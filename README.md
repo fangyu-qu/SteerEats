@@ -72,7 +72,8 @@ Validation starts 2019-12-01 and test 2020-08-01 (the last 10% of sample interac
 - `03_match_audit_sample.csv`: 100 random matches. `claude_check` is a first pass by an AI assistant (97 yes,
   1 no, 2 unsure); fill `correct` by hand before quoting the number.
 - `03_unmatched_sample.csv`: 50 unmatched open restaurants with the nearest inspection record.
-- `05_baselines.csv`: Recall@10 and NDCG@10 on validation and test.
+- `05_baselines.csv`: Recall@10 and NDCG@10 on validation and test from the first baseline run (8,449 test users);
+  superseded by `logistic_ranker/metrics.csv`, where all models use the same 8,185 test users.
 - `06_rating_over_time.csv`: per restaurant, all-time and last-12-months mean rating and the shift.
 
 ## Results (October 31, 2026)
@@ -83,7 +84,8 @@ Validation starts 2019-12-01 and test 2020-08-01 (the last 10% of sample interac
 - Comparable evaluation (test, 8,185 eligible users), Recall@10 / NDCG@10: Item-CF 0.0277 / 0.0193;
   popularity 0.0123 / 0.0084; recent popularity 0.0149 / 0.0089; logistic regression 0.0484 / 0.0357.
   Validation selected C=1. These completed-run results supersede the earlier 8,449-user baseline cohort.
-- Ratings over time: Google's displayed rating equals the all-time mean (within 0.2 stars for all 17,614
-  restaurants with 50+ reviews). For 5.5% of the 8,311 restaurants with 20+ reviews in the last 12 months, the
-  recent mean differs from the all-time mean by at least 0.5 stars (225 down, 229 up).
+- Ratings over time: Google's displayed rating is within 0.2 stars of the all-time mean for 17,606 of 17,614
+  restaurants with 50+ reviews; this does not show how Google computes its rating. For 5.5% of the 8,311
+  restaurants with 50+ reviews in all and 20+ in the last 12 months of the data, the recent mean differs from the
+  all-time mean by at least 0.5 stars (225 down, 229 up).
 
