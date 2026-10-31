@@ -1,0 +1,11 @@
+feature,standardized_coefficient
+cf_all,0.5316250594279042
+cf_liked,-0.0034431439282034105
+log_popularity,0.32249152463591574
+log_recent_popularity,0.5999684618070795
+shrunk_rating,0.0437357502382203
+shrunk_recent_rating,0.03233697601627807
+rating_change,0.0022830601383354247
+recent_share,0.09352260964259601
+months_since_last_review,-0.2508311871135011
+recent_cf_interaction,0.00783394012897821

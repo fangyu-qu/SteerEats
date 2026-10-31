@@ -1,0 +1,50 @@
+{
+  "seed": 42,
+  "negative_ratio": 5,
+  "selected_C": 1.0,
+  "feature_names": [
+    "cf_all",
+    "cf_liked",
+    "log_popularity",
+    "log_recent_popularity",
+    "shrunk_rating",
+    "shrunk_recent_rating",
+    "rating_change",
+    "recent_share",
+    "months_since_last_review",
+    "recent_cf_interaction"
+  ],
+  "training_snapshots": [
+    "2018-07-01 00:00:00",
+    "2019-01-01 00:00:00",
+    "2019-06-01 00:00:00",
+    "2019-12-01 00:01:00.810000"
+  ],
+  "validation_start": "2019-12-01 00:01:00.810000",
+  "test_start": "2020-08-01 00:18:49.388000",
+  "validation_audit": {
+    "users": 9362,
+    "cold_positive_items": 978,
+    "total_positive_items": 36594,
+    "users_without_history": 519,
+    "users_without_warm_positive": 107
+  },
+  "test_audit": {
+    "users": 8185,
+    "cold_positive_items": 2320,
+    "total_positive_items": 33164,
+    "users_without_history": 238,
+    "users_without_warm_positive": 264
+  },
+  "input_sha256": "77de2271cdd059e94429f93991dcba0a44c09e5665753f93c046590cd487a18b",
+  "solver": "liblinear",
+  "solver_iterations": [
+    6
+  ],
+  "versions": {
+    "numpy": "2.2.6",
+    "pandas": "3.0.6",
+    "sklearn": "1.9.1"
+  },
+  "note": "Warm full-catalog ranking; sampled non-interaction training negatives; no calibrated preference probabilities; no 2026 metadata features."
+}

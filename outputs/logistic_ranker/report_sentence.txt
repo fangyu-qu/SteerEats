@@ -1,0 +1,1 @@
+On the warm-catalog test (8,185 users), logistic regression achieves Recall@10 = 0.0484 and NDCG@10 = 0.0357; baselines use the same candidate catalog and eligibility rules.
