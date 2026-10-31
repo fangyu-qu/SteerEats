@@ -1,0 +1,7 @@
+period,users,model,Recall@10,NDCG@10
+validation,9469,Popularity (all history),0.0118,0.0085
+validation,9469,Popularity (last 12 months),0.012,0.0087
+validation,9469,Item-CF,0.0217,0.0151
+test,8449,Popularity (all history),0.0116,0.008
+test,8449,Popularity (last 12 months),0.0139,0.0084
+test,8449,Item-CF,0.0263,0.0184

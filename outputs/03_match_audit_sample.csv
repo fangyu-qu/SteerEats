@@ -1,0 +1,101 @@
+name,address,dba,building,street,zipcode,name_sim,dist_m,same_number,correct,claude_check
+Cooper Town,"Cooper Town, 339 1st Avenue, New York, NY 10003",COOPER TOWN DINER,339,1 AVENUE,10003,0.9,31.588317058389013,True,,yes
+Dyker Beach Golf Course Catering Hall,"Dyker Beach Golf Course Catering Hall, 1020 86th St, Brooklyn, NY 11228",DYKER BEACH GOLF (GRILL ROOM),1020,86th Street,11228,0.65625,90.30700786643243,True,,yes
+Blue Park Kitchen,"Blue Park Kitchen, 70 Pine St, New York, NY 10005",BLUE PARK KITCHEN,70,PINE STREET,10005,1.0,44.25291274203062,True,,yes
+L’Wren,"L’Wren, 4004 5th Ave, Brooklyn, NY 11232",L'WREN,4004,5 AVENUE,11232,1.0,15.965206596564826,True,,yes
+Chef Yu,"Chef Yu, 520 8th Ave, New York, NY 10018",CHEF YU / AZUKI,520,8 AVENUE,10018,0.9,17.13774380395094,True,,yes
+Radegast Hall & Biergarten,"Radegast Hall & Biergarten, 113 N 3rd St, Brooklyn, NY 11249",RADEGAST HALL & BIERGARTEN,113,NORTH    3 STREET,11249,1.0,29.75604051915643,True,,yes
+IHOP,"IHOP, 15517 Northern Blvd, Queens, NY 11354",IHOP,155-17,NORTHERN BOULEVARD,11354,1.0,46.91443825663237,True,,yes
+Hungry Ghost,"Hungry Ghost, 183 Sterling Pl, Brooklyn, NY 11238",HUNGRY GHOST,183,STERLING PLACE,11238,1.0,32.431646613609146,True,,yes
+Jalloh,"Jalloh, 3396 3rd Ave., Bronx, NY 10456",JALLOH FAMILY RESTAURANT,3396,3 AVENUE,10456,0.9,16.806730690277913,True,,yes
+Saigon Vietnamese Sandwich Deli,"Saigon Vietnamese Sandwich Deli, 369 Broome St, New York, NY 10013",SAIGON VIETNAMESE SANDWICH DELI,369,BROOME STREET,10013,1.0,18.142966908279355,True,,yes
+Colombia in Park Slope,"Colombia in Park Slope, 376 5th Ave, Brooklyn, NY 11215",COLOMBIA RESTAURANT,376,5 AVENUE,11215,0.9,28.1308905420054,True,,yes
+Liberty Bistro,"Liberty Bistro, 225 Liberty St, New York, NY 10281",LIBERTY BISTRO,225,LIBERTY STREET,10280,1.0,129.88253595102822,True,,yes
+Sal & Lloyd's Pizza Place,"Sal & Lloyd's Pizza Place, 3850 Richmond Ave, Staten Island, NY 10312",SALVATORE AND LLOYD'S PIZZA,3850,RICHMOND AVENUE,10312,0.7272727272727273,21.209395142338643,True,,yes
+Kiraku Japanese Restaurant,"Kiraku Japanese Restaurant, 1948 Williamsbridge Rd, Bronx, NY 10461",KIRAKU SUSHI JAPANESE RESTAURANT,1948,WILLIAMSBRIDGE ROAD,10461,0.9,32.11773588837686,True,,yes
+Starbucks,"Starbucks, 171 W 230th St, Bronx, NY 10463",STARBUCKS,5520,BROADWAY,10463,1.0,34.742469707605125,False,,yes
+Dunkin',"Dunkin', 1369 Broadway, New York, NY 10018",DUNKIN',1369,BROADWAY,10018,1.0,5.355088975924879,True,,yes
+Subway,"Subway, 87-08 Astoria Blvd, Queens, NY 11370",SUBWAY,87-04,ASTORIA BOULEVARD,11369,1.0,32.14935935836523,False,,unsure (nearby address)
+Sonora,"Sonora, 174 Howard Ave, Brooklyn, NY 11233",SONORA,174,HOWARD AVENUE,11233,1.0,13.770687559333423,True,,yes
+Red Oak,"Red Oak, 8305 3rd Ave, Brooklyn, NY 11209",RED OAK,8305,3 AVENUE,11209,1.0,16.992622375196017,True,,yes
+PRIME TIME,"PRIME TIME, 5023a 13th Ave, Brooklyn, NY 11219",PRIME TIME,5023,13 AVENUE,11219,1.0,50.44832002848571,True,,yes
+Papa John's Pizza,"Papa John's Pizza, 3746 3rd Ave., Bronx, NY 10456",PAPA JOHN'S PIZZA,3746,3 AVENUE,10456,1.0,26.328639625565145,True,,yes
+Blend LIC,"Blend LIC, 47-04 Vernon Blvd, Long Island City, NY 11101",BLEND,47-04,VERNON BOULEVARD,11101,0.9,13.37384829922024,True,,yes
+North Fork,"North Fork, 122 Christopher St, New York, NY 10014",NORTHFORK,110,BEDFORD STREET,10014,0.9473684210526315,23.934474986857623,False,,yes
+Kimganae | Delivery & Pick up Flushing NY,"11354 New York, Flushing, Union St, Kimganae | Delivery & Pick up Flushing NY",KIMGANAE RESTAURANT,39-12,UNION STREET,11354,0.9,26.84298364144477,False,,yes
+Little Caesars Pizza,"Little Caesars Pizza, 86-10 Roosevelt Ave, Queens, NY 11372",LITTLE CAESARS,86-10,ROOSEVELT AVENUE,11372,0.9,32.10894951059594,True,,yes
+Silver Apricot,"Silver Apricot, 20 Cornelia St, New York, NY 10014",SILVER APRICOT,20,CORNELIA STREET,10014,1.0,24.7349390803094,True,,yes
+Good Hope,"Good Hope, 1683 Flatbush Ave, Brooklyn, NY 11210, United States",GOOD HOPE RESTAURANT,1683,FLATBUSH AVENUE,11210,1.0,18.277397554301047,False,,yes
+Zeff's,"Zeff's, 312 S 3rd St, Brooklyn, NY 11211",ZEFF'S PIZZERIA,312,SOUTH    3 STREET,11211,0.9,18.405360373521503,True,,yes
+Juniper Bar,"Juniper Bar, 237 W 35th St, New York, NY 10001",JUNIPER,237,WEST   35 STREET,10001,0.9,24.21508817803936,True,,yes
+Domino's Pizza,"Domino's Pizza, 464 3rd Ave, New York, NY 10016",DOMINO'S PIZZA #3687,464,3 AVENUE,10016,0.9,26.398746239052198,True,,yes
+Chick-fil-A,"Chick-fil-A, 918 8th Ave, New York, NY 10019",CHICK-FIL-A,918,8 AVENUE,10019,1.0,20.103190340425336,True,,yes
+Caravan,"Caravan, 1797 McDonald Ave, Brooklyn, NY 11230",CARAVAN,1797,MCDONALD AVENUE,11230,1.0,43.968127867521794,True,,yes
+I Fortune Cookie,"I Fortune Cookie, 44-69 21st St, Queens, NY 11101",I-FORTUNE COOKIE,44-69,21 STREET,11101,1.0,21.050675148650985,True,,yes
+The Long Room,"The Long Room, 120 W 44th St, New York, NY 10036",THE LONG ROOM,120,WEST   44 STREET,10036,1.0,33.008329406416564,True,,yes
+Kogane,"Kogane, 76 Henry St, Brooklyn, NY 11201",KOGANE RAMEN,76,HENRY STREET,11201,0.9,20.315156893510046,True,,yes
+The Halal Guys,"The Halal Guys, 307 E 14th St, New York, NY 10003",THE HALAL GUYS,307,EAST   14 STREET,10003,1.0,22.99096923059097,True,,yes
+The Turk's Inn,"The Turk's Inn, 234 Starr St, Brooklyn, NY 11237",THE TURK'S INN,234,STARR STREET,11237,1.0,38.91581670874141,True,,yes
+IHOP,"IHOP, 2244 Church Ave, Brooklyn, NY 11226",IHOP,2244,CHURCH AVENUE,11226,1.0,75.27688162201079,True,,yes
+Polygon Brooklyn,"Polygon Brooklyn, 299 Vandervoort Ave, Brooklyn, NY 11211",POLYGON,299,VANDERVOORT AVENUE,11211,0.9,14.487530682838862,True,,yes
+Temple Canteen,"Temple Canteen, 09 Holly Ave No 143, Queens, NY 11355",TEMPLE CANTEEN,45-57,BOWNE STREET,11355,1.0,85.28320965649304,False,,yes
+Watermark Bar,"Watermark Bar, 78 South St Pier 15, New York, NY 10038",WATERMARK BAR,78,SOUTH STREET,10005,1.0,131.32514109688566,True,,yes
+Hana Michi,"Hana Michi, 28 W 32nd St, New York, NY 10001",HANAMICHI,28,WEST   32 STREET,10001,0.9473684210526315,13.563939362086249,True,,yes
+Effy's Kitchen,"Effy's Kitchen, 1567 Lexington Ave, New York, NY 10029",EJ KITCHEN,1567,LEXINGTON AVENUE,10029,0.782608695652174,22.95084376888717,True,,no (different name at the same address)
+La Fusta,"La Fusta, 80-32 Baxter Ave, Queens, NY 11373",LA FUSTA,80-32,BAXTER AVENUE,11373,1.0,13.582707435710146,True,,yes
+Burger King,"Burger King, 200 E 125th St, New York, NY 10035, United States",BURGER KING,200,EAST  125 STREET,10035,1.0,21.67926044636307,False,,yes
+Starbucks,"Starbucks, 180 W Broadway, New York, NY 10013",STARBUCKS,180,WEST BROADWAY,10013,1.0,24.820463341920732,True,,yes
+Starbucks,"Starbucks, 10 Union Square E, New York, NY 10003",STARBUCKS #7378,10,UNION SQUARE EAST,10003,0.9,41.03553410400555,True,,yes
+Dunkin',"Dunkin', 140 E 34th St, New York, NY 10016",DUNKIN' / BASKIN ROBBINS,140,EAST   34 STREET,10016,0.9,17.19866104393739,True,,yes
+Delmar Pizzeria,"Delmar Pizzeria, 1668 Sheepshead Bay Rd, Brooklyn, NY 11235",DELMAR PIZZERIA,1668,SHEEPSHEAD BAY ROAD,11235,1.0,17.112810519778233,True,,yes
+Dunkin',"Dunkin', 9507 57th Ave, Queens, NY 11373",DUNKIN',95-09,57 AVENUE,11368,1.0,27.961842285821703,False,,yes
+Ajo y Orégano,"Ajo y Orégano, 621 Crescent Ave, Bronx, NY 10458",AJO & OREGANO RESTAURANT,621,CRESCENT AVENUE,10458,0.8333333333333334,24.607124732473196,True,,yes
+Yummy Taco,"Yummy Taco, 3606 Clarendon Rd, Brooklyn, NY 11203",YUMMY TACO BROOKLYN,3606,CLARENDON ROAD,11203,0.9,23.39350397972946,True,,yes
+Jassi's Fine Indian Cuisine,"Jassi's Fine Indian Cuisine, 271-11 Union Tpke, Queens, NY 11040, United States",JASSI'S FINE INDIAN CUISINE,271-11,UNION TURNPIKE,11040,1.0,26.637157909089115,False,,yes
+DaVinci Pizzeria,"DaVinci Pizzeria, 6514 18th Ave, Brooklyn, NY 11204",DA VINCI PIZZA,6514,18 AVENUE,11204,0.8666666666666667,38.45381785015755,True,,yes
+KazuNori: The Original Hand Roll Bar,"KazuNori: The Original Hand Roll Bar, 15 W 28th St, New York, NY 10001",KAZUNORI,15,WEST   28 STREET,10001,0.9,13.286253338270312,True,,yes
+Little Thai Kitchen,"Little Thai Kitchen, 231 E 53rd St, New York, NY 10022",LITTLE THAI KITCHEN,243,EAST   53 STREET,10022,1.0,31.154430952502263,False,,unsure (nearby address)
+Banh Mi Zon,"Banh Mi Zon, 443 E 6th St, New York, NY 10009",BANH MI ZON,443,EAST    6 STREET,10009,1.0,80.17319585549154,True,,yes
+Pizza Italia,"Pizza Italia, 842 E 180th St, Bronx, NY 10460",PIZZA ITALIA 1,842,EAST  180 STREET,10460,0.9230769230769231,17.67455821913833,True,,yes
+Kuih Cafe,"Kuih Cafe, 46 Eldridge St, New York, NY 10002",KUIH CAFE,46,ELDRIDGE STREET,10002,1.0,13.911301582423459,True,,yes
+Tacombi,"Tacombi, 255 Bleecker St, New York, NY 10014, United States",TACOMBI,255,BLEECKER STREET,10014,1.0,17.08721988139466,False,,yes
+Bayard's Ale House,"Bayard's Ale House, 533 Hudson St, New York, NY 10014",BAYARD'S ALEHOUSE,533,HUDSON STREET,10014,0.9696969696969697,16.280446460323596,True,,yes
+New Star,"New Star, 9703 57th Ave, Queens, NY 11368",NEW STAR,97-03,57 AVENUE,11368,1.0,12.893398793898392,True,,yes
+Pho Hoang,"Pho Hoang, 41-01 Kissena Blvd, Flushing, NY 11355",PHO HOANG,41-01,KISSENA BOULEVARD,11355,1.0,27.024779462600495,True,,yes
+Tony's Pizza,"Tony's Pizza, 312 Utica Ave, Brooklyn, NY 11213","TONY'S PIZZA, JERK CHICKEN AND FISH",312,UTICA AVENUE,11213,0.9,15.206627390201842,True,,yes
+Baya Bar,"Baya Bar, 416 Forest Ave, Staten Island, NY 10301",BAYA BAR,416,FOREST AVENUE,10301,1.0,11.085470181117858,True,,yes
+Dream Station,"Dream Station, 3809 White Plains Rd, Bronx, NY 10467",DREAM STATION,3809,WHITE PLAINS ROAD,10467,1.0,26.777509355881737,True,,yes
+Guadalupe,"Guadalupe, 597 W 207th St, New York, NY 10034",GUADALUPE,597,WEST  207 STREET,10034,1.0,23.560997938313054,True,,yes
+Domino's Pizza,"Domino's Pizza, 943 1st Avenue, New York, NY 10022",DOMINO'S,943,1 AVENUE,10022,0.9,20.016942759605744,True,,yes
+El Salvador,"El Salvador, 1544 Myrtle Ave, Brooklyn, NY 11237",EL SALVADOR RESTAURANT,1544,MYRTLE AVENUE,11237,1.0,15.582697671711285,True,,yes
+Ichiran Times Square,"Ichiran Times Square, 152 W 49th St, New York, NY 10019",ICHIRAN TIMES SQUARE,152,WEST   49 STREET,10019,1.0,83.62069973924203,True,,yes
+Kelly D Jamaica American Rest,"Kelly D Jamaica American Rest, 11050 Sutphin Blvd, Jamaica, NY 11435",KELLY D JAMAICAN AND AMERICAN RESTAURANT,110-50,SUTPHIN BOULEVARD,11435,0.8888888888888888,29.676505553833657,True,,yes
+Copacabana Brazilian Grill,"Copacabana Brazilian Grill, 80-26 Roosevelt Ave, Jackson Heights, NY 11372",COPACABANA,80-26,ROOSEVELT AVENUE,11372,0.9,42.922627853001984,True,,yes
+Belvedere Restaurant,"Belvedere Restaurant, 21854 Hempstead Ave, Queens, NY 11429",BELVEDERE RESTAURANT,218-54,HEMPSTEAD AVENUE,11429,1.0,14.136496149563767,True,,yes
+Yiwanmen,"Yiwanmen, 150 Mott St, New York, NY 10013",YIWANMEN / CHONG QING NOODLE,150,MOTT STREET,10013,0.9,8.12277084048517,True,,yes
+GAI Chicken & Rice,"GAI Chicken & Rice, 158 East 45th Street Between Lexington and, 3rd Ave, New York, 10017",GAI CHICKEN & RICE,158,EAST   45 STREET,10017,1.0,47.02142317291563,False,,yes
+Subway,"Subway, 120 Wyckoff Ave, Brooklyn, NY 11237",SUBWAY,120,WYCKOFF AVENUE,11237,1.0,17.11861081210248,True,,yes
+Peking Express,"Peking Express, 13412 Rockaway Blvd, Queens, NY 11420",PEKING EXPRESS,134-12,ROCKAWAY BOULEVARD,11420,1.0,19.183682555982806,True,,yes
+Wildberry Cake,"Wildberry Cake, 1715 Emmons Ave, Brooklyn, NY 11235",WILDBERRY CAKE,1715,EMMONS AVENUE,11235,1.0,36.32804624766013,True,,yes
+Sin City Burger | Cheese Burger NYC | Burger Restaurant 10021,"Sin City Burger | Cheese Burger NYC | Burger Restaurant 10021, 311 E 76th St, New York, NY 10021",SIN CITY BURGER,311,EAST   76 STREET,10021,0.9,36.694408765520706,True,,yes
+Mancini's,"Mancini's, 8504 5th Ave, Brooklyn, NY 11209",MANCINI'S WOOD-FIRED PIZZA,8504,5 AVENUE,11209,0.9,25.198616144124557,True,,yes
+Joanne Trattoria,"Joanne Trattoria, 70 W 68th St, New York, NY 10023",JOANNE TRATTORIA,70,WEST   68 STREET,10023,1.0,36.44162762827411,True,,yes
+Koneko,"Koneko, 26 Clinton St, New York, NY 10002",KONEKO,26,CLINTON STREET,10002,1.0,17.050984073570852,True,,yes
+E Squared Cafe & Hookah Lounge,"E Squared Cafe & Hookah Lounge, 240 Page Ave, Staten Island, NY 10307",E SQUARED CAFE,240,PAGE AVENUE,10307,0.9,143.8510452691363,True,,yes
+Starbucks,"Starbucks, 685 3rd Ave, New York, NY 10017",STARBUCKS,685,3 AVENUE,10017,1.0,17.92521161121053,True,,yes
+Panda Express,"Panda Express, 835 3rd Ave, New York, NY 10022",PANDA EXPRESS,835,3 AVENUE,10022,1.0,23.37679657159604,True,,yes
+Kiku,"Kiku, 3838 Richmond Ave, Staten Island, NY 10312",KIKU JAPANESE CUISINE,3838,RICHMOND AVENUE,10312,0.9,30.185766165098375,True,,yes
+Taco Bell,"Taco Bell, 16001 Jamaica Ave, Queens, NY 11432",TACO BELL PIZZA HUT,160-01,JAMAICA AVENUE,11432,0.9,22.20916456500572,True,,yes
+queen bakery II,"queen bakery II, 139 Centre St, New York, NY 10013",QUEEN BAKERY II,139,CENTRE STREET,10013,1.0,35.63106973724113,True,,yes
+La Rosa Chicken & Grill - Richmond Valley,"La Rosa Chicken & Grill - Richmond Valley, 245 Richmond Valley Rd, Staten Island, NY 10307",LA ROSA GRILL,245,RICHMOND VALLEY ROAD,10309,0.9,65.81029541041751,True,,yes
+La Barracuda,"La Barracuda, Beach 97th St, Queens, NY 11694",LA BARRACUDA,196,BEACH   97 STREET,11693,1.0,28.132327270883483,False,,yes
+Addeo's,"Addeo's, 5654 Riverdale Ave, Bronx, NY 10471",ADDEO'S RIVERDALE PIZZERIA,5654,RIVERDALE AVENUE,10471,0.9,38.388453009025945,True,,yes
+Chick-fil-A,"Chick-fil-A, 1000 6th Ave, New York, NY 10018, United States",CHICK-FIL-A,1000,AVENUE OF THE AMERICAS,10018,1.0,21.193471251529274,False,,yes
+Punto Rojo Bakery in Jamaica,"Punto Rojo Bakery in Jamaica, 147-16 Hillside Avenue, Queens, NY 11435",PUNTO ROJO,147-16,HILLSIDE AVENUE,11435,0.9,27.060815857985034,True,,yes
+Hadja Marley,"Hadja Marley, 1139 Fulton St, Brooklyn, NY 11238",HADJA MARLEY,1139,FULTON STREET,11238,1.0,14.414724567967165,True,,yes
+Bordeaux Steakhouse,"Bordeaux Steakhouse, 1922 Coney Island Ave, Brooklyn, NY 11230",BORDEAUX STEAKHOUSE,1922,CONEY ISLAND AVENUE,11230,1.0,28.624660142633335,True,,yes
+el encanto de lola,"el encanto de lola, 175 Malcolm X Blvd, New York, NY 10026",EL ENCANTO DE LOLA 2,175,LENOX AVENUE,10026,0.9473684210526315,27.069800891002735,True,,yes
+Energy Fuel Fort Greene,"Energy Fuel Fort Greene, 386 Myrtle Ave, Brooklyn, NY 11205",ENERGY FUEL,386,MYRTLE AVENUE,11205,0.9,11.07955220111464,True,,yes
+Meena House Cafe,"Meena House Cafe, 476 Bay Ridge Ave, Brooklyn, NY 11220",MEENA HOUSE CAFE,476,BAYRIDGE AVENUE,11220,1.0,36.046943659091006,True,,yes
+Panda Garden,"Panda Garden, 9708 3rd Ave, Brooklyn, NY 11209",PANDA GARDEN RESTAURANT,9708,3 AVENUE,11209,1.0,20.887567596297927,True,,yes
+Genao,"Genao, 162 Throop Ave, Brooklyn, NY 11206",GENAO,162,THROOP AVENUE,11206,1.0,13.828072861720234,True,,yes

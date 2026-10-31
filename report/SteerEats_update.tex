@@ -1,0 +1,93 @@
+\documentclass[10pt]{article}
+
+\usepackage[top=0.5in,bottom=0.5in,left=0.7in,right=0.7in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+\title{SteerEats: Explaining and Steering Restaurant Recommendations in NYC\vspace{-.5em}}
+\author{Fall 2026, DS-GA 3001 Project Update\vspace{-.5em}}
+\date{Team 4: Fangyu Qu (fq2069@nyu.edu), Yila Cao (yc8155@nyu.edu)}
+
+\newcommand{\placeholder}[1]{\textbf{[TO FILL: #1]}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1pt}
+\setlength{\leftmargini}{1.2em}
+
+% Keep standard research-paper headings while using compact spacing for one page.
+\makeatletter
+\renewcommand\section{\@startsection{section}{1}{\z@}%
+  {-0.95ex \@plus -.2ex \@minus -.1ex}%
+  {0.45ex \@plus .1ex}%
+  {\normalfont\large\bfseries}}
+\makeatother
+
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+\vspace{-2.5em}
+
+\section{Progress Since the Proposal}
+We narrowed the project to an \textbf{individual recommender}. Its central visualization claim is that a linked
+before-and-after view shows why a ranking changed in ways that aggregate ranking metrics cannot. We dropped ALS,
+the UMAP and calibration views and the separate researcher dashboard; group recommendation and steering cost
+are now stretch goals.
+
+\textbf{Data.} In the Google Local New York data (33.5M reviews), 24,857 restaurants lie inside NYC's 2020
+neighborhoods, with 6.9M reviews by 2.2M users up to September 2021. Our
+development sample is 20,000 random users (seed 42) with at least 10 NYC restaurant reviews since 2017: 422,788
+first reviews of 21,155 restaurants. We split it by time: validation from December 2019, test from August 2020
+(the last 10\% of interactions).
+
+\textbf{Matching.} 42.4\% of NYC restaurants (51.5\% of those open at the 2021 crawl) match a DOHMH inspection record
+by name, house number and distance; they receive 62\% of all reviews. In a hand check of 100 random matches, 97 were
+correct, 1 wrong and 2 unclear. Most misses are closures: the inspection file lists only recently active restaurants, and
+for half of the unmatched open restaurants another business now uses the address.
+
+\textbf{Baselines.} On the test period (8,449 users), item-based CF reaches Recall@10 $=$ 0.026 and NDCG@10 $=$ 0.018,
+about twice global popularity (0.012 and 0.008); popularity over the last 12 months beats all-time popularity
+(Recall@10 $=$ 0.014). \placeholder{first logistic-regression result, or delete this sentence}
+
+\textbf{Ratings over time.} Google's displayed rating is the all-time mean of the reviews (within 0.2 stars for all
+17,614 restaurants with at least 50 reviews), so it hides change: for 5.5\% of the 8,311 restaurants with at least 20
+reviews in the last year of data, the recent mean is at least 0.5 stars away from the all-time mean (225 down, 229 up).
+
+\section{Key Paper and Gap}
+TasteWeights (Bostandjiev et al., RecSys 2012) shows a user's liked artists, three sources and the recommendations as
+linked columns, with sliders on items and sources; its user study found that control and explanation raised satisfaction. We keep its linked input--model--output view and direct control. But it explains the current list, not the
+change: users cannot see which items entered, left or moved after steering; its model is a weighted sum, not a
+learned ranker; and it ignores location.
+
+\section{Response to Feedback}
+\textbf{What a rating means.} A star rating reflects expectations about both quality and cost, so the interface shows
+price level next to each rating and compares restaurants within a price level, along with review count and a
+rolling mean with its uncertainty over time.
+
+\textbf{Time as a control.} Instead of a separate drift study, users choose a date range (e.g., the last 12
+months); restaurant features are recomputed from reviews in that range, and the before-and-after view explains the
+resulting rank changes.
+
+\textbf{Explanation accounting.} For each item, the interface applies the stages in a fixed order (learned model,
+distance and popularity adjustments, diversity re-ranking), compares the reconstructed rank change with the observed
+change and reports the residual. SHAP explains the raw model score, not the final rank.
+
+\textbf{Evidence.} We use worked case studies and a small expert or formative review instead of a controlled study that needs
+IRB approval. LLM summaries of review themes are optional context. Bursts of extreme ratings are labeled
+only as anomalies, not as fake reviews.
+
+\section{Scope, Plan and Division of Labor}
+The core is item-based CF and popularity baselines, then a learned ranker (logistic regression, then LightGBM if
+feasible), evaluated with Recall@10 and NDCG@10 across time windows. The linked interface has a map, before-and-after
+ranks, score and rank decomposition, rating history with a date-range control, and relevance--distance--diversity
+trade-offs.
+
+\textbf{Fangyu} owns data preparation (NYC filtering, time split, inspection matching, data dictionary), the baselines,
+and the rating-history and coverage views. \textbf{Yila} owns the learned ranker and explanation pipeline and the
+rank-change, SHAP, control, diversity and map views. Both review code, integrate the interface, run case
+studies and write the report.
+
+\textbf{Timeline.} Nov 3--9: learned ranker and rank-change decomposition; Nov 10--16: linked interface;
+Nov 17--23: case studies and expert review; Nov 24--30: slides and demo; Dec 1--14: final report.
+\textbf{GitHub:} \placeholder{repository URL}
+
+\end{document}
