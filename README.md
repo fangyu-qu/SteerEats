@@ -2,6 +2,31 @@
 
 Data preparation, baselines and first temporal analysis for the DS-GA 3001 project update (run of October 31, 2026).
 
+## Stage one: logistic ranking
+
+The completed model is `outputs/logistic_ranker/logistic_pipeline.joblib`; aggregate results,
+feature coefficients, run metadata and training log are in the same folder. Test Recall@10 /
+NDCG@10: logistic regression **0.0484 / 0.0357**, compared with Item-CF **0.0277 / 0.0193**
+on the same 8,185 eligible users. Validation selected C=1. The input SHA-256 is recorded
+in `run_metadata.json`; the completed run used the existing 422,788-row interaction sample.
+
+To reproduce with an existing `data/processed/sample_interactions.parquet`:
+
+```bash
+python3.11 -m venv .venv
+.venv/bin/python -m pip install -r requirements-model-lock.txt
+bash scripts/run_first_ranker.sh
+```
+
+`requirements-model-lock.txt` records versions for model training and loading. Data preparation
+also needs the packages in `requirements.txt`. Raw/processed datasets and individual-user
+evaluation CSVs stay local; running the model regenerates the individual-user metrics.
+The saved joblib artifact contains the fitted scaler and logistic classifier; ranking also
+requires historical features computed by `src/07_logistic_ranker.py`. Its scores are ranking
+scores, not calibrated preference probabilities. Load the artifact only from this trusted repository.
+Reports remain managed separately in Overleaf. The runner updates a local report only when
+`report/main.tex` is present; otherwise it completes after saving model and evaluation outputs.
+
 ## Setup and run
 
 Python 3.11+ with pandas, pyarrow, geopandas, shapely, scikit-learn and scipy. From this folder:
@@ -55,8 +80,10 @@ Validation starts 2019-12-01 and test 2020-08-01 (the last 10% of sample interac
 - Matching: 42.4% of NYC restaurants match an inspection record (51.5% of those open at the 2021 crawl); matched
   restaurants hold 62% of reviews. Half of the unmatched open restaurants' addresses now hold another inspected
   business, so most misses are closures after 2021.
-- Baselines (test, 8,449 users): item-CF Recall@10 0.026, NDCG@10 0.018; popularity 0.012 / 0.008; popularity
-  over the last 12 months 0.014 / 0.008.
+- Comparable evaluation (test, 8,185 eligible users), Recall@10 / NDCG@10: Item-CF 0.0277 / 0.0193;
+  popularity 0.0123 / 0.0084; recent popularity 0.0149 / 0.0089; logistic regression 0.0484 / 0.0357.
+  Validation selected C=1. These completed-run results supersede the earlier 8,449-user baseline cohort.
 - Ratings over time: Google's displayed rating equals the all-time mean (within 0.2 stars for all 17,614
   restaurants with 50+ reviews). For 5.5% of the 8,311 restaurants with 20+ reviews in the last 12 months, the
   recent mean differs from the all-time mean by at least 0.5 stars (225 down, 229 up).
+

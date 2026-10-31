@@ -1,0 +1,7 @@
+# Model training/loading environment (Python 3.11); data preparation uses requirements.txt.
+numpy==2.2.6
+pandas==3.0.6
+scipy==1.17.1
+scikit-learn==1.9.1
+pyarrow==25.0.1
+joblib==1.6.0

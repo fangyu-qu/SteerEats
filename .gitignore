@@ -7,3 +7,9 @@ __pycache__/
 *.fls
 *.synctex.gz
 report/
+
+
+.venv/
+outputs/logistic_ranker/*_per_user.csv
+LOCAL_SETUP.md
+SteerEats/
