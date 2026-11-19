@@ -13,3 +13,11 @@ report/
 outputs/logistic_ranker/*_per_user.csv
 LOCAL_SETUP.md
 SteerEats/
+
+# web front end
+web/node_modules/
+web/dist/
+web/public/data/cases/*.json
+!web/public/data/cases/demo_*.json
+# notebooks
+.ipynb_checkpoints/

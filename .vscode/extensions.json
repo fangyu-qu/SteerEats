@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "charliermarsh.ruff",
+    "ms-toolsai.jupyter",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "ritwickdey.LiveServer",
+    "mechatroner.rainbow-csv",
+    "yzhang.markdown-all-in-one",
+    "James-Yu.latex-workshop"
+  ]
+}
