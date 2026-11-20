@@ -63,6 +63,30 @@ reviews that remain after merging; these are different restaurants (one user's b
 branches), so they are kept apart. The baselines and logistic ranker above still use the
 original sample; they are rerun on `interactions_clean.parquet` in the next step.
 
+## Time-safe features and rankers (November 19, 2026)
+
+```bash
+python src/13_train_rankers.py          # LR + LightGBM, same features/labels/negatives/candidates (~16 min)
+python src/14_evaluate.py               # bootstrap intervals, paired tests, robustness (~12 min)
+python tests/check_time_safety.py       # truncation test: features must not change when future data is removed
+```
+
+`src/ranker_core.py` builds each snapshot strictly before its cutoff. Item popularity, ratings and
+item-item similarity use **all** clean NYC reviews before the cutoff (2–6 million), not only the sample.
+30 features in six groups: collaborative (CF on all / liked history), popularity (all-time, 12-month,
+3-month, recency, age), rating (smoothed all-time and 12-month), location (distance from the user's median
+visit point, same neighborhood, same borough), taste (cuisine affinity, price gap, chain affinity) and
+static attributes. Candidates are restaurants reviewed in the 12 months before the cutoff, minus the
+user's history; training negatives are half uniform, half popularity-matched (4 per positive).
+
+Test results (8,025 users, 2020-08-01 to 2021-04-30) with 95% bootstrap intervals are in
+`outputs/rankers/EVALUATION.md`: logistic regression NDCG@10 0.0480 [0.0453, 0.0509], Item-CF 0.0453
+[0.0428, 0.0480], LightGBM 0.0413 [0.0387, 0.0439]. Logistic regression beats Item-CF by 6.0% (paired
+interval excludes zero, Wilcoxon p = 4.6e-06); LightGBM trails logistic regression by 14.1%. The ordering
+holds without bulk-day targets, in each test quarter, and before and during COVID. These numbers replace
+the October results above, which used a different catalog, sample-only popularity and uncleaned data, so
+the two sets are not directly comparable. Per-user metrics stay local (`*_per_user.csv`).
+
 ## Raw data (`data/raw`, not in git)
 
 | File | Source | Size |

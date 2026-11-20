@@ -24,3 +24,5 @@ web/public/data/cases/*.json
 
 # data is a symlink to the shared data folder
 /data
+outputs/rankers/*per_user.csv
+outputs/rankers/smoke_*
