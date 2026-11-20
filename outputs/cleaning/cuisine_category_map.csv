@@ -1,49 +1,49 @@
 google_category,restaurants,group
-Restaurant,8490,
-Delivery Restaurant,3502,
-Fast food restaurant,2703,fast_food
-Bar,2419,bar_pub
-Takeout Restaurant,2286,
-Pizza restaurant,2243,pizza
-Chinese restaurant,2163,chinese
-American restaurant,2006,american
-Italian restaurant,1826,italian
-Coffee shop,1771,cafe_dessert
-Breakfast restaurant,1770,breakfast_brunch
+Restaurant,8481,
+Delivery Restaurant,3499,
+Fast food restaurant,2699,fast_food
+Bar,2418,bar_pub
+Takeout Restaurant,2285,
+Pizza restaurant,2241,pizza
+Chinese restaurant,2161,chinese
+American restaurant,2004,american
+Italian restaurant,1825,italian
+Coffee shop,1770,cafe_dessert
+Breakfast restaurant,1768,breakfast_brunch
 Sandwich shop,1523,sandwich_deli
-Mexican restaurant,1517,mexican
+Mexican restaurant,1515,mexican
 Cafe,1269,cafe_dessert
-Bakery,1123,cafe_dessert
-Hamburger restaurant,1054,american
+Bakery,1122,cafe_dessert
+Hamburger restaurant,1053,american
 Japanese restaurant,979,japanese
 Asian restaurant,947,asian_other
-Seafood restaurant,939,seafood
+Seafood restaurant,938,seafood
 Caterer,872,
 Sushi restaurant,832,japanese
-Bagel shop,734,cafe_dessert
+Bagel shop,733,cafe_dessert
 Chicken restaurant,727,fast_food
-Pizza delivery,698,pizza
-Brunch restaurant,674,breakfast_brunch
+Pizza delivery,697,pizza
+Brunch restaurant,673,breakfast_brunch
 Cocktail bar,624,bar_pub
-Donut shop,617,cafe_dessert
+Donut shop,616,cafe_dessert
 Vegetarian restaurant,587,vegetarian_healthy
-Mediterranean restaurant,541,middle_eastern
-Thai restaurant,530,southeast_asian
+Mediterranean restaurant,540,middle_eastern
+Thai restaurant,529,southeast_asian
 Latin American restaurant,517,latin_american
 Vegan restaurant,512,vegetarian_healthy
 Health food restaurant,498,vegetarian_healthy
 Indian restaurant,493,south_asian
 Wine bar,489,bar_pub
-Pizza Takeout,478,pizza
+Pizza Takeout,477,pizza
 Salad shop,473,vegetarian_healthy
 Lunch restaurant,458,
 Bar & grill,458,bar_pub
 Caribbean restaurant,439,caribbean
 Kosher restaurant,424,jewish_kosher
 Espresso bar,412,cafe_dessert
-New American restaurant,400,american
-Halal restaurant,378,middle_eastern
-Lounge,372,bar_pub
+New American restaurant,399,american
+Halal restaurant,376,middle_eastern
+Lounge,371,bar_pub
 Dominican restaurant,368,latin_american
 Deli,366,sandwich_deli
 Diner,364,american
@@ -60,9 +60,9 @@ Middle Eastern restaurant,286,middle_eastern
 Event venue,266,
 Spanish restaurant,262,european
 Sports bar,259,bar_pub
-Chicken wings restaurant,251,american
+Chicken wings restaurant,250,american
 Family restaurant,245,
-Barbecue restaurant,241,american
+Barbecue restaurant,240,american
 Dessert restaurant,231,cafe_dessert
 Ice cream shop,217,cafe_dessert
 Greek restaurant,215,middle_eastern
@@ -79,11 +79,11 @@ Pub,150,bar_pub
 Gastropub,148,bar_pub
 Burrito restaurant,143,mexican
 Peruvian restaurant,140,latin_american
-Colombian restaurant,140,latin_american
+Colombian restaurant,139,latin_american
 Organic restaurant,133,vegetarian_healthy
 Noodle shop,125,asian_other
 Soul food restaurant,121,american
-Turkish restaurant,121,middle_eastern
+Turkish restaurant,120,middle_eastern
 Bistro,116,european
 Catering food and drink supplier,114,
 Chinese takeaway,111,chinese
@@ -94,19 +94,19 @@ Grocery store,108,
 Pasta shop,102,italian
 Live music venue,98,
 Health food store,97,vegetarian_healthy
-Dim sum restaurant,95,chinese
 Cake shop,95,cafe_dessert
 Irish pub,95,bar_pub
+Dim sum restaurant,94,chinese
 Buffet restaurant,93,
 Southeast Asian restaurant,93,southeast_asian
 Ecuadorian restaurant,92,latin_american
-Hot dog restaurant,92,american
+Hot dog restaurant,91,american
 Irish restaurant,90,european
 Bubble tea store,88,cafe_dessert
 Southern restaurant (US),88,american
-Cantonese restaurant,88,chinese
 Sichuan restaurant,87,chinese
 Chinese noodle restaurant,87,chinese
+Cantonese restaurant,87,chinese
 Cuban restaurant,82,latin_american
 Tea house,78,cafe_dessert
 Russian restaurant,75,european
@@ -117,8 +117,8 @@ Oyster bar restaurant,71,seafood
 Dumpling restaurant,71,chinese
 Soup restaurant,70,sandwich_deli
 Hawaiian restaurant,70,asian_other
-Traditional American restaurant,70,american
 Gyro restaurant,69,middle_eastern
+Traditional American restaurant,69,american
 Pakistani restaurant,68,south_asian
 Korean barbecue restaurant,68,korean
 Taiwanese restaurant,66,chinese
@@ -154,9 +154,9 @@ Salvadoran restaurant,43,latin_american
 Shanghainese restaurant,43,chinese
 Eclectic restaurant,42,
 Malaysian restaurant,42,southeast_asian
-Uzbeki restaurant,42,middle_eastern
 Modern European restaurant,42,european
 Beer hall,42,bar_pub
+Uzbeki restaurant,41,middle_eastern
 Beer store,40,bar_pub
 Gas station,39,
 Southern Italian restaurant,38,italian
@@ -199,9 +199,9 @@ Crab house,23,seafood
 Afghani restaurant,23,middle_eastern
 Belgian restaurant,23,european
 Brewpub,22,bar_pub
-Kebab shop,22,middle_eastern
 Karaoke bar,21,bar_pub
 Brasserie,21,european
+Kebab shop,21,middle_eastern
 Ethiopian restaurant,21,african
 Beverage distributor,21,
 Hotel,20,
@@ -391,7 +391,6 @@ Croatian restaurant,3,
 Serbian restaurant,3,
 Sports nutrition store,3,
 Boat tour agency,3,
-Corporate office,3,
 Book store,3,
 Alternative fuel station,3,
 Chinese tea house,3,chinese
@@ -450,6 +449,7 @@ Syokudo and Teishoku restaurant,2,
 Irish goods store,2,european
 Seafood wholesaler,2,seafood
 Recruiter,2,
+Corporate office,2,
 Organic farm,2,
 Canadian restaurant,2,
 Bocce ball court,2,
