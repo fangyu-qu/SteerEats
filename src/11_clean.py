@@ -5,7 +5,10 @@ the files in data/processed are read only and stay unchanged.
 Restaurants
   - Drop businesses whose only "restaurant" categories are non-food ones
     ("Restaurant supply store", "Bar restaurant furniture store").
-  - Flag listings that share a name and address with another listing (kept; too few to merge safely).
+  - Merge duplicate listings of one business into the listing with more Google reviews:
+    every pair with the same name and address, plus the pairs reviewed by hand in
+    config/duplicate_listings.csv (found through cross-posted reviews). Reviews of the dropped
+    listing move to the kept one, so copies of the same review become exact duplicates.
 Reviews
   - Drop rows with no user id and no rating (2,033 in the October 2026 extract).
   - Drop exact duplicates of (user, restaurant, time, rating), keeping the first.
@@ -43,6 +46,26 @@ NON_FOOD = re.compile(r"^(restaurant supply store|bar restaurant furniture store
 START = pd.Timestamp("2017-01-01")
 PLACEHOLDER_BEFORE = pd.Timestamp("2000-01-01")
 LOG = OUTPUTS / "cleaning"
+DUPLICATES = Path(__file__).resolve().parents[1] / "config" / "duplicate_listings.csv"
+
+
+def duplicate_aliases(R):
+    """Map each dropped listing to the listing kept for the same business."""
+    key = R.name.str.lower().str.strip() + "|" + R.address.fillna("").str.lower().str.strip()
+    same = R[R.address.notna() & key.duplicated(keep=False)].assign(key=key)
+    alias, rule = {}, 0
+    for _, g in same.groupby("key"):
+        g = g.sort_values("google_num_reviews", ascending=False)
+        for d in g.gmap_id.iloc[1:]:
+            alias[d] = g.gmap_id.iloc[0]
+            rule += 1
+    reviewed = pd.read_csv(DUPLICATES)
+    for keep, drop in zip(reviewed.keep_gmap_id, reviewed.drop_gmap_id):
+        alias.setdefault(drop, keep)
+    for d in list(alias):                     # resolve chains a -> b -> c
+        while alias[d] in alias:
+            alias[d] = alias[alias[d]]
+    return alias, rule, len(alias) - rule
 
 
 def clean_restaurants(log):
@@ -51,18 +74,22 @@ def clean_restaurants(log):
     food = cats.apply(lambda cs: any("restaurant" in c.lower() and not NON_FOOD.match(c) for c in cs))
     removed = R[~food]
     R = R[food].copy()
-    key = R.name.str.lower().str.strip() + "|" + R.address.fillna("").str.lower().str.strip()
-    R["duplicate_listing"] = key.duplicated(keep=False) & R.address.notna()
+    alias, by_rule, by_review = duplicate_aliases(R)
+    R["merged_listings"] = R.gmap_id.map(pd.Series(list(alias.values())).value_counts()).fillna(0).astype(int)
+    R = R[~R.gmap_id.isin(alias)]
     log["restaurants"] = dict(input=int(len(food)), removed_non_food=int(len(removed)),
-                              kept=int(len(R)), duplicate_listings_flagged=int(R.duplicate_listing.sum()),
+                              merged_same_name_address=by_rule, merged_reviewed=by_review, kept=int(len(R)),
                               removed_examples=removed.categories.head(5).tolist())
     R.to_parquet(RESTAURANTS_CLEAN, index=False)
-    return R
+    return R, alias
 
 
-def clean_reviews(keep_ids, log):
+def clean_reviews(keep_ids, alias, log):
     t = pq.read_table(REVIEWS_NYC)
     k = t.select(["user_id", "gmap_id", "time_ms", "rating"]).to_pandas()
+    moved = k.gmap_id.isin(alias)
+    k["gmap_id"] = k.gmap_id.replace(alias)
+    t = t.set_column(t.schema.get_field_index("gmap_id"), "gmap_id", pa.array(k.gmap_id, pa.string()))
     n0 = len(k)
     time = pd.to_datetime(k.time_ms, unit="ms")
     empty = (k.user_id.isna() | k.rating.isna()).to_numpy()
@@ -70,7 +97,9 @@ def clean_reviews(keep_ids, log):
     placeholder = (time < PLACEHOLDER_BEFORE).to_numpy() & ~empty & ~dup
     gone = (~k.gmap_id.isin(keep_ids)).to_numpy() & ~empty & ~dup & ~placeholder
     keep = ~(empty | dup | placeholder | gone)
-    log["reviews"] = dict(input=n0, missing_user_or_rating=int(empty.sum()), exact_duplicates=int(dup.sum()),
+    log["reviews"] = dict(input=n0, moved_to_kept_listing=int(moved.sum()),
+                          merged_listing_copies=int((dup & moved.to_numpy()).sum()),
+                          missing_user_or_rating=int(empty.sum()), exact_duplicates=int(dup.sum()),
                           placeholder_dates=int(placeholder.sum()), non_food_restaurants=int(gone.sum()),
                           kept=int(keep.sum()))
 
@@ -109,17 +138,22 @@ def link_pairs(x, log, min_users=3):
     log["linked_listings"] = dict(pairs_any=int(len(pairs)), pairs_min_users=int(len(strong)), min_users=min_users)
 
 
-def rebuild_sample(r, removed_ids, log):
+def rebuild_sample(r, removed_ids, alias, log):
     orig = pd.read_parquet(SAMPLE)
     users = set(orig.user_id)
     s = r[(r.time >= START) & r.user_id.isin(users)].sort_values("time", kind="stable")
     s = s.drop_duplicates(["user_id", "gmap_id"], keep="first").reset_index(drop=True)
 
-    # Check: the original sample minus removed restaurants should be reproduced exactly.
-    o = orig[~orig.gmap_id.isin(removed_ids)]
+    # Check: the original sample, with merged listings mapped and removed restaurants dropped,
+    # should be reproduced exactly.
+    o = orig.assign(gmap_id=orig.gmap_id.replace(alias)).sort_values("time", kind="stable")
+    o = o.drop_duplicates(["user_id", "gmap_id"], keep="first")
+    merged_rows = len(orig) - len(o)
+    o = o[~o.gmap_id.isin(removed_ids)]
     key_o = set(zip(o.user_id, o.gmap_id, o.time.to_numpy().astype("datetime64[ms]").astype("int64")))
     key_s = set(zip(s.user_id, s.gmap_id, s.time.to_numpy().astype("datetime64[ms]").astype("int64")))
-    log["interactions_check"] = dict(original=int(len(orig)), original_on_removed_restaurants=int(len(orig) - len(o)),
+    log["interactions_check"] = dict(original=int(len(orig)), original_merged_listing_repeats=int(merged_rows),
+                                     original_on_removed_restaurants=int(len(orig) - merged_rows - len(o)),
                                      rebuilt=int(len(s)), only_in_original=len(key_o - key_s),
                                      only_in_rebuilt=len(key_s - key_o))
 
@@ -148,21 +182,25 @@ def write_log(log):
     R, V, I, C = log["restaurants"], log["reviews"], log["interactions"], log["interactions_check"]
     lines = ["# Cleaning log", "", "Generated by `src/11_clean.py`. Originals in `data/processed` are unchanged.", "",
              "## Restaurants", "",
-             f"- Input {R['input']:,}; removed {R['removed_non_food']} non-food businesses; kept {R['kept']:,}.",
-             f"- Listings sharing a name and address, flagged `duplicate_listing`: {R['duplicate_listings_flagged']}.", "",
+             f"- Input {R['input']:,}; removed {R['removed_non_food']} non-food businesses.",
+             f"- Merged duplicate listings: {R['merged_same_name_address']} with the same name and address, "
+             f"{R['merged_reviewed']} reviewed by hand (`config/duplicate_listings.csv`). Kept {R['kept']:,}.", "",
              "## Reviews", "",
              f"- Input {V['input']:,}.",
+             f"- Moved {V['moved_to_kept_listing']:,} reviews from dropped listings to the kept listing; "
+             f"{V['merged_listing_copies']:,} of them were copies of a review already there.",
              f"- Removed: {V['missing_user_or_rating']:,} rows with no user or rating, {V['exact_duplicates']:,} exact duplicates, {V['placeholder_dates']:,} placeholder dates, "
              f"{V['non_food_restaurants']:,} reviews of removed businesses.",
              f"- Kept {V['kept']:,}; {V['bulk_day_reviews']:,} posted on a day the user posted >= {BULK_DAY_MIN} reviews.",
              f"- Cross-posted (same user, same millisecond, several restaurants), flagged not removed: {V['cross_posted_reviews']:,}.",
              f"- Listing pairs sharing cross-posted reviews from >= {log['linked_listings']['min_users']} users: "
              f"{log['linked_listings']['pairs_min_users']} (of {log['linked_listings']['pairs_any']:,} pairs), "
-             "in `linked_listings.csv`; likely the same business listed twice.", "",
+             "in `linked_listings.csv`. After merging, the remaining pairs are different restaurants "
+             "(batch uploads, chain branches).", "",
              "## Interactions", "",
              f"- Rebuilt for the same users: {I['rows']:,} rows, {I['users']:,} users, {I['restaurants']:,} restaurants.",
-             f"- Check against the original sample ({C['original']:,} rows, {C['original_on_removed_restaurants']} on removed "
-             f"businesses): {C['only_in_original']} rows only in the original, {C['only_in_rebuilt']} only in the rebuild.",
+             f"- Check against the original sample ({C['original']:,} rows; {C['original_merged_listing_repeats']} repeats "
+             f"of a merged business, {C['original_on_removed_restaurants']} on removed businesses): {C['only_in_original']} rows only in the original, {C['only_in_rebuilt']} only in the rebuild.",
              f"- Users now below 10 interactions: {I['users_below_10']}.",
              "- Splits: " + "; ".join(f"{k} {v['rows']:,} ({v['start'][:10]} to {v['end'][:10]})" for k, v in I["splits"].items()) + ".",
              f"- Labels: positive {I['label_share']['positive']:.1%}, negative {I['label_share']['negative']:.1%}, "
@@ -176,11 +214,11 @@ def main():
     CLEAN.mkdir(parents=True, exist_ok=True)
     log = {}
     before = set(pd.read_parquet(RESTAURANTS_NYC, columns=["gmap_id"]).gmap_id)
-    R = clean_restaurants(log)
+    R, alias = clean_restaurants(log)
     print("restaurants done", flush=True)
-    r = clean_reviews(set(R.gmap_id), log)
+    r = clean_reviews(set(R.gmap_id), alias, log)
     print("reviews done", flush=True)
-    rebuild_sample(r, before - set(R.gmap_id), log)
+    rebuild_sample(r, before - set(R.gmap_id) - set(alias), alias, log)
     write_log(log)
 
 

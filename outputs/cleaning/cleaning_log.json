@@ -2,8 +2,9 @@
   "restaurants": {
     "input": 24857,
     "removed_non_food": 49,
-    "kept": 24808,
-    "duplicate_listings_flagged": 40,
+    "merged_same_name_address": 20,
+    "merged_reviewed": 5,
+    "kept": 24783,
     "removed_examples": [
       "Restaurant supply store",
       "Restaurant supply store; Kitchen supply store",
@@ -14,59 +15,62 @@
   },
   "reviews": {
     "input": 6907631,
+    "moved_to_kept_listing": 7148,
+    "merged_listing_copies": 6098,
     "missing_user_or_rating": 2033,
-    "exact_duplicates": 84118,
+    "exact_duplicates": 90198,
     "placeholder_dates": 381,
     "non_food_restaurants": 4716,
-    "kept": 6816383,
-    "bulk_day_reviews": 868038,
-    "cross_posted_reviews": 23907
+    "kept": 6810303,
+    "bulk_day_reviews": 865895,
+    "cross_posted_reviews": 11751
   },
   "linked_listings": {
-    "pairs_any": 19741,
-    "pairs_min_users": 303,
+    "pairs_any": 19723,
+    "pairs_min_users": 294,
     "min_users": 3
   },
   "interactions_check": {
     "original": 422788,
+    "original_merged_listing_repeats": 378,
     "original_on_removed_restaurants": 217,
-    "rebuilt": 422571,
+    "rebuilt": 422193,
     "only_in_original": 0,
     "only_in_rebuilt": 0
   },
   "interactions": {
-    "rows": 422571,
+    "rows": 422193,
     "users": 20000,
-    "restaurants": 21125,
-    "users_below_10": 16,
+    "restaurants": 21108,
+    "users_below_10": 54,
     "splits": {
       "train": {
-        "rows": 328606,
+        "rows": 328306,
         "start": "2017-01-01 00:26:47.416000",
         "end": "2019-11-30 23:58:44.139000"
       },
       "val": {
-        "rows": 49928,
+        "rows": 49885,
         "start": "2019-12-01 00:01:00.810000",
         "end": "2020-07-31 23:57:57.111000"
       },
       "test": {
-        "rows": 43485,
+        "rows": 43453,
         "start": "2020-08-01 00:18:49.388000",
         "end": "2021-05-31 23:47:33.921000"
       },
       "tail": {
-        "rows": 552,
+        "rows": 549,
         "start": "2021-06-01 01:04:12.260000",
         "end": "2021-09-06 02:23:33.643000"
       }
     },
     "label_share": {
-      "positive": 0.8128645837030937,
-      "negative": 0.07117147177634055,
-      "three_star": 0.11596394452056577
+      "positive": 0.8128249402524438,
+      "negative": 0.07119019026843174,
+      "three_star": 0.11598486947912448
     },
-    "bulk_day_share": 0.23606210553966078,
-    "cross_posted": 748
+    "bulk_day_share": 0.23569078596755513,
+    "cross_posted": 14
   }
 }

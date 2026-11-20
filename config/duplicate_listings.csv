@@ -1,0 +1,10 @@
+keep_gmap_id,drop_gmap_id,keep_name,drop_name,shared_users,distance_m,reason
+0x89c25fafaee9041f:0x189e0d820ded1cf,0x89c25fa916ffcddb:0x30971858c89b2457,Pollos Mario,Pollos A La Brasa Mario,3425,432.1,"same business: 3,425 users share copied reviews; old and new listing on Roosevelt Ave"
+0x89c245e57d4e8c33:0x3bbbb80b40f0375d,0x89c24500758d49c1:0x98e1949638ddffe,Tacis Beyti,Taci's Beyti,1333,10.4,"same business, same address, apostrophe spelling differs"
+0x89c259acc68752c1:0xa66f72c322a89e52,0x89c259acc5d5aa8b:0x5f8e9b0143d109f2,Blue Maiz,Blue Maiz,520,3.4,same name and address
+0x89c28bc9ed76f76d:0x25ed07378cba8841,0x89c28b50c6d1dba7:0x3f2e9f9733fa1727,Crosby Pizza Stop,Crosby Pizza Stop,347,0.8,same name and address
+0x89c2452e01309fbf:0x8a30954d0c69bdd3,0x89c2443457b3fadb:0xafe9e37ab58edfc5,"Nathan's Famous, Coney Island Boardwalk",Nathan's Famous,325,16.5,"same Coney Island boardwalk location, two listings"
+0x89c2617339830763:0xa99608f683410fb6,0x89c260231b0c2989:0x16636f10fccffdfe,Xi Top BBQ 西塔烧烤 | 中韩烧烤,New Xi Top BBQ,83,11.2,same address; renamed listing with Chinese name
+0x89c2593e034f10cd:0xffd9be695c144077,0x89c259792c9fcb91:0xf13d4fe1c9040dff,Hole In The Wall,Hole In The Wall,17,11.5,same name and address
+0x89c259f744b20deb:0xb536eb5ee402f92f,0x89c2591ac2346f13:0xa4840cab39750aad,FREEHOLD In The Park,Freehold In The Park,15,1.1,"same name and address, capitalization differs"
+0x89c25b88069cad91:0xb8bf845ce9d91cf6,0x89c25b88069232ff:0x9c1dac95b0e6e433,Fulton China,Leon Kitchen,15,0.0,"same address (0 m); listing renamed Fulton China, reviews copied between them"

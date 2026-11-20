@@ -52,15 +52,15 @@ python src/12_restaurant_attributes.py    # cuisine groups, chain, price, attrib
 
 | File | One row per | Notes |
 |---|---|---|
-| `restaurants_clean.parquet` | restaurant (24,808) | 49 non-food businesses removed; `duplicate_listing` flag |
-| `reviews_clean.parquet` | review (6,816,383) | empty, duplicate and placeholder-date rows removed; New York `local_date`, `local_hour`, `local_dow`; `user_day_reviews`; `cross_posted` |
-| `interactions_clean.parquet` | first review of a restaurant by a sampled user (422,571) | same 20,000 users as the original sample, reproduced exactly; splits `train` / `val` / `test` (to 2021-05-31) / `tail` (from 2021-06-01, collection fading out); `label` 1 = 4–5 stars, 0 = 1–2, missing = 3; `bulk_day` |
-| `restaurant_attributes.parquet` | restaurant (24,808) | `cuisine_group` (24 groups, `src/taxonomy.py`), `is_chain`, `price_level` + `price_missing`, 12 `attr_*` flags |
+| `restaurants_clean.parquet` | restaurant (24,783) | 49 non-food businesses removed; 25 duplicate listings merged (same name and address, or reviewed in `config/duplicate_listings.csv`); `merged_listings` count |
+| `reviews_clean.parquet` | review (6,810,303) | empty, duplicate and placeholder-date rows removed; New York `local_date`, `local_hour`, `local_dow`; `user_day_reviews`; `cross_posted` |
+| `interactions_clean.parquet` | first review of a restaurant by a sampled user (422,193) | same 20,000 users as the original sample, reproduced exactly; splits `train` / `val` / `test` (to 2021-05-31) / `tail` (from 2021-06-01, collection fading out); `label` 1 = 4–5 stars, 0 = 1–2, missing = 3; `bulk_day` |
+| `restaurant_attributes.parquet` | restaurant (24,783) | `cuisine_group` (24 groups, `src/taxonomy.py`), `is_chain`, `price_level` + `price_missing`, 12 `attr_*` flags |
 
 Snapshot-only metadata (Google rating, review count, open state) and the 2026 inspection file are never used
 as predictive features. `outputs/cleaning/linked_listings.csv` lists listing pairs that share cross-posted
-reviews; most are one business listed twice, but some are not (two restaurants reviewed in one batch), so
-merging needs a name check and is not applied yet. The baselines and logistic ranker above still use the
+reviews that remain after merging; these are different restaurants (one user's batch upload, or chain
+branches), so they are kept apart. The baselines and logistic ranker above still use the
 original sample; they are rerun on `interactions_clean.parquet` in the next step.
 
 ## Raw data (`data/raw`, not in git)

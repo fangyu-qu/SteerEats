@@ -1,17 +1,17 @@
 cuisine_group,cuisine_label,cuisine_kind,restaurants
-american,American,cuisine,3816
-chinese,Chinese,cuisine,2320
-pizza,Pizza,cuisine,2059
-mexican,Mexican,cuisine,1576
-cafe_dessert,"Cafe, bakery & dessert",format,1484
-general,General,format,1435
-italian,Italian,cuisine,1280
-latin_american,Latin American,cuisine,1256
+american,American,cuisine,3812
+chinese,Chinese,cuisine,2317
+pizza,Pizza,cuisine,2057
+mexican,Mexican,cuisine,1574
+cafe_dessert,"Cafe, bakery & dessert",format,1483
+general,General,format,1430
+italian,Italian,cuisine,1279
+latin_american,Latin American,cuisine,1255
 japanese,Japanese,cuisine,1250
-middle_eastern,Middle Eastern & Mediterranean,cuisine,1180
-european,European,cuisine,1067
+middle_eastern,Middle Eastern & Mediterranean,cuisine,1176
+european,European,cuisine,1066
 vegetarian_healthy,Vegetarian & healthy,cuisine,870
-southeast_asian,Southeast Asian,cuisine,745
+southeast_asian,Southeast Asian,cuisine,744
 caribbean,Caribbean,cuisine,654
 fast_food,Fast food & chicken,format,579
 south_asian,South Asian,cuisine,563

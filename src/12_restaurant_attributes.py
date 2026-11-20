@@ -87,7 +87,7 @@ def main():
     cols = ["gmap_id", "name", "boroname", "nta2020", "ntaname", "latitude", "longitude",
             "cuisine_group", "cuisine_label", "cuisine_kind", "cuisine_source", "cuisine_groups",
             "dohmh_cuisine", "price_level", "price_missing", "chain_key", "chain_size", "is_chain",
-            "duplicate_listing", "attrs_missing", *ATTRS]
+            "merged_listings", "attrs_missing", *ATTRS]
     R[cols].to_parquet(RESTAURANT_ATTRS, index=False)
 
     OUT.mkdir(parents=True, exist_ok=True)
