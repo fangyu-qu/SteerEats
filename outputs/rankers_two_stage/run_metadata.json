@@ -1,0 +1,110 @@
+{
+  "seed": 42,
+  "protocol": "two-stage",
+  "candidate_quotas": {
+    "item_cf": 100,
+    "liked_cf": 40,
+    "nearby_popular": 40,
+    "trending": 20
+  },
+  "negative_ratio": 10,
+  "negatives": "uniform from the user's stage-1 candidates",
+  "features": [
+    "cf_all",
+    "cf_liked",
+    "log_popularity",
+    "log_recent_popularity",
+    "log_popularity_3m",
+    "recent_share",
+    "shrunk_rating",
+    "shrunk_recent_rating",
+    "rating_change",
+    "months_since_last_review",
+    "log_item_age_months",
+    "recent_cf_interaction",
+    "log_distance_km",
+    "same_nta",
+    "same_borough",
+    "cuisine_affinity",
+    "price_gap",
+    "item_price_missing",
+    "user_price_unknown",
+    "is_chain",
+    "chain_affinity",
+    "log_user_history",
+    "attr_vegetarian_options",
+    "attr_halal",
+    "attr_late_night",
+    "attr_alcohol",
+    "attr_reservations",
+    "attr_good_for_groups",
+    "attr_good_for_kids",
+    "attrs_missing"
+  ],
+  "training_windows": [
+    {
+      "cutoff": "2018-07-01",
+      "end": "2019-01-01",
+      "rows": 99838,
+      "positives": 9079
+    },
+    {
+      "cutoff": "2019-01-01",
+      "end": "2019-06-01",
+      "rows": 116677,
+      "positives": 10607
+    },
+    {
+      "cutoff": "2019-06-01",
+      "end": "2019-12-01",
+      "rows": 145740,
+      "positives": 13256
+    }
+  ],
+  "validation_examples": 109940,
+  "selection_users": 3000,
+  "selected": {
+    "logistic_C": 10.0,
+    "lightgbm_num_leaves": 31,
+    "lightgbm_rounds": 233,
+    "lambdarank_num_leaves": 31,
+    "lambdarank_rounds": 127
+  },
+  "lightgbm_params": {
+    "objective": "binary",
+    "learning_rate": 0.05,
+    "num_leaves": 31,
+    "min_child_samples": 100,
+    "feature_fraction": 0.8,
+    "bagging_fraction": 0.8,
+    "bagging_freq": 1,
+    "lambda_l2": 1.0,
+    "seed": 42,
+    "deterministic": true,
+    "force_row_wise": true,
+    "verbose": -1,
+    "num_threads": 0
+  },
+  "validation_audit": {
+    "no_history": 138,
+    "no_available_positive": 11,
+    "positives": 10159,
+    "cold_positives": 114,
+    "users": 2651
+  },
+  "test_audit": {
+    "no_history": 231,
+    "no_available_positive": 122,
+    "positives": 30807,
+    "cold_positives": 921,
+    "users": 8025
+  },
+  "input_sha256": "7b944f81731004fa9ad251d0f52bac9c2659a59221f01e6ac8e6f94d5ce227b4",
+  "versions": {
+    "numpy": "2.5.5",
+    "pandas": "3.1.1",
+    "sklearn": "1.9.1",
+    "lightgbm": "4.7.0"
+  },
+  "runtime_seconds": 401
+}

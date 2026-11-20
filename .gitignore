@@ -26,3 +26,6 @@ web/public/data/cases/*.json
 /data
 outputs/rankers/*per_user.csv
 outputs/rankers/smoke_*
+outputs/rankers_two_stage/smoke_*
+outputs/rankers_two_stage/seeds/*/test_per_user.csv
+outputs/**/*per_user.csv
