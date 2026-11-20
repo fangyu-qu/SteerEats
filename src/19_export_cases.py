@@ -44,6 +44,14 @@ LOCAL = CLEAN / "cases"
 DEMO = ROOT / "web" / "public" / "data" / "cases"
 GROUPS = list(FEATURE_GROUPS)
 COLLAB = FEATURE_GROUPS["Collaborative"]
+SOLVER_TARGETS = [
+    {"km": 2.0, "popularity": None, "cuisines": None},
+    {"km": 1.0, "popularity": None, "cuisines": None},
+    {"km": None, "popularity": 0.4, "cuisines": None},
+    {"km": None, "popularity": None, "cuisines": 7},
+    {"km": 2.5, "popularity": 0.5, "cuisines": 6},
+    {"km": 0.6, "popularity": 0.2, "cuisines": 9},
+]
 REPLAY_THETAS = [
     dict(steering.THETA0),
     {"w_h": 0.0, "alpha": 0.0, "beta": 0.0, "lam": 0.0},
@@ -186,15 +194,24 @@ def main():
                 exp.append(dict(theta=th, model=m, top20=[int(i) for i in np.argsort(fin)[:20]],
                                 stage_residual_max=int(np.abs(log["residual"]).max()),
                                 shapley_residual_max=float(np.abs(sh["residual"]).max())))
-        expected[demo["id"]] = exp
+        solver = []
+        for tg in SOLVER_TARGETS:
+            for m in ("lr", "lgbm"):
+                res = steering.solve_targets(reread, m, tg)
+                top10 = [int(i) for i in np.argsort(steering.final_ranks(reread, res["theta"], m, sim))[:10]]
+                assert top10 == res["top"], "top_k disagrees with final_ranks"
+                solver.append(dict(targets=tg, model=m, theta=res["theta"], top=res["top"], met=res["met"]))
+        expected[demo["id"]] = {"thetas": exp, "solver": solver}
         print(f"case {case_id} ({demo['story']}): {len(ids)} candidates, {int(np.sum(full['relevant']))} later liked; "
               f"SHAP residual lr {model_part['lr']['shap_residual_max']:.1e}, lgbm {model_part['lgbm']['shap_residual_max']:.1e}",
               flush=True)
 
     (DEMO / "index.json").write_text(json.dumps(dict(cutoff=TEST_START, cases=manifest), indent=1))
     (ROOT / "tests" / "replay_expected.json").write_text(json.dumps(expected))
-    worst_stage = max(e["stage_residual_max"] for v in expected.values() for e in v)
-    worst_shap = max(e["shapley_residual_max"] for v in expected.values() for e in v)
+    worst_stage = max(e["stage_residual_max"] for v in expected.values() for e in v["thetas"])
+    worst_shap = max(e["shapley_residual_max"] for v in expected.values() for e in v["thetas"])
+    met = [all(x["met"].values()) for v in expected.values() for x in v["solver"]]
+    print(f"outcome-target solves: {len(met)}, all targets met in {sum(met)}")
     print(f"exported {len(chosen)} cases; max fixed-order residual {worst_stage}; max Shapley residual {worst_shap:.1e}")
 
 
