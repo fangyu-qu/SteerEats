@@ -1,10 +1,11 @@
-"""Cuisine taxonomy: map 700+ Google categories and 85 DOHMH cuisine labels to 24 groups.
+"""Cuisine taxonomy: map 700+ Google categories and 85 DOHMH cuisine labels to 25 groups.
 
 Rules are ordered regular expressions on the lowercased label; the first match wins, so specific
 cuisines come before broad ones (e.g. "Korean barbecue" is Korean, "Japanese steakhouse" is Japanese).
 Groups are of two kinds:
   cuisine  a food tradition the user can steer toward (Chinese, Mexican, Vegetarian & healthy, ...)
-  format   a way of eating that says little about cuisine (cafe, fast food, bar, breakfast, deli)
+  format   a way of eating that says little about cuisine (cafe, fast food, bar, breakfast, deli,
+           venue: hotels, event spaces, food halls, markets and caterers with no cuisine category)
 Generic labels ("Restaurant", "Delivery Restaurant", "Family restaurant") match nothing.
 """
 import re
@@ -34,6 +35,7 @@ GROUPS = {
     "sandwich_deli": ("Sandwich & deli", "format"),
     "fast_food": ("Fast food & chicken", "format"),
     "bar_pub": ("Bar & pub", "format"),
+    "venue": ("Venue, market & catering", "format"),
     "general": ("General", "format"),
 }
 
@@ -74,6 +76,8 @@ RULES = [
     (r"sandwich|\bdeli\b|soup", "sandwich_deli"),
     (r"fast food|chicken|fried", "fast_food"),
     (r"\bbar\b|\bpub\b|lounge|gastropub|brewpub|beer|wine bar|cocktail|\bgrill\b", "bar_pub"),
+    (r"hotel|event venue|wedding venue|banquet hall|night ?club|live music|concert hall|bowling|food court|"
+     r"food hall|market|grocery|supermarket|caterer|catering|event planner|dinner theater", "venue"),
 ]
 _COMPILED = [(re.compile(p), g) for p, g in RULES]
 
@@ -97,7 +101,8 @@ def assign(categories, dohmh=None):
     """Primary group, all groups, and where the primary came from, for one restaurant.
 
     Google lists a business's primary category first, so the first category that maps to a
-    cuisine wins; then the DOHMH cuisine; then the first format group; then "general".
+    cuisine wins; then the DOHMH cuisine; then the first format group other than "venue" (so a
+    Subway listed as "Caterer; Fast food restaurant" is fast food); then "venue"; then "general".
     """
     cats = [c for c in str(categories or "").split("; ") if c]
     g_cats = [group_of(c) for c in cats]
@@ -109,8 +114,10 @@ def assign(categories, dohmh=None):
     if g_doh and GROUPS[g_doh][1] == "cuisine":
         return g_doh, all_groups, "dohmh"
     for g in g_cats:
-        if g:
+        if g and g != "venue":
             return g, all_groups, "google"
-    if g_doh:
+    if g_doh and g_doh != "venue":
         return g_doh, all_groups, "dohmh"
+    if "venue" in g_cats:
+        return "venue", all_groups, "google"
     return "general", all_groups, "none"
