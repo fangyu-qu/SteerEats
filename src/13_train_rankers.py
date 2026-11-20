@@ -28,44 +28,11 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent))
 from common import INTERACTIONS_CLEAN, OUTPUTS, CLEAN, TEST_START, VAL_START
 from ranker_core import FEATURES, FEATURE_GROUPS, Data, Snapshot, evaluate, examples
+from models import SEED, fit_lgbm, fit_logistic, lgbm_params, logistic_scorer
 
-SEED = 42
 C_GRID = [0.1, 1.0, 10.0]
 LEAVES_GRID = [15, 31, 63]
 VAL_SELECTION_USERS = 3000
-
-
-def fit_logistic(x, y, c):
-    from sklearn.linear_model import LogisticRegression
-    from sklearn.pipeline import make_pipeline
-    from sklearn.preprocessing import StandardScaler
-    m = make_pipeline(StandardScaler(), LogisticRegression(C=c, max_iter=2000, solver="lbfgs"))
-    m.fit(x, y)
-    if m[-1].n_iter_.max() >= 2000:
-        raise ValueError("Logistic solver hit the iteration limit")
-    return m
-
-
-def logistic_scorer(m):
-    scaler, lin = m[0], m[-1]
-    w, b = lin.coef_[0], lin.intercept_[0]
-    return lambda f: ((f - scaler.mean_) / scaler.scale_) @ w + b
-
-
-def lgbm_params(leaves):
-    return dict(objective="binary", learning_rate=0.05, num_leaves=leaves, min_child_samples=100,
-                feature_fraction=0.8, bagging_fraction=0.8, bagging_freq=1, lambda_l2=1.0,
-                seed=SEED, deterministic=True, force_row_wise=True, verbose=-1, num_threads=0)
-
-
-def fit_lgbm(x, y, leaves, rounds=None, valid=None):
-    import lightgbm as lgb
-    train = lgb.Dataset(x, y, feature_name=FEATURES, free_raw_data=False)
-    if valid is None:
-        return lgb.train(lgbm_params(leaves), train, num_boost_round=rounds)
-    v = lgb.Dataset(valid[0], valid[1], reference=train)
-    return lgb.train(lgbm_params(leaves), train, num_boost_round=3000, valid_sets=[v],
-                     callbacks=[lgb.early_stopping(50, verbose=False)])
 
 
 def summarize(recs, period, audit):

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Step 14: uncertainty and robustness for the rankers trained in step 13.
+"""Step 14: uncertainty and robustness for the rankers of step 13 (--protocol full) or
+step 15 (--protocol two_stage).
 
 1. Test metrics with 95% user-level bootstrap intervals (2,000 resamples) and paired
    comparisons (bootstrap interval of the mean difference, Wilcoxon signed-rank test).
@@ -10,8 +11,9 @@
      so later periods are also a longer horizon);
    - validation window split at the COVID shutdown, using the train-window-only models:
      pre-COVID (Dec 2019 - Feb 2020) vs COVID (Mar - Jul 2020).
-Outputs: outputs/rankers/test_intervals.csv, paired_tests.csv, robustness.csv, EVALUATION.md
+Outputs (in the protocol's folder): test_intervals.csv, paired_tests.csv, robustness.csv, EVALUATION.md
 """
+import argparse
 import sys
 from pathlib import Path
 
@@ -20,36 +22,48 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent))
 from common import CLEAN, OUTPUTS, TEST_START, VAL_START
-from ranker_core import Data, Snapshot, eligible, metrics
+from ranker_core import Data, Snapshot, candidates, eligible, metrics
 
-OUT = OUTPUTS / "rankers"
 B = 2000
 SEED = 42
-MODELS = ["Popularity", "Recent popularity", "Item-CF", "Logistic regression", "LightGBM"]
+BASELINES = ["Popularity", "Recent popularity", "Item-CF"]
+PROTOCOLS = {
+    "full": dict(out=OUTPUTS / "rankers", title="full catalog", two_stage=False,
+                 models=["Logistic regression", "LightGBM"],
+                 final=dict(lr="logistic_pipeline.joblib", gb="lightgbm_model.txt"),
+                 trainonly=dict(lr="logistic_trainonly.joblib", gb="lightgbm_trainonly.txt")),
+    "two_stage": dict(out=OUTPUTS / "rankers_two_stage", title="two-stage (200 candidates)", two_stage=True,
+                      models=["Logistic regression", "LightGBM", "LightGBM LambdaRank (supplementary)"],
+                      final=dict(lr="logistic_pipeline.joblib", gb="lightgbm_model.txt", rk="lambdarank_model.txt"),
+                      trainonly=dict(lr="logistic_trainonly_two_stage.joblib", gb="lightgbm_trainonly_two_stage.txt")),
+}
+NAMES = dict(lr="Logistic regression", gb="LightGBM", rk="LightGBM LambdaRank (supplementary)")
 PAIRS = [("Logistic regression", "Item-CF"), ("LightGBM", "Item-CF"), ("LightGBM", "Logistic regression")]
 
 
-def intervals(df, rng):
+def intervals(df, models, rng):
     rows = []
-    users = df.user_id.unique()
+    users = np.sort(df.user_id.unique())
     idx = rng.integers(0, len(users), size=(B, len(users)))
-    for m in MODELS:
+    for m in models:
         d = df[df.model == m].set_index("user_id").loc[users]
         for metric in ("recall", "ndcg"):
             v = d[metric].to_numpy()
+            if np.isnan(v).all():
+                continue
             boot = v[idx].mean(axis=1)
             rows.append(dict(model=m, metric=metric, mean=v.mean(), lo=np.quantile(boot, 0.025),
                              hi=np.quantile(boot, 0.975), users=len(v)))
     return pd.DataFrame(rows)
 
 
-def paired(df, rng):
+def paired(df, rng, pairs=PAIRS):
     from scipy.stats import wilcoxon
     rows = []
-    wide = {m: df[df.model == m].set_index("user_id").sort_index() for m in MODELS}
-    n = len(wide[MODELS[0]])
+    wide = {m: df[df.model == m].set_index("user_id").sort_index() for m in set(sum(pairs, ()))}
+    n = len(wide["Item-CF"])
     idx = rng.integers(0, n, size=(B, n))
-    for a, b in PAIRS:
+    for a, b in pairs:
         for metric in ("recall", "ndcg"):
             diff = wide[a][metric].to_numpy() - wide[b][metric].to_numpy()
             boot = diff[idx].mean(axis=1)
@@ -62,58 +76,74 @@ def paired(df, rng):
     return pd.DataFrame(rows)
 
 
-def multi_evaluate(snap, variants, scorers, k=10, batch=64):
+def multi_evaluate(snap, variants, scorers, two_stage, k=10, batch=64):
     """Score each user once, then compute metrics for every target variant they are eligible in."""
     cases = {name: dict(eligible(snap, t)[0]) for name, t in variants.items()}
     users = sorted(set().union(*[set(c) for c in cases.values()]))
-    sums = {(v, m): np.zeros(2) for v in variants for m in MODELS}
-    counts = {v: len(c) for v, c in cases.items()}
+    names = BASELINES + list(scorers) + (["Stage 1 candidates"] if two_stage else [])
+    sums = {(v, m): np.zeros(2) for v in variants for m in names}
     for b0 in range(0, len(users), batch):
         chunk = users[b0:b0 + batch]
-        feats, cands, cfs = [], [], []
+        feats, cands, fulls, cfs = [], [], [], []
         for u in chunk:
             f, seen, cf = snap.user(u)
             avail = snap.available.copy()
             avail[seen] = False
-            ids = np.flatnonzero(avail)
-            feats.append(f[ids]); cands.append(ids); cfs.append(cf[ids])
+            full = np.flatnonzero(avail)
+            ids = candidates(snap, f, seen, cf) if two_stage else full
+            feats.append(f[ids]); cands.append(ids); fulls.append(full); cfs.append(cf[full])
         stacked = np.vstack(feats)
         bounds = np.cumsum([0] + [len(c) for c in cands])
         scores = {name: fn(stacked) for name, fn in scorers.items()}
         for j, u in enumerate(chunk):
-            ids = cands[j]
-            top = {"Popularity": ids[np.lexsort((ids, -snap.pop[ids]))][:k],
-                   "Recent popularity": ids[np.lexsort((ids, -snap.recent_pop[ids]))][:k],
-                   "Item-CF": ids[np.lexsort((ids, -snap.pop[ids], -cfs[j]))][:k]}
+            ids, full = cands[j], fulls[j]
+            top = {"Popularity": full[np.lexsort((full, -snap.pop[full]))][:k],
+                   "Recent popularity": full[np.lexsort((full, -snap.recent_pop[full]))][:k],
+                   "Item-CF": full[np.lexsort((full, -snap.pop[full], -cfs[j]))][:k]}
             for name, sc in scores.items():
                 top[name] = ids[np.lexsort((ids, -sc[bounds[j]:bounds[j + 1]]))][:k]
             for v, c in cases.items():
                 if u in c:
-                    for m in MODELS:
+                    for m in top:
                         sums[(v, m)] += metrics(top[m].tolist(), c[u], k)
+                    if two_stage:
+                        sums[(v, "Stage 1 candidates")] += [len(c[u] & set(ids.tolist())) / len(c[u]), np.nan]
         if (b0 // batch) % 30 == 0:
             print(f"  {min(b0 + batch, len(users))}/{len(users)} users", flush=True)
-    return [dict(variant=v, model=m, users=counts[v], **{"Recall@10": sums[(v, m)][0] / max(counts[v], 1),
-                                                          "NDCG@10": sums[(v, m)][1] / max(counts[v], 1)})
-            for v in variants for m in MODELS]
+    return [dict(variant=v, model=m, users=len(cases[v]), **{"Recall@10": sums[(v, m)][0] / max(len(cases[v]), 1),
+                                                              "NDCG@10": sums[(v, m)][1] / max(len(cases[v]), 1)})
+            for v in variants for m in names]
 
 
-def scorers_from(lr_path, gb_path):
+def scorers_from(paths, folder):
     import joblib
     import lightgbm as lgb
-    lr, gb = joblib.load(lr_path), lgb.Booster(model_file=str(gb_path))
-    sc, lin = lr[0], lr[-1]
-    return {"Logistic regression": lambda f: ((f - sc.mean_) / sc.scale_) @ lin.coef_[0] + lin.intercept_[0],
-            "LightGBM": lambda f: gb.predict(f, raw_score=True)}
+    out = {}
+    for key, name in paths.items():
+        path = folder / name
+        if key == "lr":
+            m = joblib.load(path)
+            sc, lin = m[0], m[-1]
+            out[NAMES[key]] = (lambda sc, lin: lambda f: ((f - sc.mean_) / sc.scale_) @ lin.coef_[0] + lin.intercept_[0])(sc, lin)
+        else:
+            b = lgb.Booster(model_file=str(path))
+            out[NAMES[key]] = (lambda b: lambda f: b.predict(f, raw_score=True))(b)
+    return out
 
 
 def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--protocol", choices=PROTOCOLS, default="full")
+    cfg = PROTOCOLS[ap.parse_args().protocol]
+    out, two = cfg["out"], cfg["two_stage"]
+    models = BASELINES + cfg["models"] + (["Stage 1 candidates"] if two else [])
     rng = np.random.default_rng(SEED)
-    per_user = pd.read_csv(OUT / "test_per_user.csv")
-    ci = intervals(per_user, rng)
-    pt = paired(per_user, rng)
-    ci.to_csv(OUT / "test_intervals.csv", index=False)
-    pt.to_csv(OUT / "paired_tests.csv", index=False)
+    per_user = pd.read_csv(out / "test_per_user.csv")
+    ci = intervals(per_user, models, rng)
+    extra = [("LightGBM LambdaRank (supplementary)", "Logistic regression")] if two else []
+    pt = paired(per_user, rng, PAIRS + extra)
+    ci.to_csv(out / "test_intervals.csv", index=False)
+    pt.to_csv(out / "paired_tests.csv", index=False)
     print(ci.round(4).to_string(index=False)); print(pt.round(4).to_string(index=False), flush=True)
 
     data = Data()
@@ -125,37 +155,42 @@ def main():
                 "test Aug-Oct 2020": test[test.time < "2020-11-01"],
                 "test Nov 2020-Jan 2021": test[(test.time >= "2020-11-01") & (test.time < "2021-02-01")],
                 "test Feb-Apr 2021": test[test.time >= "2021-02-01"]}
-    rows = multi_evaluate(tsnap, variants, scorers_from(OUT / "logistic_pipeline.joblib", OUT / "lightgbm_model.txt"))
+    rows = multi_evaluate(tsnap, variants, scorers_from(cfg["final"], out), two)
     del tsnap
     val = s[s.split == "val"]
     vsnap = Snapshot(data, VAL_START, users)
     vvariants = {"validation pre-COVID (Dec 2019-Feb 2020), train-only models": val[val.time < "2020-03-01"],
                  "validation COVID (Mar-Jul 2020), train-only models": val[val.time >= "2020-03-01"]}
-    rows += multi_evaluate(vsnap, vvariants, scorers_from(CLEAN / "logistic_trainonly.joblib",
-                                                          CLEAN / "lightgbm_trainonly.txt"))
+    rows += multi_evaluate(vsnap, vvariants, scorers_from(cfg["trainonly"], CLEAN), two)
     rob = pd.DataFrame(rows)
-    rob.to_csv(OUT / "robustness.csv", index=False)
+    rob.to_csv(out / "robustness.csv", index=False)
     print(rob.round(4).to_string(index=False))
 
     fmt = lambda r: f"{r['mean']:.4f} [{r.lo:.4f}, {r.hi:.4f}]"
-    md = ["# Ranker evaluation", "", "Generated by `src/14_evaluate.py` from step 13 outputs.", "",
+    md = ["# Ranker evaluation: " + cfg["title"], "", "Generated by `src/14_evaluate.py`.", "",
           "## Test (2020-08-01 to 2021-04-30), 95% user bootstrap intervals", "",
           "| Model | Recall@10 | NDCG@10 |", "|---|---|---|"]
-    for m in MODELS:
-        r = ci[(ci.model == m) & (ci.metric == "recall")].iloc[0]
-        n = ci[(ci.model == m) & (ci.metric == "ndcg")].iloc[0]
-        md.append(f"| {m} | {fmt(r)} | {fmt(n)} |")
+    for m in models:
+        r = ci[(ci.model == m) & (ci.metric == "recall")]
+        n = ci[(ci.model == m) & (ci.metric == "ndcg")]
+        md.append(f"| {m} | {fmt(r.iloc[0])} | {fmt(n.iloc[0]) if len(n) else '—'} |")
+    if two:
+        md += ["", "Stage 1 candidates: share of relevant restaurants that reach the 200 candidates "
+               "(an upper bound on re-ranker recall, not a top-10 metric)."]
     md += ["", f"Users: {int(ci.users.iloc[0]):,}.", "", "## Paired comparisons", "",
            "| A vs B | Metric | Mean difference [95% CI] | Relative | Wilcoxon p | Users A better / B better |",
            "|---|---|---|---|---|---|"]
     for _, r in pt.iterrows():
         md.append(f"| {r.model_a} vs {r.model_b} | {r.metric} | {r.mean_diff:+.4f} [{r.lo:+.4f}, {r.hi:+.4f}] | "
                   f"{r.relative:+.1%} | {r.wilcoxon_p:.2g} | {r.users_a_better:,} / {r.users_b_better:,} |")
-    md += ["", "## Robustness (NDCG@10)", "", "| Variant | Users | " + " | ".join(MODELS) + " |",
-           "|---|---|" + "---|" * len(MODELS)]
+    cols = [m for m in models if m != "Stage 1 candidates"]
+    md += ["", "## Robustness (NDCG@10; train-only models have no LambdaRank)", "",
+           "| Variant | Users | " + " | ".join(cols) + " |", "|---|---|" + "---|" * len(cols)]
     for v, g in rob.groupby("variant", sort=False):
-        md.append(f"| {v} | {int(g.users.iloc[0]):,} | " + " | ".join(f"{x:.4f}" for x in g.set_index('model').loc[MODELS, 'NDCG@10']) + " |")
-    (OUT / "EVALUATION.md").write_text("\n".join(md) + "\n")
+        g = g.set_index("model")
+        md.append(f"| {v} | {int(g.users.iloc[0]):,} | " + " | ".join(
+            f"{g.loc[m, 'NDCG@10']:.4f}" if m in g.index else "—" for m in cols) + " |")
+    (out / "EVALUATION.md").write_text("\n".join(md) + "\n")
     print("\n".join(md))
 
 

@@ -11,6 +11,12 @@ src/12_restaurant_attributes.py for the stability assumption).
 Candidates at a cutoff are restaurants with at least one review in the previous 12 months
 ("available"), minus the user's own history. Relevant items that are not available are counted
 as cold and excluded, for every model alike.
+
+Two protocols share this module:
+  full       every model ranks all available, unseen restaurants (about 19,000);
+  two-stage  stage 1 builds about 200 candidates per user from simple retrievers (item-CF,
+             liked-history CF, nearby-and-popular, trending); stage 2 re-ranks them, and training
+             negatives are drawn from the same candidates. Baselines always rank the full catalog.
 """
 import math
 
@@ -203,6 +209,73 @@ class Snapshot:
         return f, p["seen"], cf
 
 
+CANDIDATE_QUOTAS = {"item_cf": 100, "liked_cf": 40, "nearby_popular": 40, "trending": 20}
+N_CANDIDATES = sum(CANDIDATE_QUOTAS.values())
+_COL = {name: j for j, name in enumerate(FEATURES)}
+
+
+def candidates(snap, f, seen, cf, n=N_CANDIDATES):
+    """Stage 1: union of four retrievers over available, unseen restaurants, topped up from item-CF.
+
+    item_cf         similarity to everything the user reviewed (ties broken by popularity)
+    liked_cf        similarity to restaurants the user rated 4-5 stars
+    nearby_popular  log(1 + 12-month reviews) - 0.5 * km from the user's usual area
+    trending        reviews in the last 3 months, city-wide
+    """
+    avail = snap.available.copy()
+    avail[seen] = False
+    ids = np.flatnonzero(avail)
+    dist = np.expm1(f[ids, _COL["log_distance_km"]])
+    scores = {"item_cf": cf[ids] + 1e-9 * snap.pop[ids],
+              "liked_cf": f[ids, _COL["cf_liked"]] + 1e-9 * snap.pop[ids],
+              "nearby_popular": np.log1p(snap.recent_pop[ids]) - 0.5 * dist,
+              "trending": snap.pop_3m[ids]}
+    chosen, order_cf = [], None
+    for name, q in CANDIDATE_QUOTAS.items():
+        order = ids[np.lexsort((ids, -scores[name]))]
+        if name == "item_cf":
+            order_cf = order
+        have = set(chosen)
+        chosen.extend([i for i in order[: q * 3] if i not in have][:q])
+    if len(chosen) < n:
+        have = set(chosen)
+        chosen.extend([i for i in order_cf if i not in have][: n - len(chosen)])
+    return np.array(chosen[:n], dtype=np.int64)
+
+
+def examples_two_stage(snap, target, rng, ratio=10):
+    """Candidate-set training: positives that stage 1 retrieved, plus up to `ratio` negatives each
+    sampled uniformly from the remaining candidates.
+
+    Positives outside the candidates are left out on purpose: keeping them while every negative is a
+    high-similarity candidate teaches the model that high similarity means "not visited" (the
+    selection bias seen in the first smoke run).
+    """
+    cases, _ = eligible(snap, target)
+    observed = target.groupby("user_id").item.agg(set)
+    xs, ys, groups = [], [], []
+    for u, rel in cases:
+        f, seen, cf = snap.user(u)
+        cand = candidates(snap, f, seen, cf)
+        pos = np.array(sorted(rel & set(cand.tolist())))
+        if not len(pos):
+            continue
+        pool = np.array([i for i in cand if i not in observed[u]])
+        n_neg = min(len(pool), ratio * len(pos))
+        if not n_neg:
+            continue
+        neg = rng.choice(pool, size=n_neg, replace=False)
+        # Shuffle within the user: LightGBM breaks score ties by row order, so positives-first rows
+        # would inflate early-iteration validation NDCG for the listwise objective.
+        rows = np.concatenate([pos, neg])
+        lab = np.concatenate([np.ones(len(pos)), np.zeros(n_neg)])
+        perm = rng.permutation(len(rows))
+        xs.append(f[rows[perm]])
+        ys.append(lab[perm])
+        groups.extend([u] * len(rows))
+    return np.vstack(xs), np.concatenate(ys), np.array(groups)
+
+
 def eligible(snap, target):
     """(user, set of relevant item ids) for users with history and an available, unseen positive."""
     if (target.time < snap.cutoff).any():
@@ -252,32 +325,38 @@ def examples(snap, target, rng, ratio=4):
     return np.vstack(xs), np.concatenate(ys), np.array(groups)
 
 
-def evaluate(snap, target, scorers, k=10, batch=64, log_every=2000):
-    """Full-candidate ranking for every eligible user.
+def evaluate(snap, target, scorers, k=10, batch=64, log_every=2000, two_stage=False):
+    """Rank for every eligible user: full catalog, or (two_stage) re-rank stage-1 candidates.
 
-    scorers: name -> function(feature_matrix) -> scores. Baselines are added here.
+    scorers: name -> function(feature_matrix) -> scores. Baselines always rank the full catalog.
+    In two-stage mode a "Stage 1 candidates" record holds candidate recall (share of relevant
+    items that reach the candidate set), which bounds every re-ranker's recall.
     Returns per-user records (list of dicts) and the eligibility audit.
     """
     cases, audit = eligible(snap, target)
     recs = []
     for b0 in range(0, len(cases), batch):
         chunk = cases[b0:b0 + batch]
-        feats, cands, cfs = [], [], []
+        feats, cands, cfs, fulls = [], [], [], []
         for u, _ in chunk:
             f, seen, cf = snap.user(u)
             avail = snap.available.copy()
             avail[seen] = False
-            ids = np.flatnonzero(avail)
-            feats.append(f[ids]); cands.append(ids); cfs.append(cf[ids])
+            full_ids = np.flatnonzero(avail)
+            ids = candidates(snap, f, seen, cf) if two_stage else full_ids
+            feats.append(f[ids]); cands.append(ids); cfs.append(cf[full_ids]); fulls.append(full_ids)
         stacked = np.vstack(feats)
         bounds = np.cumsum([0] + [len(c) for c in cands])
         scores = {name: fn(stacked) for name, fn in scorers.items()}
         for j, (u, rel) in enumerate(chunk):
-            ids = cands[j]
+            ids, full_ids = cands[j], fulls[j]
+            if two_stage:
+                recs.append(dict(user_id=u, model="Stage 1 candidates", recall=len(rel & set(ids.tolist())) / len(rel),
+                                 ndcg=np.nan, n_relevant=len(rel)))
             orders = {
-                "Popularity": ids[np.lexsort((ids, -snap.pop[ids]))],
-                "Recent popularity": ids[np.lexsort((ids, -snap.recent_pop[ids]))],
-                "Item-CF": ids[np.lexsort((ids, -snap.pop[ids], -cfs[j]))],
+                "Popularity": full_ids[np.lexsort((full_ids, -snap.pop[full_ids]))],
+                "Recent popularity": full_ids[np.lexsort((full_ids, -snap.recent_pop[full_ids]))],
+                "Item-CF": full_ids[np.lexsort((full_ids, -snap.pop[full_ids], -cfs[j]))],
             }
             for name, sc in scores.items():
                 s = sc[bounds[j]:bounds[j + 1]]

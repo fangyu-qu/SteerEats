@@ -87,6 +87,30 @@ holds without bulk-day targets, in each test quarter, and before and during COVI
 the October results above, which used a different catalog, sample-only popularity and uncleaned data, so
 the two sets are not directly comparable. Per-user metrics stay local (`*_per_user.csv`).
 
+## Two-stage protocol (November 19, 2026)
+
+```bash
+python src/15_train_two_stage.py                    # stage 1: ~200 candidates; stage 2: LR / LightGBM re-rank (~7 min)
+python src/15_train_two_stage.py --seed 1           # metrics-only reruns with other sampling seeds
+python src/14_evaluate.py --protocol two_stage      # intervals, paired tests, robustness
+python src/16_compare_protocols.py                  # outputs/MODEL_COMPARISON.md
+```
+
+Stage 1 (`ranker_core.candidates`) unions four retrievers: item-CF (100), liked-history CF (40),
+nearby-and-popular (40) and city-wide trending (20). It reaches 31.1% of relevant test restaurants, which
+bounds every re-ranker. Stage 2 trains on positives that stage 1 retrieved plus 10 negatives per positive
+drawn from the same candidates. Training on all positives instead made the models learn that high CF
+similarity means "not visited", and unshuffled rows let LightGBM's tie-breaking inflate validation NDCG.
+Both issues were found in smoke runs and fixed before the reported results.
+
+Two-stage test NDCG@10 (`outputs/rankers_two_stage/EVALUATION.md`): LightGBM 0.0482 [0.0456, 0.0510] and
+logistic regression 0.0481 [0.0453, 0.0509] are tied (paired p = 0.97), both about 6% above Item-CF. A
+supplementary LightGBM LambdaRank model reaches 0.0508 [0.0480, 0.0537], 5.6% above logistic regression
+(p = 0.0034). Across three sampling seeds, logistic regression stays at 0.0479–0.0482, pointwise LightGBM
+moves within 0.0482–0.0498, and LambdaRank within 0.0497–0.0508. LightGBM's 14% deficit under the
+full-catalog protocol therefore came from its training negatives (random and popular restaurants), not
+from the model class. The browser demo uses the two-stage design.
+
 ## Raw data (`data/raw`, not in git)
 
 | File | Source | Size |
