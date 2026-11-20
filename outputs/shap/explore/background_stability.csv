@@ -1,0 +1,9 @@
+model,background,rank_corr,max_share_change
+Logistic regression,sample 1 (200 rows),0.9933259176863181,0.008773339600570973
+Logistic regression,sample 2 (200 rows),0.9951056729699665,0.04224045222571299
+Logistic regression,sample 3 (200 rows),0.9986651835372636,0.020413849094031156
+Logistic regression,sample 4 (200 rows),0.9991101223581758,0.02188767881226583
+Logistic regression,sample 5 (200 rows),0.9964404894327029,0.02102576250007926
+LightGBM,"new sample (50 rows), 5,000 explained rows",0.9964404894327029,0.02191363813589932
+LightGBM,"new sample (100 rows), 5,000 explained rows",0.9959955506117909,0.008150360519021141
+LightGBM,"new sample (200 rows), 5,000 explained rows",0.9982202447163514,0.00376360526131711
