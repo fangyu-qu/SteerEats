@@ -1,0 +1,689 @@
+google_category,restaurants,group
+Restaurant,8490,
+Delivery Restaurant,3502,
+Fast food restaurant,2703,fast_food
+Bar,2419,bar_pub
+Takeout Restaurant,2286,
+Pizza restaurant,2243,pizza
+Chinese restaurant,2163,chinese
+American restaurant,2006,american
+Italian restaurant,1826,italian
+Coffee shop,1771,cafe_dessert
+Breakfast restaurant,1770,breakfast_brunch
+Sandwich shop,1523,sandwich_deli
+Mexican restaurant,1517,mexican
+Cafe,1269,cafe_dessert
+Bakery,1123,cafe_dessert
+Hamburger restaurant,1054,american
+Japanese restaurant,979,japanese
+Asian restaurant,947,asian_other
+Seafood restaurant,939,seafood
+Caterer,872,
+Sushi restaurant,832,japanese
+Bagel shop,734,cafe_dessert
+Chicken restaurant,727,fast_food
+Pizza delivery,698,pizza
+Brunch restaurant,674,breakfast_brunch
+Cocktail bar,624,bar_pub
+Donut shop,617,cafe_dessert
+Vegetarian restaurant,587,vegetarian_healthy
+Mediterranean restaurant,541,middle_eastern
+Thai restaurant,530,southeast_asian
+Latin American restaurant,517,latin_american
+Vegan restaurant,512,vegetarian_healthy
+Health food restaurant,498,vegetarian_healthy
+Indian restaurant,493,south_asian
+Wine bar,489,bar_pub
+Pizza Takeout,478,pizza
+Salad shop,473,vegetarian_healthy
+Lunch restaurant,458,
+Bar & grill,458,bar_pub
+Caribbean restaurant,439,caribbean
+Kosher restaurant,424,jewish_kosher
+Espresso bar,412,cafe_dessert
+New American restaurant,400,american
+Halal restaurant,378,middle_eastern
+Lounge,372,bar_pub
+Dominican restaurant,368,latin_american
+Deli,366,sandwich_deli
+Diner,364,american
+French restaurant,361,european
+Coffee store,353,cafe_dessert
+Juice shop,333,cafe_dessert
+Internet cafe,327,cafe_dessert
+Korean restaurant,325,korean
+Taco restaurant,312,mexican
+Jamaican restaurant,299,caribbean
+Steak house,289,american
+Asian fusion restaurant,286,asian_other
+Middle Eastern restaurant,286,middle_eastern
+Event venue,266,
+Spanish restaurant,262,european
+Sports bar,259,bar_pub
+Chicken wings restaurant,251,american
+Family restaurant,245,
+Barbecue restaurant,241,american
+Dessert restaurant,231,cafe_dessert
+Ice cream shop,217,cafe_dessert
+Greek restaurant,215,middle_eastern
+Fine dining restaurant,214,
+Dessert shop,208,cafe_dessert
+Vietnamese restaurant,199,southeast_asian
+Ramen restaurant,198,japanese
+Cajun restaurant,198,american
+Delivery service,194,
+Gluten-free restaurant,174,vegetarian_healthy
+European restaurant,156,european
+Tex-Mex restaurant,152,mexican
+Pub,150,bar_pub
+Gastropub,148,bar_pub
+Burrito restaurant,143,mexican
+Peruvian restaurant,140,latin_american
+Colombian restaurant,140,latin_american
+Organic restaurant,133,vegetarian_healthy
+Noodle shop,125,asian_other
+Soul food restaurant,121,american
+Turkish restaurant,121,middle_eastern
+Bistro,116,european
+Catering food and drink supplier,114,
+Chinese takeaway,111,chinese
+Delivery Chinese restaurant,111,chinese
+Tapas restaurant,109,european
+Pastry shop,109,cafe_dessert
+Grocery store,108,
+Pasta shop,102,italian
+Live music venue,98,
+Health food store,97,vegetarian_healthy
+Dim sum restaurant,95,chinese
+Cake shop,95,cafe_dessert
+Irish pub,95,bar_pub
+Buffet restaurant,93,
+Southeast Asian restaurant,93,southeast_asian
+Ecuadorian restaurant,92,latin_american
+Hot dog restaurant,92,american
+Irish restaurant,90,european
+Bubble tea store,88,cafe_dessert
+Southern restaurant (US),88,american
+Cantonese restaurant,88,chinese
+Sichuan restaurant,87,chinese
+Chinese noodle restaurant,87,chinese
+Cuban restaurant,82,latin_american
+Tea house,78,cafe_dessert
+Russian restaurant,75,european
+South Asian restaurant,73,south_asian
+Hookah bar,72,bar_pub
+Tapas bar,72,european
+Oyster bar restaurant,71,seafood
+Dumpling restaurant,71,chinese
+Soup restaurant,70,sandwich_deli
+Hawaiian restaurant,70,asian_other
+Traditional American restaurant,70,american
+Gyro restaurant,69,middle_eastern
+Pakistani restaurant,68,south_asian
+Korean barbecue restaurant,68,korean
+Taiwanese restaurant,66,chinese
+Soup shop,65,sandwich_deli
+Night club,62,
+Falafel restaurant,62,middle_eastern
+Frozen yogurt shop,60,cafe_dessert
+Fried chicken takeaway,60,fast_food
+Hot pot restaurant,60,chinese
+Bangladeshi restaurant,59,south_asian
+Small plates restaurant,59,
+Brazilian restaurant,58,latin_american
+Wedding venue,58,
+Chicken shop,57,fast_food
+Puerto Rican restaurant,56,latin_american
+Israeli restaurant,55,middle_eastern
+Convenience store,54,
+South American restaurant,54,latin_american
+West African restaurant,52,african
+Ethnic restaurant,52,
+Filipino restaurant,51,southeast_asian
+Grill,50,bar_pub
+Beer garden,50,bar_pub
+Sushi takeaway,48,japanese
+Northern Italian restaurant,48,italian
+Food court,48,
+Porridge restaurant,48,chinese
+Haitian restaurant,47,caribbean
+Banquet hall,47,
+Izakaya restaurant,46,japanese
+Eastern European restaurant,44,european
+Salvadoran restaurant,43,latin_american
+Shanghainese restaurant,43,chinese
+Eclectic restaurant,42,
+Malaysian restaurant,42,southeast_asian
+Uzbeki restaurant,42,middle_eastern
+Modern European restaurant,42,european
+Beer hall,42,bar_pub
+Beer store,40,bar_pub
+Gas station,39,
+Southern Italian restaurant,38,italian
+Pan-Asian restaurant,37,asian_other
+ATM,37,
+Authentic Japanese restaurant,36,japanese
+Nepalese restaurant,36,south_asian
+Gourmet grocery store,36,
+Fusion restaurant,35,
+German restaurant,35,european
+Lebanese restaurant,35,middle_eastern
+Seafood market,35,seafood
+Live music bar,35,bar_pub
+African restaurant,34,african
+Snack bar,32,fast_food
+Mandarin restaurant,30,chinese
+Moroccan restaurant,30,middle_eastern
+Australian restaurant,30,european
+Venezuelan restaurant,30,latin_american
+Hot dog stand,30,american
+Fish & chips restaurant,29,seafood
+Market,29,
+Cafeteria,28,cafe_dessert
+Cheesesteak restaurant,28,american
+Crêperie,27,european
+Scandinavian restaurant,27,european
+Indian takeaway,27,south_asian
+Polish restaurant,27,european
+Modern French restaurant,26,european
+British restaurant,26,european
+Supermarket,26,
+Georgian restaurant,26,european
+Argentinian restaurant,26,latin_american
+Nuevo Latino restaurant,25,latin_american
+Meal delivery,25,
+Organic food store,24,
+Butcher shop,24,
+Jazz club,23,
+Crab house,23,seafood
+Afghani restaurant,23,middle_eastern
+Belgian restaurant,23,european
+Brewpub,22,bar_pub
+Kebab shop,22,middle_eastern
+Karaoke bar,21,bar_pub
+Brasserie,21,european
+Ethiopian restaurant,21,african
+Beverage distributor,21,
+Hotel,20,
+Japanese curry restaurant,20,japanese
+Traditional restaurant,20,
+Southwestern restaurant (US),20,mexican
+Jewish restaurant,19,jewish_kosher
+Pho restaurant,19,southeast_asian
+Mexican grocery store,18,mexican
+Brewery,18,
+Grocery delivery service,17,
+Art gallery,17,
+Event planner,17,
+Mexican torta restaurant,17,mexican
+Rice restaurant,17,
+Takeout restaurant,17,
+Club,17,
+Japanese steakhouse,17,japanese
+Creole restaurant,16,american
+Karaoke,16,
+Egyptian restaurant,16,middle_eastern
+Pretzel store,15,cafe_dessert
+Ukrainian restaurant,15,european
+Car wash,15,
+Catering,15,
+Pan-Latin restaurant,15,latin_american
+Vegetarian cafe and deli,15,vegetarian_healthy
+Wine store,15,
+Hoagie restaurant,15,american
+Modern Indian restaurant,15,south_asian
+Sicilian restaurant,15,italian
+Portuguese restaurant,15,european
+Teppanyaki restaurant,15,japanese
+Hunan restaurant,14,chinese
+Candy store,14,
+Video arcade,14,
+Cheese shop,14,
+Patisserie,14,cafe_dessert
+Party planner,14,
+Udon noodle restaurant,14,japanese
+Neapolitan restaurant,14,italian
+Austrian restaurant,14,european
+Coffee roasters,13,cafe_dessert
+Hong Kong style fast food restaurant,13,chinese
+Indonesian restaurant,13,southeast_asian
+Dinner theater,13,
+Continental restaurant,13,european
+Kosher grocery store,12,jewish_kosher
+Comedy club,12,
+Tea store,12,
+Gift shop,12,
+Wi-Fi spot,12,
+Chophouse restaurant,12,american
+Chocolate shop,12,cafe_dessert
+Californian restaurant,12,american
+Italian grocery store,12,italian
+Basque restaurant,12,european
+Persian restaurant,12,middle_eastern
+Wholesale bakery,11,cafe_dessert
+BBQ area,11,american
+Yemenite restaurant,11,middle_eastern
+Food and drink,11,
+Garden,11,
+Yakitori restaurant,11,japanese
+Produce market,11,
+Tourist attraction,11,
+Shopping mall,11,
+Store,10,
+Mobile caterer,10,
+Guatemalan restaurant,10,latin_american
+Organic shop,9,
+Vitamin & supplements store,9,
+Meat dish restaurant,9,
+Clothing store,9,
+Shabu-shabu restaurant,9,japanese
+Pool hall,9,
+Roman restaurant,9,italian
+Meat products,9,
+Raw food restaurant,9,vegetarian_healthy
+Honduran restaurant,9,latin_american
+Dance club,9,
+Asian grocery store,8,asian_other
+Japanese sweets restaurant,8,japanese
+Indian Muslim restaurant,8,south_asian
+Fruit and vegetable store,8,
+Non-profit organization,8,
+Wok restaurant,8,chinese
+French steakhouse restaurant,8,european
+Tuscan restaurant,8,italian
+Concert hall,8,
+Cookie shop,8,cafe_dessert
+Uruguayan restaurant,8,latin_american
+Tamale shop,7,
+Fondue restaurant,7,
+Service establishment,7,
+Japanese grocery store,7,japanese
+Wedding planner,7,
+Czech restaurant,7,european
+Nightlife,7,
+Wedding bakery,7,cafe_dessert
+Charcuterie,7,
+Pie shop,7,
+Punjabi restaurant,7,
+Tobacco shop,7,
+Butcher shop deli,7,sandwich_deli
+Bowling alley,7,
+Pizza takeaway,7,pizza
+Central American restaurant,7,american
+Haute French restaurant,7,european
+Korean beef restaurant,7,korean
+Kaiseki restaurant,7,japanese
+Piano bar,7,bar_pub
+Confectionery,7,
+Sri Lankan restaurant,7,south_asian
+Box lunch supplier,7,
+Grill store,6,bar_pub
+Home goods store,6,
+Adult entertainment club,6,
+Soba noodle shop,6,japanese
+Social club,6,
+Tibetan restaurant,6,south_asian
+Cupcake shop,6,cafe_dessert
+Pancake restaurant,6,breakfast_brunch
+Chocolate artisan,6,cafe_dessert
+Coworking space,6,
+Syrian restaurant,6,middle_eastern
+Burmese restaurant,6,southeast_asian
+Natural goods store,6,
+Tonkatsu restaurant,6,japanese
+Angler fish restaurant,6,seafood
+Children's amusement center,6,
+Children's party service,6,
+Frozen dessert supplier,5,cafe_dessert
+Cabaret club,5,
+Mexican goods store,5,mexican
+Down home cooking restaurant,5,
+Swimming pool,5,
+Romanian restaurant,5,
+Chocolate cafe,5,cafe_dessert
+New England restaurant,5,
+Liquor store,5,
+Wedding service,5,
+Singaporean restaurant,5,southeast_asian
+Fresh food market,5,
+Food products supplier,5,
+Korean rib restaurant,5,korean
+Coffee stand,5,cafe_dessert
+Wine cellar,5,
+Armenian restaurant,5,middle_eastern
+Cooking class,5,
+Gift basket store,5,
+Shawarma restaurant,4,
+Restaurant or cafe,4,cafe_dessert
+Food producer,4,
+Meat wholesaler,4,
+Açaí shop,4,
+Association or organization,4,
+Spa,4,
+Coffee wholesaler,4,cafe_dessert
+Charity,4,
+Cambodian restaurant,4,southeast_asian
+Japanese cheap sweets shop,4,japanese
+Fish and chips takeaway,4,seafood
+Country food restaurant,4,
+Chilean restaurant,4,latin_american
+Lottery retailer,4,
+Cultural center,4,
+Wellness center,4,
+Salsa bar,4,bar_pub
+Food bank,4,
+North African restaurant,4,african
+Hookah store,4,
+Yakiniku restaurant,4,
+Modern izakaya restaurants,4,japanese
+Swiss restaurant,4,european
+Dance hall,4,
+DJ service,4,
+Gay bar,4,bar_pub
+Dairy,3,
+Boutique,3,
+Hungarian restaurant,3,european
+Tofu restaurant,3,
+Danish restaurant,3,
+Indian grocery store,3,south_asian
+Food service,3,
+Croatian restaurant,3,
+Serbian restaurant,3,
+Sports nutrition store,3,
+Boat tour agency,3,
+Corporate office,3,
+Book store,3,
+Alternative fuel station,3,
+Chinese tea house,3,chinese
+Amusement center,3,
+South African restaurant,3,african
+Fish store,3,seafood
+Paraguayan restaurant,3,
+Contemporary Louisiana restaurant,3,
+Seafood donburi restaurant,3,seafood
+Self service restaurant,3,
+Raclette restaurant,3,
+Food delivery,3,
+North Eastern Indian restaurant,3,south_asian
+Performing arts theater,3,
+Art cafe,3,cafe_dessert
+Venetian restaurant,3,
+Day spa,3,
+Disco club,3,
+Farmers' market,3,
+Historical landmark,3,
+Swedish restaurant,3,
+Modern British restaurant,3,european
+Japanese delicatessen,3,japanese
+Blues club,3,
+Dance restaurant,2,
+Beauty supply store,2,
+Self-catering accommodation,2,
+Dog cafe,2,cafe_dessert
+Gay & lesbian organization,2,
+Plant nursery,2,
+Yoga studio,2,
+Men's clothing store,2,
+Sunglasses store,2,
+Corporate entertainment service,2,
+Event management company,2,
+Florist,2,
+Wellness program,2,
+Laotian restaurant,2,southeast_asian
+Tea and coffee merchant,2,cafe_dessert
+Fujian restaurant,2,
+Katsudon restaurant,2,japanese
+Fitness center,2,
+Gym,2,
+Personal trainer,2,
+Restaurant supply store,2,
+Spice store,2,
+Japanese regional restaurant,2,japanese
+Frozen food store,2,
+Chocolate factory,2,cafe_dessert
+Biryani restaurant,2,
+Bar tabac,2,bar_pub
+Miniature golf course,2,
+Party store,2,
+Kazakhstani restaurant,2,
+Syokudo and Teishoku restaurant,2,
+Irish goods store,2,european
+Seafood wholesaler,2,seafood
+Recruiter,2,
+Organic farm,2,
+Canadian restaurant,2,
+Bocce ball court,2,
+Barber shop,2,
+Herbalist,2,
+Weight loss service,2,
+Soup kitchen,2,sandwich_deli
+Wholesale food store,2,
+Food manufacturer,2,
+Korean grocery store,2,korean
+Ham shop,2,
+Food and beverage exporter,2,
+Food,2,
+Indoor lodging,2,
+Barbecue area,2,american
+Couscous restaurant,2,
+Health and beauty shop,2,
+Okonomiyaki restaurant,2,japanese
+Po’ boys restaurant,2,
+Massage spa,2,
+Rice shop,2,
+Winery,2,
+Massage therapist,2,
+Dan Dan noodle restaurant,2,asian_other
+Sardinian restaurant,2,
+Business center,2,
+Japanese confectionery shop,2,japanese
+Tempura restaurant,2,japanese
+Artist,2,
+Exhibit,2,
+Community center,2,
+Band,2,
+East African restaurant,2,african
+Tiki bar,2,bar_pub
+Movie theater,2,
+Takoyaki restaurant,2,
+Herb shop,2,
+Seafood,2,seafood
+Cider bar,2,bar_pub
+Cold noodle restaurant,2,asian_other
+Function room facility,2,
+Galician restaurant,2,
+Educational institution,1,
+Wholesaler,1,
+Pueblan restaurant,1,
+Pharmacy,1,
+Medical supply store,1,
+Photo shop,1,
+Surgical supply store,1,
+Household goods wholesaler,1,
+Recreation center,1,
+Truck stop,1,
+Spa and health club,1,
+Cosmetics store,1,
+Jewelry store,1,
+Shoe store,1,
+Women's clothing store,1,
+Wedding buffet,1,
+Outdoor swimming pool,1,
+Billiards supply store,1,
+Orthodox synagogue,1,
+Synagogue,1,
+Warehouse store,1,
+Beverages,1,
+Girl bar,1,bar_pub
+Tennis club,1,
+After school program,1,
+Camp,1,
+Golf instructor,1,
+Cheese manufacturer,1,
+Athletic club,1,
+Summer camp,1,
+Distribution service,1,
+Table tennis club,1,
+Clothing wholesaler,1,
+Dance school,1,
+Physical fitness program,1,
+Drama theater,1,
+Sundae restaurant,1,
+Business development service,1,
+Macrobiotic restaurant,1,
+Student dormitory,1,
+Souvenir store,1,
+Doll store,1,
+Hat shop,1,
+Video store,1,
+Poultry store,1,
+Electric vehicle charging station,1,
+Musical club,1,
+Welsh restaurant,1,
+Seafood farm,1,seafood
+Pharmaceutical company,1,
+Provence restaurant,1,
+Consultant,1,
+Manufacturer,1,
+Culinary school,1,
+Mobile phone repair shop,1,
+Money transfer service,1,
+Phone repair service,1,
+Food store,1,
+Baby clothing store,1,
+Mongolian barbecue restaurant,1,asian_other
+Travel agency,1,
+Chamber of Commerce,1,
+Travel,1,
+Conference center,1,
+Casino,1,
+Japanized western restaurant,1,
+Green energy supplier,1,
+Life coach,1,
+Chinese supermarket,1,chinese
+Hospital,1,
+Homeopathic pharmacy,1,
+Cigar shop,1,
+Soft drinks shop,1,
+Distillery,1,
+Egg supplier,1,
+Auditorium,1,
+Professional services,1,
+Lottery shop,1,
+Tempura donburi restaurant,1,japanese
+Fashion designer,1,
+Real estate agents,1,
+Bottled water supplier,1,
+Veterinarian,1,
+Nicaraguan restaurant,1,latin_american
+Meeting room,1,
+Library,1,
+Pottery store,1,
+New Zealand restaurant,1,
+English restaurant,1,european
+Dart bar,1,bar_pub
+Stage,1,
+Attorney,1,
+Antique store,1,
+Pawn shop,1,
+Ballroom,1,
+Lithuanian restaurant,1,
+Mutton barbecue restaurant,1,american
+Travel lounge,1,bar_pub
+Real estate agency,1,
+Stamp shop,1,
+North Indian restaurant,1,south_asian
+Poke bar,1,asian_other
+Fruit and vegetable processing,1,
+Squash club,1,
+Business to business service,1,
+Facial spa,1,
+Health spa,1,
+Sauna,1,
+Australian goods store,1,european
+Javanese restaurant,1,
+Fish spa,1,seafood
+Courier service,1,
+Fax service,1,
+Mobile disco,1,
+Night market,1,
+Guizhou restaurant,1,
+Cannabis store,1,
+Oaxacan restaurant,1,
+Social services organization,1,
+Thai massage therapist,1,southeast_asian
+Soccer club,1,
+Kitchen,1,
+Bakery equipment,1,cafe_dessert
+Bar restaurant furniture store,1,bar_pub
+Commercial refrigeration,1,
+Commercial refrigerator supplier,1,
+Equipment supplier,1,
+Kitchen supply store,1,
+Art dealer,1,
+Dairy store,1,
+Polynesian restaurant,1,
+Custom tailor,1,
+Tailor,1,
+Hall,1,
+Beach pavillion,1,
+Condiments supplier,1,
+Greenhouse,1,
+Russian grocery store,1,european
+Flower delivery,1,
+Sukiyaki and Shabu Shabu restaurant,1,japanese
+Chinaware store,1,
+General store,1,
+Conveyor belt sushi restaurant,1,japanese
+Meeting planning service,1,
+Health consultant,1,
+Naturopathic practitioner,1,
+Stand bar,1,bar_pub
+Arts organization,1,
+Record store,1,
+Furniture maker,1,
+Obanzai restaurant,1,
+Kushiage and kushikatsu restaurant,1,
+Money order service,1,
+Pizza,1,pizza
+Sports club,1,
+Board game club,1,
+Meat packer,1,
+Meat processor,1,
+Slaughterhouse,1,
+Corporate gift supplier,1,
+Kiosk,1,
+Craft store,1,
+Japanese inn,1,japanese
+Eritrean restaurant,1,
+Rock music club,1,
+Drive-in movie theater,1,
+Art center,1,
+Soondae restaurant,1,
+Language school,1,
+Sokol house,1,
+Furniture rental service,1,
+Alsace restaurant,1,
+Shooting event area,1,
+Group accommodation,1,
+Offal pot cooking restaurant,1,
+Bridge,1,
+Bed & breakfast,1,breakfast_brunch
+Inn,1,
+Pool billard club,1,
+Sukiyaki restaurant,1,
+School,1,
+Sweets and dessert buffet,1,cafe_dessert
+Cell phone store,1,
+Cooking school,1,
+Childrens party buffet,1,
+Wine club,1,
+Wax museum,1,
+Extended stay hotel,1,
+Entertainer,1,
+Wellness hotel,1,
+Brazilian pastelaria,1,latin_american
+Musician,1,
+Pet friendly accommodation,1,
+Travellers lodge,1,
+Indian sweets shop,1,south_asian

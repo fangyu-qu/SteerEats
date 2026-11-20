@@ -40,6 +40,29 @@ python3 src/05_baselines.py               # popularity, recent popularity, item-
 python3 src/06_rating_over_time.py        # all-time vs last-12-months ratings
 ```
 
+## Audit and cleaning (November 19, 2026)
+
+Run after steps 01–04. Originals in `data/processed` are read only; cleaned files go to `data/clean`.
+
+```bash
+python src/10_data_audit.py --raw         # findings -> outputs/data_audit/AUDIT.md (+ CSVs for figures)
+python src/11_clean.py                    # clean restaurants, reviews, interactions -> outputs/cleaning/CLEANING_LOG.md
+python src/12_restaurant_attributes.py    # cuisine groups, chain, price, attribute flags
+```
+
+| File | One row per | Notes |
+|---|---|---|
+| `restaurants_clean.parquet` | restaurant (24,808) | 49 non-food businesses removed; `duplicate_listing` flag |
+| `reviews_clean.parquet` | review (6,816,383) | empty, duplicate and placeholder-date rows removed; New York `local_date`, `local_hour`, `local_dow`; `user_day_reviews`; `cross_posted` |
+| `interactions_clean.parquet` | first review of a restaurant by a sampled user (422,571) | same 20,000 users as the original sample, reproduced exactly; splits `train` / `val` / `test` (to 2021-05-31) / `tail` (from 2021-06-01, collection fading out); `label` 1 = 4–5 stars, 0 = 1–2, missing = 3; `bulk_day` |
+| `restaurant_attributes.parquet` | restaurant (24,808) | `cuisine_group` (24 groups, `src/taxonomy.py`), `is_chain`, `price_level` + `price_missing`, 12 `attr_*` flags |
+
+Snapshot-only metadata (Google rating, review count, open state) and the 2026 inspection file are never used
+as predictive features. `outputs/cleaning/linked_listings.csv` lists listing pairs that share cross-posted
+reviews; most are one business listed twice, but some are not (two restaurants reviewed in one batch), so
+merging needs a name check and is not applied yet. The baselines and logistic ranker above still use the
+original sample; they are rerun on `interactions_clean.parquet` in the next step.
+
 ## Raw data (`data/raw`, not in git)
 
 | File | Source | Size |

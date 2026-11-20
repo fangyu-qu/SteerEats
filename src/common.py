@@ -27,3 +27,18 @@ def normalize_name(name):
     s = re.sub(r"[^a-z0-9 ]+", " ", s)
     filler = {"the", "inc", "llc", "corp", "co", "ltd", "restaurant", "nyc", "ny", "and"}
     return " ".join(w for w in s.split() if w not in filler)
+
+# Cleaned data (src/11_clean.py, src/12_restaurant_attributes.py); originals in data/processed stay untouched.
+CLEAN = ROOT / "data" / "clean"
+RESTAURANTS_CLEAN = CLEAN / "restaurants_clean.parquet"
+REVIEWS_CLEAN = CLEAN / "reviews_clean.parquet"
+INTERACTIONS_CLEAN = CLEAN / "interactions_clean.parquet"
+RESTAURANT_ATTRS = CLEAN / "restaurant_attributes.parquet"
+SAMPLE = PROCESSED / "sample_interactions.parquet"
+
+# Time boundaries (UTC, as in src/04). Collection tails off after May 2021, so later rows form a "tail" split.
+VAL_START = "2019-12-01"
+TEST_START = "2020-08-01"
+TAIL_START = "2021-06-01"
+LOCAL_TZ = "America/New_York"
+BULK_DAY_MIN = 5   # a user posting >= this many NYC restaurant reviews on one local day
