@@ -21,3 +21,6 @@ web/public/data/cases/*.json
 !web/public/data/cases/demo_*.json
 # notebooks
 .ipynb_checkpoints/
+
+# data is a symlink to the shared data folder
+/data
