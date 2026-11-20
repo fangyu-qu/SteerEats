@@ -36,9 +36,10 @@ INTERACTIONS_CLEAN = CLEAN / "interactions_clean.parquet"
 RESTAURANT_ATTRS = CLEAN / "restaurant_attributes.parquet"
 SAMPLE = PROCESSED / "sample_interactions.parquet"
 
-# Time boundaries (UTC, as in src/04). Collection tails off after May 2021, so later rows form a "tail" split.
+# Time boundaries (UTC, as in src/04). Collection is already half-missing in May 2021, so rows from
+# 2021-05-01 on form a "tail" split that is never evaluated.
 VAL_START = "2019-12-01"
 TEST_START = "2020-08-01"
-TAIL_START = "2021-06-01"
+TAIL_START = "2021-05-01"
 LOCAL_TZ = "America/New_York"
 BULK_DAY_MIN = 5   # a user posting >= this many NYC restaurant reviews on one local day

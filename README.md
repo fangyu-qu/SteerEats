@@ -52,10 +52,10 @@ python src/12_restaurant_attributes.py    # cuisine groups, chain, price, attrib
 
 | File | One row per | Notes |
 |---|---|---|
-| `restaurants_clean.parquet` | restaurant (24,783) | 49 non-food businesses removed; 25 duplicate listings merged (same name and address, or reviewed in `config/duplicate_listings.csv`); `merged_listings` count |
-| `reviews_clean.parquet` | review (6,810,303) | empty, duplicate and placeholder-date rows removed; New York `local_date`, `local_hour`, `local_dow`; `user_day_reviews`; `cross_posted` |
-| `interactions_clean.parquet` | first review of a restaurant by a sampled user (422,193) | same 20,000 users as the original sample, reproduced exactly; splits `train` / `val` / `test` (to 2021-05-31) / `tail` (from 2021-06-01, collection fading out); `label` 1 = 4–5 stars, 0 = 1–2, missing = 3; `bulk_day` |
-| `restaurant_attributes.parquet` | restaurant (24,783) | `cuisine_group` (24 groups, `src/taxonomy.py`), `is_chain`, `price_level` + `price_missing`, 12 `attr_*` flags |
+| `restaurants_clean.parquet` | restaurant (24,724) | 49 non-food businesses and 59 non-food venues (primary category shopping mall, gas station, convenience store or tourist attraction) removed; 25 duplicate listings merged (same name and address, or reviewed in `config/duplicate_listings.csv`); `merged_listings` count |
+| `reviews_clean.parquet` | review (6,767,323) | empty, duplicate and placeholder-date rows removed; New York `local_date`, `local_hour`, `local_dow`; `user_day_reviews`; `cross_posted` |
+| `interactions_clean.parquet` | first review of a restaurant by a sampled user (418,914) | same 20,000 users as the original sample, reproduced exactly; splits `train` / `val` / `test` (2020-08-01 to 2021-04-30) / `tail` (from 2021-05-01, collection already half-missing, never evaluated); `label` 1 = 4–5 stars, 0 = 1–2, missing = 3; `bulk_day` |
+| `restaurant_attributes.parquet` | restaurant (24,724) | `cuisine_group` (25 groups incl. "Venue" for hotels, event spaces, food halls and markets without a cuisine, `src/taxonomy.py`), `is_chain`, `price_level` + `price_missing`, 12 `attr_*` flags |
 
 Snapshot-only metadata (Google rating, review count, open state) and the 2026 inspection file are never used
 as predictive features. `outputs/cleaning/linked_listings.csv` lists listing pairs that share cross-posted

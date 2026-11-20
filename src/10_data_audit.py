@@ -60,6 +60,10 @@ def main():
     md += ["## Restaurants (`restaurants_nyc.parquet`)", "",
            f"- {len(R):,} restaurants; {cats.nunique()} distinct Google categories.",
            f"- {bad.sum()} carry a non-restaurant category (restaurant supply or furniture store).",
+           f"- Primary category is a non-food venue: " + ", ".join(
+               f"{k} {n}" for k, n in R.categories.str.split("; ").str[0].value_counts()
+               .reindex(["Shopping mall", "Gas station", "Convenience store", "Tourist attraction", "Hotel",
+                         "Event venue", "Grocery store", "Food court"]).dropna().astype(int).items()) + ".",
            f"- Price level missing for {pct(R.price_level.isna().mean())}.",
            f"- Permanently closed at the 2021 crawl: {pct(R.permanently_closed_2021.mean())}.",
            f"- Duplicate name + address pairs: {R.duplicated(['name', 'address']).sum()}.",

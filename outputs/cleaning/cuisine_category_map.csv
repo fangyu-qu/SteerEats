@@ -1,24 +1,24 @@
 google_category,restaurants,group
-Restaurant,8481,
+Restaurant,8431,
 Delivery Restaurant,3499,
 Fast food restaurant,2699,fast_food
 Bar,2418,bar_pub
-Takeout Restaurant,2285,
+Takeout Restaurant,2284,
 Pizza restaurant,2241,pizza
 Chinese restaurant,2161,chinese
 American restaurant,2004,american
-Italian restaurant,1825,italian
-Coffee shop,1770,cafe_dessert
-Breakfast restaurant,1768,breakfast_brunch
-Sandwich shop,1523,sandwich_deli
+Italian restaurant,1824,italian
+Breakfast restaurant,1766,breakfast_brunch
+Coffee shop,1763,cafe_dessert
+Sandwich shop,1520,sandwich_deli
 Mexican restaurant,1515,mexican
 Cafe,1269,cafe_dessert
-Bakery,1122,cafe_dessert
+Bakery,1120,cafe_dessert
 Hamburger restaurant,1053,american
 Japanese restaurant,979,japanese
 Asian restaurant,947,asian_other
 Seafood restaurant,938,seafood
-Caterer,872,
+Caterer,872,venue
 Sushi restaurant,832,japanese
 Bagel shop,733,cafe_dessert
 Chicken restaurant,727,fast_food
@@ -35,9 +35,9 @@ Health food restaurant,498,vegetarian_healthy
 Indian restaurant,493,south_asian
 Wine bar,489,bar_pub
 Pizza Takeout,477,pizza
-Salad shop,473,vegetarian_healthy
-Lunch restaurant,458,
+Salad shop,471,vegetarian_healthy
 Bar & grill,458,bar_pub
+Lunch restaurant,451,
 Caribbean restaurant,439,caribbean
 Kosher restaurant,424,jewish_kosher
 Espresso bar,412,cafe_dessert
@@ -46,8 +46,8 @@ Halal restaurant,376,middle_eastern
 Lounge,371,bar_pub
 Dominican restaurant,368,latin_american
 Deli,366,sandwich_deli
-Diner,364,american
 French restaurant,361,european
+Diner,359,american
 Coffee store,353,cafe_dessert
 Juice shop,333,cafe_dessert
 Internet cafe,327,cafe_dessert
@@ -57,7 +57,7 @@ Jamaican restaurant,299,caribbean
 Steak house,289,american
 Asian fusion restaurant,286,asian_other
 Middle Eastern restaurant,286,middle_eastern
-Event venue,266,
+Event venue,266,venue
 Spanish restaurant,262,european
 Sports bar,259,bar_pub
 Chicken wings restaurant,250,american
@@ -67,7 +67,7 @@ Dessert restaurant,231,cafe_dessert
 Ice cream shop,217,cafe_dessert
 Greek restaurant,215,middle_eastern
 Fine dining restaurant,214,
-Dessert shop,208,cafe_dessert
+Dessert shop,206,cafe_dessert
 Vietnamese restaurant,199,southeast_asian
 Ramen restaurant,198,japanese
 Cajun restaurant,198,american
@@ -85,16 +85,16 @@ Noodle shop,125,asian_other
 Soul food restaurant,121,american
 Turkish restaurant,120,middle_eastern
 Bistro,116,european
-Catering food and drink supplier,114,
+Catering food and drink supplier,114,venue
 Chinese takeaway,111,chinese
 Delivery Chinese restaurant,111,chinese
 Tapas restaurant,109,european
-Pastry shop,109,cafe_dessert
-Grocery store,108,
-Pasta shop,102,italian
-Live music venue,98,
+Pastry shop,108,cafe_dessert
+Pasta shop,101,italian
+Live music venue,98,venue
 Health food store,97,vegetarian_healthy
 Cake shop,95,cafe_dessert
+Grocery store,95,venue
 Irish pub,95,bar_pub
 Dim sum restaurant,94,chinese
 Buffet restaurant,93,
@@ -123,7 +123,7 @@ Pakistani restaurant,68,south_asian
 Korean barbecue restaurant,68,korean
 Taiwanese restaurant,66,chinese
 Soup shop,65,sandwich_deli
-Night club,62,
+Night club,62,venue
 Falafel restaurant,62,middle_eastern
 Frozen yogurt shop,60,cafe_dessert
 Fried chicken takeaway,60,fast_food
@@ -131,11 +131,10 @@ Hot pot restaurant,60,chinese
 Bangladeshi restaurant,59,south_asian
 Small plates restaurant,59,
 Brazilian restaurant,58,latin_american
-Wedding venue,58,
+Wedding venue,58,venue
 Chicken shop,57,fast_food
 Puerto Rican restaurant,56,latin_american
 Israeli restaurant,55,middle_eastern
-Convenience store,54,
 South American restaurant,54,latin_american
 West African restaurant,52,african
 Ethnic restaurant,52,
@@ -144,10 +143,10 @@ Grill,50,bar_pub
 Beer garden,50,bar_pub
 Sushi takeaway,48,japanese
 Northern Italian restaurant,48,italian
-Food court,48,
+Food court,48,venue
 Porridge restaurant,48,chinese
 Haitian restaurant,47,caribbean
-Banquet hall,47,
+Banquet hall,47,venue
 Izakaya restaurant,46,japanese
 Eastern European restaurant,44,european
 Salvadoran restaurant,43,latin_american
@@ -157,28 +156,25 @@ Malaysian restaurant,42,southeast_asian
 Modern European restaurant,42,european
 Beer hall,42,bar_pub
 Uzbeki restaurant,41,middle_eastern
-Beer store,40,bar_pub
-Gas station,39,
 Southern Italian restaurant,38,italian
 Pan-Asian restaurant,37,asian_other
-ATM,37,
 Authentic Japanese restaurant,36,japanese
 Nepalese restaurant,36,south_asian
-Gourmet grocery store,36,
+Beer store,36,bar_pub
+Gourmet grocery store,36,venue
 Fusion restaurant,35,
 German restaurant,35,european
 Lebanese restaurant,35,middle_eastern
 Seafood market,35,seafood
 Live music bar,35,bar_pub
 African restaurant,34,african
-Snack bar,32,fast_food
 Mandarin restaurant,30,chinese
 Moroccan restaurant,30,middle_eastern
 Australian restaurant,30,european
 Venezuelan restaurant,30,latin_american
 Hot dog stand,30,american
 Fish & chips restaurant,29,seafood
-Market,29,
+Market,29,venue
 Cafeteria,28,cafe_dessert
 Cheesesteak restaurant,28,american
 Crêperie,27,european
@@ -187,13 +183,14 @@ Indian takeaway,27,south_asian
 Polish restaurant,27,european
 Modern French restaurant,26,european
 British restaurant,26,european
-Supermarket,26,
+Supermarket,26,venue
 Georgian restaurant,26,european
 Argentinian restaurant,26,latin_american
+Snack bar,25,fast_food
 Nuevo Latino restaurant,25,latin_american
 Meal delivery,25,
 Organic food store,24,
-Butcher shop,24,
+Butcher shop,23,
 Jazz club,23,
 Crab house,23,seafood
 Afghani restaurant,23,middle_eastern
@@ -204,7 +201,7 @@ Brasserie,21,european
 Kebab shop,21,middle_eastern
 Ethiopian restaurant,21,african
 Beverage distributor,21,
-Hotel,20,
+Hotel,20,venue
 Japanese curry restaurant,20,japanese
 Traditional restaurant,20,
 Southwestern restaurant (US),20,mexican
@@ -212,9 +209,9 @@ Jewish restaurant,19,jewish_kosher
 Pho restaurant,19,southeast_asian
 Mexican grocery store,18,mexican
 Brewery,18,
-Grocery delivery service,17,
+Grocery delivery service,17,venue
 Art gallery,17,
-Event planner,17,
+Event planner,17,venue
 Mexican torta restaurant,17,mexican
 Rice restaurant,17,
 Takeout restaurant,17,
@@ -225,11 +222,9 @@ Karaoke,16,
 Egyptian restaurant,16,middle_eastern
 Pretzel store,15,cafe_dessert
 Ukrainian restaurant,15,european
-Car wash,15,
-Catering,15,
+Catering,15,venue
 Pan-Latin restaurant,15,latin_american
 Vegetarian cafe and deli,15,vegetarian_healthy
-Wine store,15,
 Hoagie restaurant,15,american
 Modern Indian restaurant,15,south_asian
 Sicilian restaurant,15,italian
@@ -247,7 +242,7 @@ Austrian restaurant,14,european
 Coffee roasters,13,cafe_dessert
 Hong Kong style fast food restaurant,13,chinese
 Indonesian restaurant,13,southeast_asian
-Dinner theater,13,
+Dinner theater,13,venue
 Continental restaurant,13,european
 Kosher grocery store,12,jewish_kosher
 Comedy club,12,
@@ -255,27 +250,25 @@ Tea store,12,
 Gift shop,12,
 Wi-Fi spot,12,
 Chophouse restaurant,12,american
+Wine store,12,
 Chocolate shop,12,cafe_dessert
 Californian restaurant,12,american
-Italian grocery store,12,italian
 Basque restaurant,12,european
 Persian restaurant,12,middle_eastern
 Wholesale bakery,11,cafe_dessert
 BBQ area,11,american
+Italian grocery store,11,italian
 Yemenite restaurant,11,middle_eastern
 Food and drink,11,
 Garden,11,
 Yakitori restaurant,11,japanese
-Produce market,11,
-Tourist attraction,11,
-Shopping mall,11,
+Produce market,11,venue
 Store,10,
-Mobile caterer,10,
+Mobile caterer,10,venue
 Guatemalan restaurant,10,latin_american
 Organic shop,9,
 Vitamin & supplements store,9,
 Meat dish restaurant,9,
-Clothing store,9,
 Shabu-shabu restaurant,9,japanese
 Pool hall,9,
 Roman restaurant,9,italian
@@ -283,6 +276,7 @@ Meat products,9,
 Raw food restaurant,9,vegetarian_healthy
 Honduran restaurant,9,latin_american
 Dance club,9,
+Tourist attraction,9,
 Asian grocery store,8,asian_other
 Japanese sweets restaurant,8,japanese
 Indian Muslim restaurant,8,south_asian
@@ -290,8 +284,9 @@ Fruit and vegetable store,8,
 Non-profit organization,8,
 Wok restaurant,8,chinese
 French steakhouse restaurant,8,european
+Convenience store,8,
 Tuscan restaurant,8,italian
-Concert hall,8,
+Concert hall,8,venue
 Cookie shop,8,cafe_dessert
 Uruguayan restaurant,8,latin_american
 Tamale shop,7,
@@ -307,7 +302,7 @@ Pie shop,7,
 Punjabi restaurant,7,
 Tobacco shop,7,
 Butcher shop deli,7,sandwich_deli
-Bowling alley,7,
+Bowling alley,7,venue
 Pizza takeaway,7,pizza
 Central American restaurant,7,american
 Haute French restaurant,7,european
@@ -322,6 +317,7 @@ Home goods store,6,
 Adult entertainment club,6,
 Soba noodle shop,6,japanese
 Social club,6,
+Clothing store,6,
 Tibetan restaurant,6,south_asian
 Cupcake shop,6,cafe_dessert
 Pancake restaurant,6,breakfast_brunch
@@ -345,7 +341,7 @@ New England restaurant,5,
 Liquor store,5,
 Wedding service,5,
 Singaporean restaurant,5,southeast_asian
-Fresh food market,5,
+Fresh food market,5,venue
 Food products supplier,5,
 Korean rib restaurant,5,korean
 Coffee stand,5,cafe_dessert
@@ -392,7 +388,6 @@ Serbian restaurant,3,
 Sports nutrition store,3,
 Boat tour agency,3,
 Book store,3,
-Alternative fuel station,3,
 Chinese tea house,3,chinese
 Amusement center,3,
 South African restaurant,3,african
@@ -409,7 +404,7 @@ Art cafe,3,cafe_dessert
 Venetian restaurant,3,
 Day spa,3,
 Disco club,3,
-Farmers' market,3,
+Farmers' market,3,venue
 Historical landmark,3,
 Swedish restaurant,3,
 Modern British restaurant,3,european
@@ -417,7 +412,7 @@ Japanese delicatessen,3,japanese
 Blues club,3,
 Dance restaurant,2,
 Beauty supply store,2,
-Self-catering accommodation,2,
+Self-catering accommodation,2,venue
 Dog cafe,2,cafe_dessert
 Gay & lesbian organization,2,
 Plant nursery,2,
@@ -537,7 +532,6 @@ Doll store,1,
 Hat shop,1,
 Video store,1,
 Poultry store,1,
-Electric vehicle charging station,1,
 Musical club,1,
 Welsh restaurant,1,
 Seafood farm,1,seafood
@@ -606,7 +600,7 @@ Fish spa,1,seafood
 Courier service,1,
 Fax service,1,
 Mobile disco,1,
-Night market,1,
+Night market,1,venue
 Guizhou restaurant,1,
 Cannabis store,1,
 Oaxacan restaurant,1,
@@ -638,6 +632,7 @@ Conveyor belt sushi restaurant,1,japanese
 Meeting planning service,1,
 Health consultant,1,
 Naturopathic practitioner,1,
+Shopping mall,1,
 Stand bar,1,bar_pub
 Arts organization,1,
 Record store,1,
@@ -679,9 +674,9 @@ Cooking school,1,
 Childrens party buffet,1,
 Wine club,1,
 Wax museum,1,
-Extended stay hotel,1,
+Extended stay hotel,1,venue
 Entertainer,1,
-Wellness hotel,1,
+Wellness hotel,1,venue
 Brazilian pastelaria,1,latin_american
 Musician,1,
 Pet friendly accommodation,1,

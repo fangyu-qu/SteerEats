@@ -1,21 +1,21 @@
 cuisine_group,cuisine_label,cuisine_kind,restaurants
-american,American,cuisine,3812
+american,American,cuisine,3807
 chinese,Chinese,cuisine,2317
 pizza,Pizza,cuisine,2057
 mexican,Mexican,cuisine,1574
 cafe_dessert,"Cafe, bakery & dessert",format,1483
-general,General,format,1430
-italian,Italian,cuisine,1279
+general,General,format,1328
+italian,Italian,cuisine,1277
 latin_american,Latin American,cuisine,1255
 japanese,Japanese,cuisine,1250
 middle_eastern,Middle Eastern & Mediterranean,cuisine,1176
 european,European,cuisine,1066
-vegetarian_healthy,Vegetarian & healthy,cuisine,870
+vegetarian_healthy,Vegetarian & healthy,cuisine,868
 southeast_asian,Southeast Asian,cuisine,744
 caribbean,Caribbean,cuisine,654
 fast_food,Fast food & chicken,format,579
 south_asian,South Asian,cuisine,563
-sandwich_deli,Sandwich & deli,format,521
+sandwich_deli,Sandwich & deli,format,520
 seafood,Seafood,cuisine,487
 asian_other,"Asian, other",cuisine,457
 bar_pub,Bar & pub,format,413
@@ -23,3 +23,4 @@ korean,Korean,cuisine,321
 jewish_kosher,Jewish & kosher,cuisine,313
 african,African,cuisine,99
 breakfast_brunch,Breakfast & brunch,format,63
+venue,"Venue, market & catering",format,53
