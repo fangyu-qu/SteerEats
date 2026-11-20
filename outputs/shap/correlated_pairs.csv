@@ -1,0 +1,9 @@
+feature_a,feature_b,correlation
+shrunk_rating,shrunk_recent_rating,0.952101852962512
+log_popularity,log_recent_popularity,0.941013078705879
+cf_liked,recent_cf_interaction,0.93873236872319
+cf_all,cf_liked,0.9288674606099079
+cf_all,recent_cf_interaction,0.8637218302770994
+recent_share,log_item_age_months,-0.7702765814879889
+is_chain,chain_affinity,0.7632742882202656
+log_recent_popularity,log_popularity_3m,0.7523533061652421

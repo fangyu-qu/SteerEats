@@ -111,6 +111,27 @@ moves within 0.0482–0.0498, and LambdaRank within 0.0497–0.0508. LightGBM's 
 full-catalog protocol therefore came from its training negatives (random and popular restaurants), not
 from the model class. The browser demo uses the two-stage design.
 
+## SHAP explanations (November 19, 2026)
+
+```bash
+python src/17_shap.py     # ~7 min; outputs/shap/SHAP.md and aggregates; row-level values in data/clean/shap/ (local)
+```
+
+Explains the raw scores (log-odds) of the two-stage logistic regression and LightGBM for the 200
+stage-1 candidates of 300 random test users (60,000 rows). Both use interventional SHAP with the same
+200-row background, so they answer the same question. The logistic values use the closed form
+w_j (x_j − E[x_j]), which matches `shap.LinearExplainer` to 1.8e-15. LightGBM uses TreeExplainer
+(additivity residual median 6.8e-08; 2 rows above 1e-3, excluded from agreement statistics) and, for
+comparison, path-dependent TreeSHAP.
+
+Findings (`outputs/shap/SHAP.md`): popularity features carry about 43% of attribution in both models.
+Logistic regression puts 31% on months since the last review, while LightGBM puts 21% on 3-month
+popularity and 18% on CF. These are correlated ways of saying "recently active", and the two models split
+the credit differently. Sign disagreements concentrate in correlated features (12-month popularity, item
+age, rating change, good-for-kids), where the linear model's coefficients compensate for collinearity.
+The models share 2 or 3 of their top-3 features for 79% of candidates. The choice between interventional
+and path-dependent value functions barely matters for LightGBM (global rank correlation 0.983).
+
 ## Raw data (`data/raw`, not in git)
 
 | File | Source | Size |
