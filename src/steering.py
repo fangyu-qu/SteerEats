@@ -130,3 +130,77 @@ def shapley_controls(case, theta, model, sim=None):
     total = rank_with(CONTROLS) - rank_with(())
     residual = total - sum(phi.values())
     return dict(phi=phi, total=total, residual=residual)
+
+
+# ---------------------------------------------------------------------------------------------
+# Outcome targets (interface decision 2026-11-20, "Option B"): the user states what the top 10
+# should look like; the controls are found per model. Mirrored by solveTargets in web/src/steer.js.
+# ---------------------------------------------------------------------------------------------
+LAM_MAX = 0.5
+SOLVER_GRIDS = {"alpha": [round(k * 0.02, 4) for k in range(51)],
+                "beta": [round(k * 0.02, 4) for k in range(51)],
+                "lam": [round(k * 0.01, 4) for k in range(51)]}
+NO_TARGET = {"km": None, "popularity": None, "cuisines": None}
+
+
+def top_k(case, theta, model, k=10):
+    """First k picks of the final ranking (equal to final_ranks' top k, without the full MMR)."""
+    z = np.asarray(case[model]["noncollab"]) + theta["w_h"] * np.asarray(case[model]["collab"])
+    s0 = minmax(z)
+    s1 = s0 - theta["alpha"] * np.asarray(case["distance_n"])
+    s2 = s1 - theta["beta"] * np.asarray(case["popularity_n"])
+    rel = minmax(s2)
+    lam = theta["lam"]
+    if lam == 0:
+        return order(rel)[:k]
+    cu, nt = np.asarray(case["cuisine"]), np.asarray(case["nta"])
+    max_sim = np.zeros(len(rel))
+    taken = np.zeros(len(rel), bool)
+    out = []
+    for _ in range(k):
+        v = (1 - lam) * rel - lam * max_sim
+        v[taken] = -np.inf
+        i = int(np.argmax(v))
+        out.append(i)
+        taken[i] = True
+        max_sim = np.maximum(max_sim, SIM_CUISINE * (cu == cu[i]) + SIM_NTA * (nt == nt[i]))
+    return np.array(out)
+
+
+def outcomes(case, top):
+    # Plain left-to-right sums, the same order as the browser, so threshold checks agree exactly.
+    km = sum(float(case["candidates"]["distance_km"][i]) for i in top) / len(top)
+    pop = sum(float(case["popularity_n"][i]) for i in top) / len(top)
+    return {"km": km, "popularity": pop,
+            "cuisines": len(set(np.asarray(case["cuisine"])[top].tolist()))}
+
+
+def _meets(o, targets, key):
+    t = targets.get(key)
+    if t is None:
+        return True
+    return o["cuisines"] >= t if key == "cuisines" else o[key] <= t
+
+
+def solve_targets(case, model, targets, w_h=1.0, passes=2):
+    """Smallest alpha / beta / lam (scanned upward on fixed grids, two coordinate passes) meeting
+    targets {"km": max mean km, "popularity": max mean percentile, "cuisines": min distinct groups};
+    None means no target. Returns theta, top-10 indices, outcomes and which targets are met."""
+    theta = {"w_h": w_h, "alpha": 0.0, "beta": 0.0, "lam": 0.0}
+    knobs = (("alpha", "km"), ("beta", "popularity"), ("lam", "cuisines"))
+    for _ in range(passes):
+        for key, target in knobs:
+            if targets.get(target) is None:
+                continue
+            grid = SOLVER_GRIDS[key]
+            chosen = grid[-1]
+            for v in grid:
+                theta[key] = v
+                if _meets(outcomes(case, top_k(case, theta, model)), targets, target):
+                    chosen = v
+                    break
+            theta[key] = chosen
+    top = top_k(case, theta, model)
+    o = outcomes(case, top)
+    return {"theta": theta, "top": [int(i) for i in top], "outcomes": o,
+            "met": {k: _meets(o, targets, k) for k in ("km", "popularity", "cuisines")}}
