@@ -161,8 +161,9 @@ mismatches, fixed-order residual 0, Shapley residual 4e-14.
 Each case holds restaurant facts at the 2020-08-01 cutoff, both models' raw scores, and SHAP per feature
 and per group. Three cases are scripted by rule (a home-borough-bound Manhattan user, the most
 popularity-dominated top 10, the largest disagreement between models); 21 are random. The shareable
-`demo_*.json` files carry no user id, no visit history and no future-visit flags, and round the home
-point to about 1 km; full copies stay in `data/clean/cases/`. In the sweep, diversity saturates at
+`demo_*.json` files carry no user id and no visit history, and round the home point to about 1 km.
+For the presentation they flag `later_liked` restaurants (reviewed with 4–5 stars during the test
+period), as the team decided on 2026-11-20. Full copies stay in `data/clean/cases/`. In the sweep, diversity saturates at
 `lam = 0.5` (10 cuisines and 10 neighborhoods in the top 10), and at `lam = 1` MMR ignores relevance, so the
 interface maps its slider to `lam` in [0, 0.5].
 

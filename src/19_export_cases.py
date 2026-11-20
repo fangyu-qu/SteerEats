@@ -16,7 +16,9 @@ at least one restaurant the user went on to like among the candidates.
 Two versions:
   data/clean/cases/case_XX.json      full (history list, future visits flagged), local only;
   web/public/data/cases/demo_XX.json  shareable: no user id, home rounded to ~1 km, no visit history
-                                       list, no future-visit flags.
+                                       list. Includes `later_liked` (restaurants the user reviewed with
+                                       4-5 stars during the test period) for the presentation, a choice
+                                       made by the team on 2026-11-20.
 Replay expectations (tests/replay_expected.json): final top-20 orders and residual checks for several
 control settings, computed by src/steering.py from the exported (rounded) demo files.
 """
@@ -162,7 +164,8 @@ def main():
                     relevant=[bool(i in c["rel"]) for i in ids])
         (LOCAL / f"case_{case_id}.json").write_text(json.dumps(full))
         demo = dict(case, id=f"demo_{case_id}",
-                    user=dict(case["user"], home_lat=round(p["lat"], 2), home_lon=round(p["lon"], 2)))
+                    user=dict(case["user"], home_lat=round(p["lat"], 2), home_lon=round(p["lon"], 2)),
+                    later_liked=full["relevant"])
         km_demo = haversine_km(round(p["lat"], 2), round(p["lon"], 2), data.lat[ids], data.lon[ids])
         demo["candidates"] = dict(cands, distance_km=r(km_demo))
         demo["distance_n"] = r(np.minimum(km_demo, steering.DIST_CAP_KM) / steering.DIST_CAP_KM)
