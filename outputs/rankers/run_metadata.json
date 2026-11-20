@@ -1,0 +1,150 @@
+{
+  "seed": 42,
+  "negative_ratio": 4,
+  "negatives": "half uniform, half popularity-matched",
+  "features": [
+    "cf_all",
+    "cf_liked",
+    "log_popularity",
+    "log_recent_popularity",
+    "log_popularity_3m",
+    "recent_share",
+    "shrunk_rating",
+    "shrunk_recent_rating",
+    "rating_change",
+    "months_since_last_review",
+    "log_item_age_months",
+    "recent_cf_interaction",
+    "log_distance_km",
+    "same_nta",
+    "same_borough",
+    "cuisine_affinity",
+    "price_gap",
+    "item_price_missing",
+    "user_price_unknown",
+    "is_chain",
+    "chain_affinity",
+    "log_user_history",
+    "attr_vegetarian_options",
+    "attr_halal",
+    "attr_late_night",
+    "attr_alcohol",
+    "attr_reservations",
+    "attr_good_for_groups",
+    "attr_good_for_kids",
+    "attrs_missing"
+  ],
+  "feature_groups": {
+    "Collaborative": [
+      "cf_all",
+      "cf_liked",
+      "recent_cf_interaction"
+    ],
+    "Popularity": [
+      "log_popularity",
+      "log_recent_popularity",
+      "log_popularity_3m",
+      "recent_share",
+      "months_since_last_review",
+      "log_item_age_months"
+    ],
+    "Rating": [
+      "shrunk_rating",
+      "shrunk_recent_rating",
+      "rating_change"
+    ],
+    "Location": [
+      "log_distance_km",
+      "same_nta",
+      "same_borough"
+    ],
+    "Taste": [
+      "cuisine_affinity",
+      "price_gap",
+      "item_price_missing",
+      "user_price_unknown",
+      "is_chain",
+      "chain_affinity",
+      "log_user_history"
+    ],
+    "Attributes": [
+      "attr_vegetarian_options",
+      "attr_halal",
+      "attr_late_night",
+      "attr_alcohol",
+      "attr_reservations",
+      "attr_good_for_groups",
+      "attr_good_for_kids",
+      "attrs_missing"
+    ]
+  },
+  "training_windows": [
+    {
+      "cutoff": "2018-07-01",
+      "end": "2019-01-01",
+      "rows": 204995,
+      "positives": 40999,
+      "history_reviews": 2371755
+    },
+    {
+      "cutoff": "2019-01-01",
+      "end": "2019-06-01",
+      "rows": 215675,
+      "positives": 43135,
+      "history_reviews": 3348628
+    },
+    {
+      "cutoff": "2019-06-01",
+      "end": "2019-12-01",
+      "rows": 254410,
+      "positives": 50882,
+      "history_reviews": 4218174
+    }
+  ],
+  "validation_examples": 179635,
+  "selection_users": 3000,
+  "selected": {
+    "logistic_C": 1.0,
+    "lightgbm_num_leaves": 63,
+    "lightgbm_rounds": 201
+  },
+  "lightgbm_params": {
+    "objective": "binary",
+    "learning_rate": 0.05,
+    "num_leaves": 63,
+    "min_child_samples": 100,
+    "feature_fraction": 0.8,
+    "bagging_fraction": 0.8,
+    "bagging_freq": 1,
+    "lambda_l2": 1.0,
+    "seed": 42,
+    "deterministic": true,
+    "force_row_wise": true,
+    "verbose": -1,
+    "num_threads": 0
+  },
+  "validation_audit": {
+    "no_history": 129,
+    "no_available_positive": 13,
+    "positives": 10257,
+    "cold_positives": 128,
+    "users": 2652
+  },
+  "test_audit": {
+    "no_history": 231,
+    "no_available_positive": 122,
+    "positives": 30807,
+    "cold_positives": 921,
+    "users": 8025
+  },
+  "test_start": "2020-08-01",
+  "validation_start": "2019-12-01",
+  "input_sha256": "7b944f81731004fa9ad251d0f52bac9c2659a59221f01e6ac8e6f94d5ce227b4",
+  "versions": {
+    "numpy": "2.5.5",
+    "pandas": "3.1.1",
+    "sklearn": "1.9.1",
+    "lightgbm": "4.7.0"
+  },
+  "runtime_seconds": 945
+}
