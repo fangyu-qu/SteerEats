@@ -132,6 +132,15 @@ age, rating change, good-for-kids), where the linear model's coefficients compen
 The models share 2 or 3 of their top-3 features for 79% of candidates. The choice between interventional
 and path-dependent value functions barely matters for LightGBM (global rank correlation 0.983).
 
+`python src/18_shap_explore.py` (~1.5 min) goes further (`outputs/shap/explore/EXPLORE.md`). Summing SHAP
+within feature groups raises per-candidate agreement from 0.685 to 0.771, so much of the feature-level
+disagreement is credit-splitting among correlated features. LightGBM's effects are mostly monotone; it
+departs from linear for cuisine affinity and rating (linear R² 0.46 and 0.42), flattens distance between 4
+and 12 km, and interacts popularity with CF, history size and distance. When a model misses a restaurant
+the user went on to like, the score gap to its 10th recommendation is mainly collaborative for logistic
+regression (44%) and popularity for LightGBM (44%); location explains 25% of logistic regression's
+misses. Global importance is stable across background samples (rank correlation ≥ 0.993).
+
 ## Raw data (`data/raw`, not in git)
 
 | File | Source | Size |
