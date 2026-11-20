@@ -141,6 +141,31 @@ the user went on to like, the score gap to its 10th recommendation is mainly col
 regression (44%) and popularity for LightGBM (44%); location explains 25% of logistic regression's
 misses. Global importance is stable across background samples (rank correlation ≥ 0.993).
 
+## Steering and change explanations (November 20, 2026)
+
+```bash
+python src/19_export_cases.py       # 24 steerable cases -> web/public/data/cases/ (+ full local copies)
+node tests/replay.mjs               # browser code must reproduce the Python rankings exactly
+python tests/check_steering.py      # each control moves the top 10 the intended way
+```
+
+`src/steering.py` (reference) and `web/src/steer.js` (browser) implement the same four controls over each
+user's 200 candidates. History weight `w_h` scales the Collaborative group's SHAP contribution. The
+distance (`alpha`) and popularity (`beta`) penalties apply to the min-max normalized score. MMR diversity
+(`lam`) works over cuisine group and neighborhood. Rank changes are logged in the fixed stage order
+model → distance → popularity → diversity, which telescopes to zero residual, and they are also
+attributed with exact Shapley values over the four controls (16 rankings), which removes the
+order-dependence. The replay test runs 336 settings (24 cases × 7 control settings × 2 models): 0
+mismatches, fixed-order residual 0, Shapley residual 4e-14.
+
+Each case holds restaurant facts at the 2020-08-01 cutoff, both models' raw scores, and SHAP per feature
+and per group. Three cases are scripted by rule (a home-borough-bound Manhattan user, the most
+popularity-dominated top 10, the largest disagreement between models); 21 are random. The shareable
+`demo_*.json` files carry no user id, no visit history and no future-visit flags, and round the home
+point to about 1 km; full copies stay in `data/clean/cases/`. In the sweep, diversity saturates at
+`lam = 0.5` (10 cuisines and 10 neighborhoods in the top 10), and at `lam = 1` MMR ignores relevance, so the
+interface maps its slider to `lam` in [0, 0.5].
+
 ## Raw data (`data/raw`, not in git)
 
 | File | Source | Size |

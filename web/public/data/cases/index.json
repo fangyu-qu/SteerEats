@@ -1,0 +1,173 @@
+{
+ "cutoff": "2020-08-01",
+ "cases": [
+  {
+   "id": "demo_01",
+   "file": "demo_01.json",
+   "story": "local_manhattan",
+   "home_borough": "Manhattan",
+   "history_size": 2
+  },
+  {
+   "id": "demo_02",
+   "file": "demo_02.json",
+   "story": "popularity_dominated",
+   "home_borough": "Manhattan",
+   "history_size": 19
+  },
+  {
+   "id": "demo_03",
+   "file": "demo_03.json",
+   "story": "models_disagree",
+   "home_borough": "Brooklyn",
+   "history_size": 16
+  },
+  {
+   "id": "demo_04",
+   "file": "demo_04.json",
+   "story": "random",
+   "home_borough": "Bronx",
+   "history_size": 21
+  },
+  {
+   "id": "demo_05",
+   "file": "demo_05.json",
+   "story": "random",
+   "home_borough": "Bronx",
+   "history_size": 11
+  },
+  {
+   "id": "demo_06",
+   "file": "demo_06.json",
+   "story": "random",
+   "home_borough": "Brooklyn",
+   "history_size": 12
+  },
+  {
+   "id": "demo_07",
+   "file": "demo_07.json",
+   "story": "random",
+   "home_borough": "Queens",
+   "history_size": 14
+  },
+  {
+   "id": "demo_08",
+   "file": "demo_08.json",
+   "story": "random",
+   "home_borough": "Manhattan",
+   "history_size": 9
+  },
+  {
+   "id": "demo_09",
+   "file": "demo_09.json",
+   "story": "random",
+   "home_borough": "Brooklyn",
+   "history_size": 12
+  },
+  {
+   "id": "demo_10",
+   "file": "demo_10.json",
+   "story": "random",
+   "home_borough": "Manhattan",
+   "history_size": 7
+  },
+  {
+   "id": "demo_11",
+   "file": "demo_11.json",
+   "story": "random",
+   "home_borough": "Manhattan",
+   "history_size": 9
+  },
+  {
+   "id": "demo_12",
+   "file": "demo_12.json",
+   "story": "random",
+   "home_borough": "Bronx",
+   "history_size": 5
+  },
+  {
+   "id": "demo_13",
+   "file": "demo_13.json",
+   "story": "random",
+   "home_borough": "Manhattan",
+   "history_size": 24
+  },
+  {
+   "id": "demo_14",
+   "file": "demo_14.json",
+   "story": "random",
+   "home_borough": "Brooklyn",
+   "history_size": 28
+  },
+  {
+   "id": "demo_15",
+   "file": "demo_15.json",
+   "story": "random",
+   "home_borough": "Bronx",
+   "history_size": 13
+  },
+  {
+   "id": "demo_16",
+   "file": "demo_16.json",
+   "story": "random",
+   "home_borough": "Manhattan",
+   "history_size": 23
+  },
+  {
+   "id": "demo_17",
+   "file": "demo_17.json",
+   "story": "random",
+   "home_borough": "Bronx",
+   "history_size": 8
+  },
+  {
+   "id": "demo_18",
+   "file": "demo_18.json",
+   "story": "random",
+   "home_borough": "Manhattan",
+   "history_size": 22
+  },
+  {
+   "id": "demo_19",
+   "file": "demo_19.json",
+   "story": "random",
+   "home_borough": "Queens",
+   "history_size": 2
+  },
+  {
+   "id": "demo_20",
+   "file": "demo_20.json",
+   "story": "random",
+   "home_borough": "Manhattan",
+   "history_size": 73
+  },
+  {
+   "id": "demo_21",
+   "file": "demo_21.json",
+   "story": "random",
+   "home_borough": "Bronx",
+   "history_size": 14
+  },
+  {
+   "id": "demo_22",
+   "file": "demo_22.json",
+   "story": "random",
+   "home_borough": "Queens",
+   "history_size": 3
+  },
+  {
+   "id": "demo_23",
+   "file": "demo_23.json",
+   "story": "random",
+   "home_borough": "Manhattan",
+   "history_size": 13
+  },
+  {
+   "id": "demo_24",
+   "file": "demo_24.json",
+   "story": "random",
+   "home_borough": "Manhattan",
+   "history_size": 3
+  }
+ ]
+}
