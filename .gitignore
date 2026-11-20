@@ -1,4 +1,4 @@
-data/
+/data/
 __pycache__/
 .DS_Store
 *.aux
@@ -29,3 +29,4 @@ outputs/rankers/smoke_*
 outputs/rankers_two_stage/smoke_*
 outputs/rankers_two_stage/seeds/*/test_per_user.csv
 outputs/**/*per_user.csv
+!web/public/data/cases/index.json
