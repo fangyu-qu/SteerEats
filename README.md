@@ -166,6 +166,26 @@ point to about 1 km; full copies stay in `data/clean/cases/`. In the sweep, dive
 `lam = 0.5` (10 cuisines and 10 neighborhoods in the top 10), and at `lam = 1` MMR ignores relevance, so the
 interface maps its slider to `lam` in [0, 0.5].
 
+## RQ1 steering trade-offs (November 20, 2026)
+
+```bash
+python src/20_rq1_sweep.py       # ~5 min: one-at-a-time sweep (8,025 users), joint grid + steering cost (2,000 users)
+python src/21_rq1_frontier.py    # matched-outcome comparison and Pareto frontiers
+```
+
+Results are in `outputs/rq1/RQ1.md`. Every control costs relevance, at different rates. A moderate history
+weight is almost free (w_h = 0.75 keeps 96–98% of NDCG@10), while removing the collaborative signal
+(w_h = 0) loses about 40%. Halving mean distance (alpha = 0.25 for logistic regression, 0.5 for LightGBM)
+keeps 86–87% of NDCG@10. Six cuisine groups in the top 10 cost 9–13%. Pushing popularity to the bottom
+quartile costs 42–55%. Compared at matched outcomes, the models mostly trade off alike, with two
+exceptions. Logistic regression keeps more relevance for very local (≤ 1 km: 82% vs 75%) and very niche
+lists (popularity ≤ 0.25: 58% vs 45%). LightGBM, whose default list already reaches farther (3.9 km vs
+2.6 km; 18% vs 8% outside the home borough), keeps far more when a quarter of the list must come from
+other boroughs (64% vs 21%). Steering cost: about 70% of candidate neighborhoods in the user's home
+borough can be brought into the top 10 on the grid, but only 33% (logistic regression) and 41% (LightGBM)
+of neighborhoods in other boroughs. The LightGBM history-weight results use path-dependent SHAP; on the
+300 step-17 users, interventional values give the same pattern (NDCG@10 at w_h = 0.5: 0.0414 vs 0.0420).
+
 ## Raw data (`data/raw`, not in git)
 
 | File | Source | Size |
