@@ -5,12 +5,13 @@ import { MODEL_NAMES, STEPS, esc, hueVar } from "./views/common.js";
 import { mountConsole, renderSolution } from "./views/console.js";
 import { highlightFlow, renderFlow } from "./views/flow.js";
 import { createMap } from "./views/map.js";
-import { highlightList, renderList } from "./views/list.js";
+import { highlightList, markSelected, renderList } from "./views/list.js";
+import { renderContrast, renderLedger } from "./views/ledger.js";
 
 const STORY = { local_manhattan: "Manhattan regular", popularity_dominated: "Popular-places fan", models_disagree: "Models disagree" };
 const state = {
   model: "lgbm", w_h: 1, kmDraft: 2, targets: { km: null, popularity: null, cuisines: null },
-  c: null, sim: null, caseId: null, hover: null, result: null,
+  c: null, sim: null, caseId: null, hover: null, result: null, selected: null, contrast: null,
 };
 const el = (id) => document.getElementById(id);
 
@@ -30,7 +31,8 @@ async function boot() {
   el("flow-key").innerHTML = [["model", "History weight moved it"], ["control", "Distance or popularity moved it"],
     ["diversity", "Variety moved it"], [null, "No change at that step"]]
     .map(([h, t]) => `<li><i style="background:${hueVar(h)}"></i>${t}</li>`).join("");
-  views.map = createMap(el("map"), { nta, boroughs }, { hover: setHover });
+  views.map = createMap(el("map"), { nta, boroughs }, { hover: setHover, select });
+  el("contrast-select").addEventListener("change", (e) => { state.contrast = e.target.value === "" ? null : +e.target.value; renderWhy(); });
   const fromHash = readHash(index);
   views.console = mountConsole(el("console"), state, () => schedule());
   setModel(state.model);
@@ -47,6 +49,7 @@ function readHash(index) {
   if (num("km") != null) { state.kmDraft = num("km"); state.targets.km = num("km"); }
   if (num("pop") != null) state.targets.popularity = num("pop");
   if (num("cui") != null) state.targets.cuisines = num("cui");
+  if (num("sel") != null) state.pendingSel = num("sel");
   const want = h.get("case");
   const hit = index.cases.find((x) => x.id === want || x.file === want);
   return hit ? hit.file : null;
@@ -60,6 +63,7 @@ function writeHash() {
   if (state.targets.km != null) h.set("km", state.targets.km);
   if (state.targets.popularity != null) h.set("pop", state.targets.popularity);
   if (state.targets.cuisines != null) h.set("cui", state.targets.cuisines);
+  if (state.selected != null) h.set("sel", state.selected);
   history.replaceState(null, "", "#" + h.toString());
 }
 
@@ -70,7 +74,9 @@ function setModel(m) {
 
 async function loadCase(file) {
   const c = await fetch(`/data/cases/${file}`).then((r) => r.json());
-  state.c = c; state.sim = similarity(c); state.caseId = file;
+  state.c = c; state.sim = similarity(c); state.caseId = file; state.contrast = null;
+  state.selected = state.pendingSel != null && state.pendingSel < c.cuisine.length ? state.pendingSel : null;
+  state.pendingSel = null;
   el("case-select").value = file;
   update({ refit: true });
 }
@@ -130,10 +136,39 @@ function update({ refit }) {
   renderSolution(el("console"), state, r);
   el("summary").innerHTML = summarize(r);
   const ranks = { default: r.before, model: r.st.S0, distance: r.st.S1, popularity: r.st.S2, diversity: r.st.S3 };
-  renderFlow(el("flow"), { c, ranks, stepNotes: stepNotes(r.theta) }, { hover: setHover });
-  renderList(el("list"), el("exited"), { c, top: r.top, before: r.before, after: r.after, phi: r.phi, liked, gone: r.gone }, { hover: setHover });
-  views.map.update({ c, top: r.top, gone: r.gone, liked, home: { lat: c.user.home_lat, lon: c.user.home_lon } }, { refit });
+  r.ranks = ranks;
+  if (state.selected == null) state.selected = r.top[0];
+  renderFlow(el("flow"), { c, ranks, stepNotes: stepNotes(r.theta), selected: state.selected }, { hover: setHover, select });
+  renderList(el("list"), el("exited"), { c, top: r.top, before: r.before, after: r.after, phi: r.phi, liked, gone: r.gone }, { hover: setHover, select });
+  views.map.update({ c, top: r.top, gone: r.gone, liked, selected: state.selected, home: { lat: c.user.home_lat, lon: c.user.home_lon } }, { refit });
+  markSelected([el("list"), el("exited")], state.selected);
+  renderWhy();
   setHover(state.hover);
+}
+
+// Default comparison: a place that left the list (best default rank first), else the next place down.
+function defaultContrast(r, a) {
+  if (r.gone.length) return r.gone.find((i) => i !== a) ?? null;
+  const pos = r.top.indexOf(a);
+  return pos >= 0 && pos < r.top.length - 1 ? r.top[pos + 1] : r.top[0] === a ? r.top[1] : r.top[0];
+}
+
+function renderWhy() {
+  const r = state.result, c = state.c, a = state.selected;
+  if (!r || a == null) return;
+  const options = [...r.top, ...r.gone].filter((i) => i !== a);
+  if (state.contrast == null || state.contrast === a || !options.includes(state.contrast)) state.contrast = defaultContrast(r, a);
+  el("contrast-select").innerHTML = options.map((i) =>
+    `<option value="${i}">${r.after[i] <= 10 ? `#${r.after[i]}` : "left"} · ${esc(c.candidates.name[i])}</option>`).join("");
+  if (state.contrast != null) el("contrast-select").value = state.contrast;
+  const ctx = { c, model: state.model, theta: r.theta, ranks: r.ranks };
+  renderLedger(el("ledger"), { ...ctx, i: a, notes: el("ledger-notes"), detail: el("ledger-detail") });
+  renderContrast(el("contrast"), { ...ctx, a, b: state.contrast, caption: el("contrast-caption") });
+}
+
+function select(i) {
+  state.selected = i;
+  update({ refit: false });
 }
 
 function setHover(id) {

@@ -36,6 +36,7 @@ export function createMap(root, geo, handlers) {
 
   function place() {
     if (!last) return;
+    const data = last;
     const { c, top, gone, home, liked } = last;
     overlay.selectAll("g.home").data([home]).join((e) => {
       const g = e.append("g").attr("class", "home");
@@ -53,7 +54,8 @@ export function createMap(root, geo, handlers) {
       return g;
     });
     goneSel.attr("data-id", (i) => i).attr("transform", (i) => `translate(${xy(c.candidates.lon[i], c.candidates.lat[i])})`)
-      .on("pointerenter", (_, i) => handlers.hover(i)).on("pointerleave", () => handlers.hover(null));
+      .on("pointerenter", (_, i) => handlers.hover(i)).on("pointerleave", () => handlers.hover(null))
+      .on("click", (_, i) => handlers.select(i));
     goneSel.select("title").text((i) => `${c.candidates.name[i]} (left the top 10)`);
     const pins = overlay.selectAll("g.pin").data(top, (i) => i).join((e) => {
       const g = e.append("g").attr("class", "pin");
@@ -64,7 +66,8 @@ export function createMap(root, geo, handlers) {
     });
     pins.attr("data-id", (i) => i).classed("liked", (i) => liked[i])
       .attr("transform", (i) => `translate(${xy(c.candidates.lon[i], c.candidates.lat[i])})`)
-      .on("pointerenter", (_, i) => handlers.hover(i)).on("pointerleave", () => handlers.hover(null));
+      .on("pointerenter", (_, i) => handlers.hover(i)).on("pointerleave", () => handlers.hover(null))
+      .on("click", (_, i) => handlers.select(i)).classed("selected", (i) => i === data.selected);
     pins.select("text").text((i) => top.indexOf(i) + 1);
     pins.select("title").text((i) => `${top.indexOf(i) + 1}. ${c.candidates.name[i]}, ${c.candidates.distance_km[i].toFixed(1)} km`);
     pins.raise();

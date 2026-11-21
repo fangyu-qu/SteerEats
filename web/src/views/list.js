@@ -41,9 +41,14 @@ export function renderList(listEl, exitedEl, data, handlers) {
     if (el.dataset.id == null) continue;
     el.addEventListener("pointerenter", () => handlers.hover(+el.dataset.id));
     el.addEventListener("pointerleave", () => handlers.hover(null));
+    el.addEventListener("click", () => handlers.select(+el.dataset.id));
   }
 }
 
 export function highlightList(roots, id) {
   for (const r of roots) for (const el of r.children) el.classList.toggle("hover", id != null && +el.dataset.id === id);
+}
+
+export function markSelected(roots, id) {
+  for (const r of roots) for (const el of r.children) el.classList.toggle("selected", id != null && +el.dataset.id === id);
 }
