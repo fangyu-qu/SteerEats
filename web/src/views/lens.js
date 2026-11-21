@@ -118,7 +118,7 @@ export function createLens(root, pop, handlers) {
   // --- Two lists ---------------------------------------------------------------------------------
   function renderSlope(c, ctx, ovNow, ovDefault) {
     const node = $("lens-slope");
-    const width = Math.max(node.clientWidth, 400), ROW = 22, TOP = 34, BELOW = 17;
+    const width = Math.max(node.clientWidth, 300), ROW = 22, TOP = 34, BELOW = 17;
     const nameW = Math.min(200, (width - 150) / 2), xl = nameW + 16, xr = width - nameW - 16;
     const chars = Math.floor(nameW / 6.7);
     const R = ctx.finals, n = c.cuisine.length;
@@ -135,7 +135,7 @@ export function createLens(root, pop, handlers) {
       .attr("role", "img").attr("aria-label", `Slope chart comparing the two models' top 10: ${ovNow} shared`);
     svg.selectAll("*").remove();
     const head = (x, anchor, m) => svg.append("text").attr("class", "lens-col").attr("x", x).attr("y", 14).attr("text-anchor", anchor)
-      .text(MODEL_NAMES[m] + (m === ctx.model ? " · shown above" : ""));
+      .text((width < 460 ? SHORT[m] : MODEL_NAMES[m]) + (m === ctx.model && width >= 460 ? " · shown above" : ""));
     head(xl + 4, "end", "lr"); head(xr - 4, "start", "lgbm");
     svg.append("line").attr("class", "lens-guide").attr("x1", 0).attr("x2", width).attr("y1", belowY - 4).attr("y2", belowY - 4);
     layers.slopeNote = svg.append("text").attr("class", "lens-note halo").attr("x", width / 2).attr("y", belowY - 8).attr("text-anchor", "middle").text("outside the top 10");
@@ -294,7 +294,7 @@ export function createLens(root, pop, handlers) {
   // --- Reliance dumbbell -------------------------------------------------------------------------
   function renderReliance(st) {
     const node = $("lens-rel");
-    const width = Math.max(node.clientWidth, 320), LABEL = 172, ROW = 34, TOP = 8, AX = 24;
+    const width = Math.max(node.clientWidth, 280), LABEL = width < 400 ? 140 : 172, ROW = 34, TOP = 8, AX = 24;
     const groups = Object.keys(st.shares.lr).sort((a, b) => Math.max(st.shares.lgbm[b], st.shares.lr[b]) - Math.max(st.shares.lgbm[a], st.shares.lr[a]));
     const P = pop.shap_groups.rows;
     const max = d3.max(groups, (g) => Math.max(st.shares.lr[g], st.shares.lgbm[g], P[g]?.lr ?? 0, P[g]?.lgbm ?? 0));
@@ -304,13 +304,14 @@ export function createLens(root, pop, handlers) {
       .attr("role", "img").attr("aria-label", "Share of SHAP attribution by feature group for each model");
     svg.selectAll("*").remove();
     svg.append("g").attr("class", "tk-axis").attr("transform", `translate(0,${TOP + groups.length * ROW})`)
-      .call(d3.axisBottom(x).ticks(5).tickSize(3).tickFormat(d3.format(".0%")));
+      .call(d3.axisBottom(x).ticks(width < 400 ? 3 : 5).tickSize(3).tickFormat(d3.format(".0%")));
     const mark = (g, m, cx, cy, filled, size) => (m === "lr"
       ? g.append("rect").attr("x", cx - size).attr("y", cy - size).attr("width", 2 * size).attr("height", 2 * size)
       : g.append("circle").attr("cx", cx).attr("cy", cy).attr("r", size + 0.6)).attr("class", filled ? "mk fill" : "mk hollow");
     groups.forEach((gname, r) => {
       const cy = TOP + (r + 0.5) * ROW, g = svg.append("g").attr("class", "rel-row");
-      g.append("text").attr("class", "lab").attr("x", 0).attr("y", cy - 4).attr("dy", "0.35em").text(GROUP_LABEL[gname] ?? gname);
+      const short = SHORT_GROUP[gname] ? SHORT_GROUP[gname][0].toUpperCase() + SHORT_GROUP[gname].slice(1) : gname;
+      g.append("text").attr("class", "lab").attr("x", 0).attr("y", cy - 4).attr("dy", "0.35em").text(width < 400 ? short : GROUP_LABEL[gname] ?? gname);
       const u = st.shares, p = P[gname];
       if (p) {
         g.append("line").attr("class", "db pop").attr("x1", x(p.lr)).attr("x2", x(p.lgbm)).attr("y1", cy + 7).attr("y2", cy + 7);
@@ -331,7 +332,7 @@ export function createLens(root, pop, handlers) {
     if (key === agreeKey) return;
     agreeKey = key;
     const node = $("lens-agree");
-    const width = Math.max(node.clientWidth, 330), COLS = 3, GAP = 14;
+    const width = Math.max(node.clientWidth, 280), COLS = width < 420 ? 2 : 3, GAP = 14;
     const cell = Math.min(200, (width - GAP * (COLS - 1)) / COLS), M = { l: 6, t: 20, r: 6, b: 6 };
     const groups = Object.keys(c.feature_groups);
     const rowsN = Math.ceil(groups.length / COLS);

@@ -6,6 +6,8 @@ const POP_OPTIONS = [[null, "No preference"], [0.5, "Average below the 50th perc
   [0.3, "Below the 30th percentile"], [0.2, "Below the 20th percentile"]];
 const CUI_OPTIONS = [[null, "No preference"], [5, "At least 5 cuisine groups"], [6, "At least 6"], [7, "At least 7"], [8, "At least 8"]];
 
+const ordinal = (n) => `${n}${[11, 12, 13].includes(n % 100) ? "th" : ({ 1: "st", 2: "nd", 3: "rd" })[n % 10] ?? "th"}`;
+
 export function mountConsole(root, state, onChangeRaw, actions = {}) {
   // Any console control leaves a setting loaded from the trade-off view and returns to outcome targets.
   const onChange = () => { state.thetaOverride = null; onChangeRaw(); };
@@ -77,7 +79,7 @@ export function renderSolution(root, state, result) {
   const badges = [];
   const badge = (ok, text) => `<span class="met ${ok ? "yes" : "no"}">${ok ? CHECK : CROSS}${text}</span>`;
   if (t.km != null) badges.push(badge(solved.met.km, `${solved.outcomes.km.toFixed(1)} km`));
-  if (t.popularity != null) badges.push(badge(solved.met.popularity, `${Math.round(solved.outcomes.popularity * 100)}th pct`));
+  if (t.popularity != null) badges.push(badge(solved.met.popularity, `${ordinal(Math.round(solved.outcomes.popularity * 100))} pct`));
   if (t.cuisines != null) badges.push(badge(solved.met.cuisines, `${solved.outcomes.cuisines} cuisines`));
   const th = solved.theta, o = other.theta;
   const fmt = (v) => v.toFixed(2);
@@ -88,10 +90,10 @@ export function renderSolution(root, state, result) {
     ${loaded ? `<div class="boost-chip"><span>Setting loaded from the trade-off view. Targets are paused; changing any control goes back to them.</span><button type="button" id="loaded-clear">Clear</button></div>`
       : badges.length ? `<div class="chips">${badges.join("")}</div>` : `<p>No targets set. The list is the model's own ranking${state.w_h < 1 ? ", with your history weight applied" : ""}.</p>`}
     <p>${MODEL_NAMES[state.model]} used</p>
-    <div class="chips"><span class="chip model">history ${fmt(th.w_h)}</span><span class="chip control">α ${fmt(th.alpha)}</span>
+    <div class="chips theta"><span class="chip model">history ${fmt(th.w_h)}</span><span class="chip control">α ${fmt(th.alpha)}</span>
       <span class="chip control">β ${fmt(th.beta)}</span><span class="chip diversity">λ ${fmt(th.lam / LAM_MAX)}</span></div>
-    ${boost ? `<p>Neighborhood boost <span class="mono">+${boost.amount.toFixed(2)}</span>; ${otherName} would need <span class="mono">+${boost.other.toFixed(2)}</span>.</p>` : ""}
+    ${boost ? `<p>Neighborhood boost <span class="num">+${boost.amount.toFixed(2)}</span>; ${otherName} would need <span class="num">+${boost.other.toFixed(2)}</span>.</p>` : ""}
     ${loaded ? `<p>${otherName} uses the same setting.</p>` : ""}
-    ${anyTarget ? `<p>${otherName} would need α <span class="mono">${fmt(o.alpha)}</span>, β <span class="mono">${fmt(o.beta)}</span>,
-      λ <span class="mono">${fmt(o.lam / LAM_MAX)}</span> for the same targets.</p>` : ""}`;
+    ${anyTarget ? `<p>${otherName} would need α <span class="num">${fmt(o.alpha)}</span>, β <span class="num">${fmt(o.beta)}</span>,
+      λ <span class="num">${fmt(o.lam / LAM_MAX)}</span> for the same targets.</p>` : ""}`;
 }
