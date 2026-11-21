@@ -32,6 +32,8 @@ max popularity percentile, min cuisine groups, selected candidate, boosted neigh
 
 ![Score ledger](../docs/img/ui-v0-ledger.png)
 
+![Console previews](../docs/img/ui-v0-console-previews.png)
+
 ![Trade-off space](../docs/img/ui-v0-tradeoff.png)
 
 ![Model lens](../docs/img/ui-v0-model-lens.png)
