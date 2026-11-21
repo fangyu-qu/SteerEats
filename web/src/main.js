@@ -1,6 +1,6 @@
 // SteerEats app: loads a demo case, solves the user's outcome targets per model, and renders the linked views.
 import * as d3 from "d3";
-import { LAM_MAX, THETA0, shapleyControls, similarity, solveTargets, stageLog, stages } from "./steer.js";
+import { LAM_MAX, THETA0, outcomes, shapleyControls, similarity, solveBoost, solveTargets, stageLog, stages, steeringCost } from "./steer.js";
 import { MODEL_NAMES, STEPS, esc, hueVar } from "./views/common.js";
 import { mountConsole, renderSolution } from "./views/console.js";
 import { highlightFlow, renderFlow } from "./views/flow.js";
@@ -12,12 +12,14 @@ const STORY = { local_manhattan: "Manhattan regular", popularity_dominated: "Pop
 const state = {
   model: "lgbm", w_h: 1, kmDraft: 2, targets: { km: null, popularity: null, cuisines: null },
   c: null, sim: null, caseId: null, hover: null, result: null, selected: null, contrast: null,
+  boostNta: null, costCache: new Map(), ntaCodes: [],
 };
 const el = (id) => document.getElementById(id);
 
 async function boot() {
-  const [index, nta, boroughs] = await Promise.all(["/data/cases/index.json", "/data/nyc_nta.geojson", "/data/nyc_boroughs.geojson"]
+  const [index, nta, boroughs, ntaCodes] = await Promise.all(["/data/cases/index.json", "/data/nyc_nta.geojson", "/data/nyc_boroughs.geojson", "/data/nta_index.json"]
     .map((u) => fetch(u).then((r) => { if (!r.ok) throw new Error(`Could not load ${u}`); return r.json(); })));
+  state.ntaCodes = ntaCodes;
   el("cutoff").textContent = `Snapshot ${index.cutoff} · test period Aug 2020 – Apr 2021`;
   const scripted = index.cases.filter((x) => x.story !== "random"), others = index.cases.filter((x) => x.story === "random");
   el("case-select").innerHTML =
@@ -28,13 +30,13 @@ async function boot() {
     setModel(b.dataset.model);
     update({ refit: true });
   }));
-  el("flow-key").innerHTML = [["model", "History weight moved it"], ["control", "Distance or popularity moved it"],
+  el("flow-key").innerHTML = [["model", "History weight moved it"], ["control", "Distance, popularity or neighborhood moved it"],
     ["diversity", "Variety moved it"], [null, "No change at that step"]]
     .map(([h, t]) => `<li><i style="background:${hueVar(h)}"></i>${t}</li>`).join("");
-  views.map = createMap(el("map"), { nta, boroughs }, { hover: setHover, select });
+  views.map = createMap(el("map"), { nta, boroughs, codes: ntaCodes }, { hover: setHover, select, boost: toggleBoost });
   el("contrast-select").addEventListener("change", (e) => { state.contrast = e.target.value === "" ? null : +e.target.value; renderWhy(); });
   const fromHash = readHash(index);
-  views.console = mountConsole(el("console"), state, () => schedule());
+  views.console = mountConsole(el("console"), state, () => schedule(), { clearBoost: () => toggleBoost(null) });
   setModel(state.model);
   window.addEventListener("resize", () => schedule(false));
   await loadCase(fromHash ?? index.cases[0].file);
@@ -50,6 +52,7 @@ function readHash(index) {
   if (num("pop") != null) state.targets.popularity = num("pop");
   if (num("cui") != null) state.targets.cuisines = num("cui");
   if (num("sel") != null) state.pendingSel = num("sel");
+  if (num("boost") != null) state.pendingBoost = num("boost");
   const want = h.get("case");
   const hit = index.cases.find((x) => x.id === want || x.file === want);
   return hit ? hit.file : null;
@@ -63,6 +66,7 @@ function writeHash() {
   if (state.targets.km != null) h.set("km", state.targets.km);
   if (state.targets.popularity != null) h.set("pop", state.targets.popularity);
   if (state.targets.cuisines != null) h.set("cui", state.targets.cuisines);
+  if (state.boostNta != null) h.set("boost", state.boostNta);
   if (state.selected != null) h.set("sel", state.selected);
   history.replaceState(null, "", "#" + h.toString());
 }
@@ -77,6 +81,8 @@ async function loadCase(file) {
   state.c = c; state.sim = similarity(c); state.caseId = file; state.contrast = null;
   state.selected = state.pendingSel != null && state.pendingSel < c.cuisine.length ? state.pendingSel : null;
   state.pendingSel = null;
+  state.boostNta = state.pendingBoost != null && c.nta.includes(state.pendingBoost) ? state.pendingBoost : null;
+  state.pendingBoost = null;
   el("case-select").value = file;
   update({ refit: true });
 }
@@ -92,7 +98,19 @@ function compute() {
   const { c, sim, model } = state;
   const solved = solveTargets(c, model, state.targets, state.w_h);
   const other = solveTargets(c, model === "lr" ? "lgbm" : "lr", state.targets, state.w_h);
-  const theta = solved.theta;
+  let theta = solved.theta, boost = null;
+  if (state.boostNta != null) {
+    const b = solveBoost(c, model, theta, state.boostNta);
+    const ob = solveBoost(c, model === "lr" ? "lgbm" : "lr", other.theta, state.boostNta);
+    theta = b.theta;
+    boost = { nta: state.boostNta, amount: b.theta.boost, reached: b.reached, other: ob.theta.boost, otherReached: ob.reached };
+    // targets are judged on the final list, after the boost
+    const fin = stages(c, theta, model, sim).S3;
+    const o = outcomes(c, [...Array(c.cuisine.length).keys()].filter((i) => fin[i] <= 10));
+    const t = state.targets;
+    solved.outcomes = o;
+    solved.met = { km: t.km == null || o.km <= t.km, popularity: t.popularity == null || o.popularity <= t.popularity, cuisines: t.cuisines == null || o.cuisines >= t.cuisines };
+  }
   const st = stages(c, theta, model, sim);
   const log = stageLog(c, theta, model, sim);
   const sh = shapleyControls(c, theta, model, sim);
@@ -101,7 +119,9 @@ function compute() {
   const top = [...Array(n).keys()].filter((i) => after[i] <= 10).sort((a, b) => after[a] - after[b]);
   const defTop = [...Array(n).keys()].filter((i) => before[i] <= 10).sort((a, b) => before[a] - before[b]);
   const gone = defTop.filter((i) => after[i] > 10);
-  return { solved, other, theta, st, before, after, top, defTop, gone, phi: sh.phi };
+  const key = `${state.caseId}|${model}`;
+  if (!state.costCache.has(key)) state.costCache.set(key, steeringCost(c, model));
+  return { solved, other, theta, boost, st, before, after, top, defTop, gone, phi: sh.phi, cost: state.costCache.get(key) };
 }
 
 function stepNotes(theta) {
@@ -111,6 +131,7 @@ function stepNotes(theta) {
     model: theta.w_h === 1 ? "off" : `${Math.round(theta.w_h * 100)}% weight`,
     distance: theta.alpha === 0 ? "off" : `α ${f(theta.alpha)}`,
     popularity: theta.beta === 0 ? "off" : `β ${f(theta.beta)}`,
+    boost: !theta.boost ? "off" : `+${f(theta.boost)}`,
     diversity: theta.lam === 0 ? "off" : `λ ${f(theta.lam / LAM_MAX)}`,
   };
 }
@@ -135,12 +156,13 @@ function update({ refit }) {
   const c = state.c, liked = c.later_liked || new Array(c.cuisine.length).fill(false);
   renderSolution(el("console"), state, r);
   el("summary").innerHTML = summarize(r);
-  const ranks = { default: r.before, model: r.st.S0, distance: r.st.S1, popularity: r.st.S2, diversity: r.st.S3 };
+  const ranks = { default: r.before, model: r.st.S0, distance: r.st.S1, popularity: r.st.S2, boost: r.st.S2b, diversity: r.st.S3 };
   r.ranks = ranks;
   if (state.selected == null) state.selected = r.top[0];
   renderFlow(el("flow"), { c, ranks, stepNotes: stepNotes(r.theta), selected: state.selected }, { hover: setHover, select });
   renderList(el("list"), el("exited"), { c, top: r.top, before: r.before, after: r.after, phi: r.phi, liked, gone: r.gone }, { hover: setHover, select });
-  views.map.update({ c, top: r.top, gone: r.gone, liked, selected: state.selected, home: { lat: c.user.home_lat, lon: c.user.home_lon } }, { refit });
+  views.map.update({ c, top: r.top, gone: r.gone, liked, selected: state.selected, cost: r.cost, boostNta: state.boostNta,
+    home: { lat: c.user.home_lat, lon: c.user.home_lon } }, { refit });
   markSelected([el("list"), el("exited")], state.selected);
   renderWhy();
   setHover(state.hover);
@@ -164,6 +186,12 @@ function renderWhy() {
   const ctx = { c, model: state.model, theta: r.theta, ranks: r.ranks };
   renderLedger(el("ledger"), { ...ctx, i: a, notes: el("ledger-notes"), detail: el("ledger-detail") });
   renderContrast(el("contrast"), { ...ctx, a, b: state.contrast, caption: el("contrast-caption") });
+}
+
+// Clicking a neighbourhood boosts it; clicking it again (or the console's remove button) turns the boost off.
+function toggleBoost(nta) {
+  state.boostNta = nta == null || state.boostNta === nta ? null : nta;
+  update({ refit: false });
 }
 
 function select(i) {

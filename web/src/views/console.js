@@ -6,7 +6,7 @@ const POP_OPTIONS = [[null, "No preference"], [0.5, "Average below the 50th perc
   [0.3, "Below the 30th percentile"], [0.2, "Below the 20th percentile"]];
 const CUI_OPTIONS = [[null, "No preference"], [5, "At least 5 cuisine groups"], [6, "At least 6"], [7, "At least 7"], [8, "At least 8"]];
 
-export function mountConsole(root, state, onChange) {
+export function mountConsole(root, state, onChange, actions = {}) {
   root.innerHTML = `
     <h2>Steer your recommendations</h2>
     <div class="ctl">
@@ -25,6 +25,11 @@ export function mountConsole(root, state, onChange) {
     </div>
     <div class="ctl">
       <label class="field" for="ctl-cui"><span>Cuisine variety</span><select id="ctl-cui">${CUI_OPTIONS.map(([v, t]) => `<option value="${v ?? ""}">${t}</option>`).join("")}</select></label>
+    </div>
+    <div class="ctl" id="boost-ctl">
+      <span class="ctl-top"><span class="lbl">Neighborhood</span></span>
+      <div id="boost-status"></div>
+      <p class="ctl-help">Click a neighborhood on the map to bring one of its places into your top 10. Shading shows how far your other controls would have to move to get there.</p>
     </div>
     <button class="btn-reset" type="button" id="ctl-reset">Reset to the model's list</button>
     <div class="solution" id="solution" aria-live="polite"></div>`;
@@ -47,14 +52,22 @@ export function mountConsole(root, state, onChange) {
   $("ctl-pop").addEventListener("change", (e) => { state.targets.popularity = e.target.value === "" ? null : +e.target.value; onChange(); });
   $("ctl-cui").addEventListener("change", (e) => { state.targets.cuisines = e.target.value === "" ? null : +e.target.value; onChange(); });
   $("ctl-reset").addEventListener("click", () => {
-    state.w_h = 1; state.targets = { km: null, popularity: null, cuisines: null }; sync(); onChange();
+    state.w_h = 1; state.targets = { km: null, popularity: null, cuisines: null }; state.boostNta = null; sync(); onChange();
   });
+  root.addEventListener("click", (e) => { if (e.target.closest("#boost-clear")) actions.clearBoost?.(); });
   sync();
   return { sync };
 }
 
 export function renderSolution(root, state, result) {
-  const { solved, other } = result;
+  const { solved, other, boost } = result;
+  const bs = root.querySelector("#boost-status");
+  if (!boost) bs.innerHTML = `<p class="ctl-help">None selected.</p>`;
+  else {
+    const i = state.c.nta.indexOf(boost.nta), name = state.c.candidates.nta_name[i];
+    bs.innerHTML = `<div class="boost-chip"><span><b>${name}</b><span class="mono"> +${boost.amount.toFixed(2)}</span>
+      ${boost.reached ? "" : " · not reached"}</span><button type="button" id="boost-clear" aria-label="Remove neighborhood boost">Remove</button></div>`;
+  }
   const t = state.targets;
   const badges = [];
   const badge = (ok, text) => `<span class="met ${ok ? "yes" : "no"}">${ok ? CHECK : CROSS}${text}</span>`;
@@ -70,6 +83,7 @@ export function renderSolution(root, state, result) {
     <p>${MODEL_NAMES[state.model]} used</p>
     <div class="chips"><span class="chip model">history ${fmt(th.w_h)}</span><span class="chip control">α ${fmt(th.alpha)}</span>
       <span class="chip control">β ${fmt(th.beta)}</span><span class="chip diversity">λ ${fmt(th.lam / LAM_MAX)}</span></div>
+    ${boost ? `<p>Neighborhood boost <span class="mono">+${boost.amount.toFixed(2)}</span>; ${otherName} would need <span class="mono">+${boost.other.toFixed(2)}</span>.</p>` : ""}
     ${anyTarget ? `<p>${otherName} would need α <span class="mono">${fmt(o.alpha)}</span>, β <span class="mono">${fmt(o.beta)}</span>,
       λ <span class="mono">${fmt(o.lam / LAM_MAX)}</span> for the same targets.</p>` : ""}`;
 }

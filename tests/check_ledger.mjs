@@ -17,7 +17,7 @@ for (const f of readdirSync(dir).filter((x) => x.startsWith("demo_"))) {
   const sim = similarity(c);
   for (const model of ["lr", "lgbm"]) for (const th of thetas) {
     const st = stages(c, th, model, sim);
-    const ranks = { default: st.S0, model: st.S0, distance: st.S1, popularity: st.S2, diversity: st.S3 };
+    const ranks = { default: st.S0, model: st.S0, distance: st.S1, popularity: st.S2, boost: st.S2b, diversity: st.S3 };
     const m = c[model], n = m.raw.length;
     let zmin = Infinity, zmax = -Infinity;
     for (let k = 0; k < n; k++) { const z = m.noncollab[k] + th.w_h * m.collab[k]; zmin = Math.min(zmin, z); zmax = Math.max(zmax, z); }

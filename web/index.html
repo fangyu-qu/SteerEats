@@ -44,9 +44,15 @@
         <section class="panel map-panel" aria-labelledby="map-title">
           <header class="panel-head">
             <h2 id="map-title">Where the list went</h2>
-            <p class="panel-sub">Your usual area with 1, 2 and 5 km rings. Numbers are your new top 10; hollow dots are places that left it.</p>
+            <p class="panel-sub">Your usual area with 1, 2 and 5 km rings. Numbers are your new top 10; hollow dots are places that left it. Shading is the steering cost: the smallest total change of your four controls that brings a place from that neighborhood into the top 10.</p>
           </header>
           <div id="map" class="map"></div>
+          <div class="cost-legend" aria-label="Steering cost legend">
+            <span class="cl-title">Steering cost to reach a neighborhood</span>
+            <span><i class="sw cost-0"></i>in your list now</span><span><i class="sw cost-1"></i>≤ 0.25</span>
+            <span><i class="sw cost-2"></i>≤ 0.5</span><span><i class="sw cost-3"></i>≤ 1</span><span><i class="sw cost-4"></i>&gt; 1</span>
+            <span><i class="sw unreach"></i>not reachable</span><span><i class="sw none"></i>no candidates</span>
+          </div>
         </section>
         <section class="panel list-panel" aria-labelledby="list-title">
           <header class="panel-head">

@@ -4,6 +4,7 @@ export const STEPS = [
   { key: "model", label: "History weight", hue: "model", control: "w_h" },
   { key: "distance", label: "Distance", hue: "control", control: "alpha" },
   { key: "popularity", label: "Popularity", hue: "control", control: "beta" },
+  { key: "boost", label: "Neighborhood", hue: "control", control: "boost" },
   { key: "diversity", label: "Variety", hue: "diversity", control: "lam" },
 ];
 export const CONTROL_INFO = {
@@ -11,6 +12,7 @@ export const CONTROL_INFO = {
   alpha: { name: "distance", hue: "control" },
   beta: { name: "popularity", hue: "control" },
   lam: { name: "variety", hue: "diversity" },
+  boost: { name: "neighborhood", hue: "control" },
 };
 export const MODEL_NAMES = { lr: "Logistic regression", lgbm: "LightGBM" };
 export const hueVar = (hue) => (hue ? `var(--${hue})` : "var(--track)");

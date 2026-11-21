@@ -28,7 +28,8 @@ from math import factorial
 import numpy as np
 
 CONTROLS = ("w_h", "alpha", "beta", "lam")
-THETA0 = {"w_h": 1.0, "alpha": 0.0, "beta": 0.0, "lam": 0.0}
+THETA0 = {"w_h": 1.0, "alpha": 0.0, "beta": 0.0, "lam": 0.0, "boost": 0.0, "boost_nta": -1}
+BOOST_GRID = [round(k * 0.02, 4) for k in range(101)]   # neighbourhood boost, normalized-score units
 DIST_CAP_KM = 15.0
 SIM_CUISINE, SIM_NTA = 0.5, 0.5
 
@@ -73,6 +74,13 @@ def mmr_order(rel, sim, lam):
     return np.array(chosen)
 
 
+def boost_vector(case, theta):
+    """Neighbourhood boost (map control, 2026-11-20): +boost for candidates in neighbourhood boost_nta."""
+    b, n = theta.get("boost", 0.0), theta.get("boost_nta", -1)
+    nta = np.asarray(case["nta"])
+    return b * (nta == n) if b and n >= 0 else np.zeros(len(nta))
+
+
 def stages(case, theta, model, sim=None):
     """Scores and ranks at each stage for one model ("lr" or "lgbm")."""
     sim = similarity(case) if sim is None else sim
@@ -80,9 +88,11 @@ def stages(case, theta, model, sim=None):
     s0 = minmax(z)
     s1 = s0 - theta["alpha"] * np.asarray(case["distance_n"])
     s2 = s1 - theta["beta"] * np.asarray(case["popularity_n"])
-    o3 = mmr_order(minmax(s2), sim, theta["lam"])
+    s2b = s2 + boost_vector(case, theta)
+    o3 = mmr_order(minmax(s2b), sim, theta["lam"])
     return {"S0": ranks_from_order(order(s0)), "S1": ranks_from_order(order(s1)),
-            "S2": ranks_from_order(order(s2)), "S3": ranks_from_order(o3), "score": {"S0": s0, "S1": s1, "S2": s2}}
+            "S2": ranks_from_order(order(s2)), "S2b": ranks_from_order(order(s2b)), "S3": ranks_from_order(o3),
+            "score": {"S0": s0, "S1": s1, "S2": s2, "S2b": s2b}}
 
 
 def final_ranks(case, theta, model, sim=None):
@@ -99,16 +109,18 @@ def stage_log(case, theta, model, sim=None):
     before = final_ranks(case, THETA0, model, sim)
     st = stages(case, theta, model, sim)
     steps = {"model": st["S0"] - before, "distance": st["S1"] - st["S0"],
-             "popularity": st["S2"] - st["S1"], "diversity": st["S3"] - st["S2"]}
+             "popularity": st["S2"] - st["S1"], "boost": st["S2b"] - st["S2"], "diversity": st["S3"] - st["S2b"]}
     total = st["S3"] - before
     residual = total - sum(steps.values())
     return dict(before=before, after=st["S3"], steps=steps, total=total, residual=residual)
 
 
 def shapley_controls(case, theta, model, sim=None):
-    """Exact Shapley attribution of each candidate's final-rank change to the four controls."""
+    """Exact Shapley attribution of each candidate's final-rank change to the controls
+    (the four sliders, plus the neighbourhood boost when it is on)."""
     sim = similarity(case) if sim is None else sim
-    n = len(CONTROLS)
+    controls = CONTROLS + (("boost",) if theta.get("boost", 0) else ())
+    n = len(controls)
     cache = {}
 
     def rank_with(subset):
@@ -117,17 +129,19 @@ def shapley_controls(case, theta, model, sim=None):
             t = dict(THETA0)
             for c in key:
                 t[c] = theta[c]
+                if c == "boost":
+                    t["boost_nta"] = theta["boost_nta"]
             cache[key] = final_ranks(case, t, model, sim).astype(float)
         return cache[key]
 
-    phi = {c: np.zeros(len(case["cuisine"])) for c in CONTROLS}
-    for c in CONTROLS:
-        others = [o for o in CONTROLS if o != c]
+    phi = {c: np.zeros(len(case["cuisine"])) for c in controls}
+    for c in controls:
+        others = [o for o in controls if o != c]
         for k in range(n):
             w = factorial(k) * factorial(n - k - 1) / factorial(n)
             for s in combinations(others, k):
                 phi[c] += w * (rank_with(s + (c,)) - rank_with(s))
-    total = rank_with(CONTROLS) - rank_with(())
+    total = rank_with(controls) - rank_with(())
     residual = total - sum(phi.values())
     return dict(phi=phi, total=total, residual=residual)
 
@@ -148,7 +162,7 @@ def top_k(case, theta, model, k=10):
     z = np.asarray(case[model]["noncollab"]) + theta["w_h"] * np.asarray(case[model]["collab"])
     s0 = minmax(z)
     s1 = s0 - theta["alpha"] * np.asarray(case["distance_n"])
-    s2 = s1 - theta["beta"] * np.asarray(case["popularity_n"])
+    s2 = s1 - theta["beta"] * np.asarray(case["popularity_n"]) + boost_vector(case, theta)
     rel = minmax(s2)
     lam = theta["lam"]
     if lam == 0:
@@ -186,7 +200,7 @@ def solve_targets(case, model, targets, w_h=1.0, passes=2):
     """Smallest alpha / beta / lam (scanned upward on fixed grids, two coordinate passes) meeting
     targets {"km": max mean km, "popularity": max mean percentile, "cuisines": min distinct groups};
     None means no target. Returns theta, top-10 indices, outcomes and which targets are met."""
-    theta = {"w_h": w_h, "alpha": 0.0, "beta": 0.0, "lam": 0.0}
+    theta = dict(THETA0, w_h=w_h)
     knobs = (("alpha", "km"), ("beta", "popularity"), ("lam", "cuisines"))
     for _ in range(passes):
         for key, target in knobs:
@@ -204,3 +218,16 @@ def solve_targets(case, model, targets, w_h=1.0, passes=2):
     o = outcomes(case, top)
     return {"theta": theta, "top": [int(i) for i in top], "outcomes": o,
             "met": {k: _meets(o, targets, k) for k in ("km", "popularity", "cuisines")}}
+
+
+def solve_boost(case, model, theta, nta):
+    """Smallest boost on BOOST_GRID that puts a restaurant from neighbourhood `nta` into the top 10, given
+    the other controls in theta. Returns (theta with boost, reached?)."""
+    t = dict(theta, boost_nta=int(nta))
+    codes = np.asarray(case["nta"])
+    for b in BOOST_GRID:
+        t["boost"] = b
+        if np.any(codes[top_k(case, t, model)] == nta):
+            return t, True
+    t["boost"] = BOOST_GRID[-1]
+    return t, False

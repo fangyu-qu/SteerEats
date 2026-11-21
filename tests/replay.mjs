@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { finalRanks, similarity, stageLog, shapleyControls, solveTargets } from "../web/src/steer.js";
+import { finalRanks, similarity, stageLog, shapleyControls, solveTargets, solveBoost } from "../web/src/steer.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const expected = JSON.parse(readFileSync(join(root, "tests", "replay_expected.json"), "utf8"));
@@ -19,6 +19,13 @@ for (const [id, block] of Object.entries(expected)) {
       res.top.every((v, i) => v === s.top[i]) && Object.keys(s.met).every((k) => res.met[k] === s.met[k]);
     solverChecks++;
     if (!ok) { solverFailures++; console.log(`SOLVER MISMATCH ${id} ${s.model} ${JSON.stringify(s.targets)}`); }
+  }
+  for (const bst of block.boost) {
+    const res = solveBoost(c, bst.model, bst.base, bst.nta);
+    solverChecks++;
+    if (res.theta.boost !== bst.boost || res.reached !== bst.reached) {
+      solverFailures++; console.log(`BOOST MISMATCH ${id} ${bst.model} ${res.theta.boost} vs ${bst.boost}`);
+    }
   }
   for (const run of block.thetas) {
     const ranks = finalRanks(c, run.theta, run.model, sim);
@@ -38,5 +45,5 @@ for (const [id, block] of Object.entries(expected)) {
 }
 console.log(`${checks} replays over ${Object.keys(expected).length} cases: ${failures} failures; ` +
             `max fixed-order residual ${worstStage}; max Shapley residual ${worstShapley.toExponential(1)}`);
-console.log(`${solverChecks} outcome-target solves: ${solverFailures} mismatches`);
+console.log(`${solverChecks} outcome-target and boost solves: ${solverFailures} mismatches`);
 process.exit(failures || solverFailures ? 1 : 0);
