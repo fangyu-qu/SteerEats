@@ -1,12 +1,13 @@
 // SteerEats app: loads a demo case, solves the user's outcome targets per model, and renders the linked views.
 import * as d3 from "d3";
-import { LAM_MAX, THETA0, outcomes, shapleyControls, similarity, solveBoost, solveTargets, stageLog, stages, steeringCost } from "./steer.js";
+import { LAM_MAX, THETA0, finalRanks, outcomes, shapleyControls, similarity, solveBoost, solveTargets, stageLog, stages, steeringCost } from "./steer.js";
 import { MODEL_NAMES, STEPS, esc, hueVar } from "./views/common.js";
 import { mountConsole, renderSolution } from "./views/console.js";
 import { highlightFlow, renderFlow } from "./views/flow.js";
 import { createMap } from "./views/map.js";
 import { highlightList, markSelected, renderList } from "./views/list.js";
 import { renderContrast, renderLedger } from "./views/ledger.js";
+import { createLens } from "./views/lens.js";
 
 const STORY = { local_manhattan: "Manhattan regular", popularity_dominated: "Popular-places fan", models_disagree: "Models disagree" };
 const state = {
@@ -17,7 +18,7 @@ const state = {
 const el = (id) => document.getElementById(id);
 
 async function boot() {
-  const [index, nta, boroughs, ntaCodes] = await Promise.all(["/data/cases/index.json", "/data/nyc_nta.geojson", "/data/nyc_boroughs.geojson", "/data/nta_index.json"]
+  const [index, nta, boroughs, ntaCodes, lensPop] = await Promise.all(["/data/cases/index.json", "/data/nyc_nta.geojson", "/data/nyc_boroughs.geojson", "/data/nta_index.json", "/data/model_lens.json"]
     .map((u) => fetch(u).then((r) => { if (!r.ok) throw new Error(`Could not load ${u}`); return r.json(); })));
   state.ntaCodes = ntaCodes;
   el("cutoff").textContent = `Snapshot ${index.cutoff} · test period Aug 2020 – Apr 2021`;
@@ -34,6 +35,7 @@ async function boot() {
     ["diversity", "Variety moved it"], [null, "No change at that step"]]
     .map(([h, t]) => `<li><i style="background:${hueVar(h)}"></i>${t}</li>`).join("");
   views.map = createMap(el("map"), { nta, boroughs, codes: ntaCodes }, { hover: setHover, select, boost: toggleBoost });
+  views.lens = createLens(el("lens"), lensPop, { hover: setHover, select });
   el("contrast-select").addEventListener("change", (e) => { state.contrast = e.target.value === "" ? null : +e.target.value; renderWhy(); });
   const fromHash = readHash(index);
   views.console = mountConsole(el("console"), state, () => schedule(), { clearBoost: () => toggleBoost(null) });
@@ -96,13 +98,14 @@ function schedule(refit = true) {
 
 function compute() {
   const { c, sim, model } = state;
+  const otherModel = model === "lr" ? "lgbm" : "lr";
   const solved = solveTargets(c, model, state.targets, state.w_h);
-  const other = solveTargets(c, model === "lr" ? "lgbm" : "lr", state.targets, state.w_h);
-  let theta = solved.theta, boost = null;
+  const other = solveTargets(c, otherModel, state.targets, state.w_h);
+  let theta = solved.theta, otherTheta = other.theta, boost = null;
   if (state.boostNta != null) {
     const b = solveBoost(c, model, theta, state.boostNta);
-    const ob = solveBoost(c, model === "lr" ? "lgbm" : "lr", other.theta, state.boostNta);
-    theta = b.theta;
+    const ob = solveBoost(c, otherModel, other.theta, state.boostNta);
+    theta = b.theta; otherTheta = ob.theta;
     boost = { nta: state.boostNta, amount: b.theta.boost, reached: b.reached, other: ob.theta.boost, otherReached: ob.reached };
     // targets are judged on the final list, after the boost
     const fin = stages(c, theta, model, sim).S3;
@@ -121,7 +124,13 @@ function compute() {
   const gone = defTop.filter((i) => after[i] > 10);
   const key = `${state.caseId}|${model}`;
   if (!state.costCache.has(key)) state.costCache.set(key, steeringCost(c, model));
-  return { solved, other, theta, boost, st, before, after, top, defTop, gone, phi: sh.phi, cost: state.costCache.get(key) };
+  // Model lens: both models' final lists under the same targets, and their own (unsteered) lists.
+  const dkey = `${state.caseId}|defaults`;
+  if (!state.costCache.has(dkey)) state.costCache.set(dkey, { lr: finalRanks(c, THETA0, "lr", sim), lgbm: finalRanks(c, THETA0, "lgbm", sim) });
+  const finals = { [model]: after, [otherModel]: finalRanks(c, otherTheta, otherModel, sim) };
+  const off = (t) => t.w_h !== 1 || t.alpha || t.beta || t.lam || t.boost;
+  const lens = { finals, defaults: state.costCache.get(dkey), steered: off(theta) || off(otherTheta) };
+  return { solved, other, theta, boost, st, before, after, top, defTop, gone, phi: sh.phi, cost: state.costCache.get(key), lens };
 }
 
 function stepNotes(theta) {
@@ -165,6 +174,7 @@ function update({ refit }) {
     home: { lat: c.user.home_lat, lon: c.user.home_lon } }, { refit });
   markSelected([el("list"), el("exited")], state.selected);
   renderWhy();
+  views.lens.update({ c, model: state.model, selected: state.selected, ...r.lens });
   setHover(state.hover);
 }
 
@@ -204,6 +214,7 @@ function setHover(id) {
   highlightFlow(el("flow"), id);
   highlightList([el("list"), el("exited")], id);
   views.map.highlight(id);
+  views.lens?.highlight(id);
 }
 
 boot().catch((err) => {
