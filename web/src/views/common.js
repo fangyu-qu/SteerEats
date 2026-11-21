@@ -1,10 +1,10 @@
 // Shared vocabulary for every view: steering steps, the controls behind them, and their effect hues.
 export const STEPS = [
-  { key: "default", label: "Model default", hue: null },
-  { key: "model", label: "History weight", hue: "model", control: "w_h" },
+  { key: "default", label: "Model default", short: "Default", hue: null },
+  { key: "model", label: "History weight", short: "History", hue: "model", control: "w_h" },
   { key: "distance", label: "Distance", hue: "control", control: "alpha" },
   { key: "popularity", label: "Popularity", hue: "control", control: "beta" },
-  { key: "boost", label: "Neighborhood", hue: "control", control: "boost" },
+  { key: "boost", label: "Neighborhood", short: "Boost", hue: "control", control: "boost" },
   { key: "diversity", label: "Variety", hue: "diversity", control: "lam" },
 ];
 export const CONTROL_INFO = {

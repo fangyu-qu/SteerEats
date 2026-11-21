@@ -84,7 +84,9 @@ export function createEvaluation(root, ev) {
   // --- Accuracy dot plot ------------------------------------------------------------------------
   function renderAcc() {
     const node = $("ev-acc");
-    const width = Math.max(node.clientWidth, 400), LABEL = 178, VAL = 178, ROW = 30, TOP = 6, AX = 24;
+    // narrow (phone): short names, the value under the name instead of a value column
+    const width = Math.max(node.clientWidth, 280), narrow = width < 520;
+    const LABEL = narrow ? 118 : 178, VAL = narrow ? 12 : 178, ROW = narrow ? 42 : 30, TOP = 6, AX = 24;
     const models = ORDER.filter((m) => ev.rankers[m]?.[metric]);
     const R = (m) => ev.rankers[m][metric];
     const x = d3.scaleLinear([0, d3.max(models, (m) => R(m).hi) * 1.05], [LABEL, width - VAL]).nice();
@@ -98,13 +100,13 @@ export function createEvaluation(root, ev) {
     svg.append("g").attr("class", "tk-axis").attr("transform", `translate(0,${TOP + models.length * ROW})`)
       .call(d3.axisBottom(x).ticks(4).tickSize(3).tickFormat(d3.format(".2f")));
     models.forEach((m, k) => {
-      const cy = TOP + (k + 0.5) * ROW, r = R(m), kind = KIND(m), g = svg.append("g").attr("class", `acc ${kind}`);
+      const cy = TOP + (k + 0.5) * ROW - (narrow ? 6 : 0), r = R(m), kind = KIND(m), g = svg.append("g").attr("class", `acc ${kind}`);
       g.append("line").attr("class", "lens-guide").attr("x1", LABEL).attr("x2", width - VAL).attr("y1", cy).attr("y2", cy);
-      g.append("text").attr("class", "lab").attr("x", 0).attr("y", cy).attr("dy", "0.35em").text(NAME[m]);
+      g.append("text").attr("class", "lab").attr("x", 0).attr("y", cy).attr("dy", "0.35em").text(narrow ? SHORT[m] ?? NAME[m] : NAME[m]);
       g.append("line").attr("class", "ci").attr("x1", x(r.lo)).attr("x2", x(r.hi)).attr("y1", cy).attr("y2", cy);
       for (const v of [r.lo, r.hi]) g.append("line").attr("class", "ci").attr("x1", x(v)).attr("x2", x(v)).attr("y1", cy - 4).attr("y2", cy + 4);
       g.append("circle").attr("cx", x(r.mean)).attr("cy", cy).attr("r", 5).attr("class", "pt");
-      g.append("text").attr("class", "val").attr("x", width - VAL + 10).attr("y", cy).attr("dy", "0.35em")
+      g.append("text").attr("class", narrow ? "sub mono-sub" : "val").attr("x", narrow ? 0 : width - VAL + 10).attr("y", narrow ? cy + 15 : cy).attr("dy", "0.35em")
         .text(`${f4(r.mean)} [${f4(r.lo)}, ${f4(r.hi)}]`);
       g.append("rect").attr("class", "hit").attr("x", 0).attr("y", cy - ROW / 2).attr("width", width).attr("height", ROW)
         .on("pointermove", (e) => showTip(e, `<b>${esc(NAME[m])}</b><br>${METRIC[metric]} <span class="mono">${f4(r.mean)}</span><br>95% interval <span class="mono">${f4(r.lo)} to ${f4(r.hi)}</span>`
@@ -116,7 +118,8 @@ export function createEvaluation(root, ev) {
   // --- Paired differences ------------------------------------------------------------------------
   function renderDiff() {
     const node = $("ev-diff");
-    const width = Math.max(node.clientWidth, 360), LABEL = 178, VAL = 150, ROW = 40, TOP = 6, AX = 24;
+    const width = Math.max(node.clientWidth, 280), narrow = width < 520;
+    const LABEL = narrow ? 150 : 178, VAL = narrow ? 12 : 150, ROW = narrow ? 56 : 40, TOP = 6, AX = 24;
     const rows = ev.paired.filter((r) => r.metric === metric);
     const m = d3.max(rows, (r) => Math.max(Math.abs(r.lo), Math.abs(r.hi))) * 1.1;
     const x = d3.scaleLinear([-m, m], [LABEL, width - VAL]).nice();
@@ -125,7 +128,7 @@ export function createEvaluation(root, ev) {
       .attr("role", "img").attr("aria-label", `Paired ${METRIC[metric]} differences`);
     svg.selectAll("*").remove();
     svg.append("g").attr("class", "tk-axis").attr("transform", `translate(0,${TOP + rows.length * ROW})`)
-      .call(d3.axisBottom(x).ticks(3).tickSize(3).tickFormat((v) => (v > 0 ? "+" : v < 0 ? "−" : "") + d3.format(".3f")(Math.abs(v))));
+      .call(d3.axisBottom(x).ticks(narrow ? 2 : 3).tickSize(3).tickFormat((v) => (v > 0 ? "+" : v < 0 ? "−" : "") + d3.format(".3f")(Math.abs(v))));
     svg.append("line").attr("class", "zero").attr("x1", x(0)).attr("x2", x(0)).attr("y1", TOP).attr("y2", TOP + rows.length * ROW);
     rows.forEach((r, k) => {
       const cy = TOP + (k + 0.5) * ROW - 4, g = svg.append("g").attr("class", "acc learned");
@@ -136,9 +139,12 @@ export function createEvaluation(root, ev) {
       g.append("line").attr("class", "ci").attr("x1", x(r.lo)).attr("x2", x(r.hi)).attr("y1", cy).attr("y2", cy);
       for (const v of [r.lo, r.hi]) g.append("line").attr("class", "ci").attr("x1", x(v)).attr("x2", x(v)).attr("y1", cy - 4).attr("y2", cy + 4);
       g.append("circle").attr("cx", x(r.mean_diff)).attr("cy", cy).attr("r", 5).attr("class", sig ? "pt" : "pt hollow");
-      g.append("text").attr("class", "val").attr("x", width - VAL + 10).attr("y", cy).attr("dy", "0.35em")
-        .text(`${r.mean_diff >= 0 ? "+" : "−"}${pctf(Math.abs(r.relative))} · p ${r.wilcoxon_p < 0.001 ? "< 0.001" : r.wilcoxon_p.toFixed(3)}`);
-      g.append("text").attr("class", "sub").attr("x", width - VAL + 10).attr("y", cy + 15).attr("dy", "0.35em").text(sig ? "interval excludes 0" : "no detectable difference");
+      const stat = `${r.mean_diff >= 0 ? "+" : "−"}${pctf(Math.abs(r.relative))} · p ${r.wilcoxon_p < 0.001 ? "< 0.001" : r.wilcoxon_p.toFixed(3)}`;
+      if (narrow) g.append("text").attr("class", "sub").attr("x", 0).attr("y", cy + 30).attr("dy", "0.35em").text(`${stat} · ${sig ? "excludes 0" : "no detectable difference"}`);
+      else {
+        g.append("text").attr("class", "val").attr("x", width - VAL + 10).attr("y", cy).attr("dy", "0.35em").text(stat);
+        g.append("text").attr("class", "sub").attr("x", width - VAL + 10).attr("y", cy + 15).attr("dy", "0.35em").text(sig ? "interval excludes 0" : "no detectable difference");
+      }
       g.append("rect").attr("class", "hit").attr("x", 0).attr("y", cy - ROW / 2 + 4).attr("width", width).attr("height", ROW)
         .on("pointermove", (e) => showTip(e, `<b>${esc(NAME[r.model_a] ?? r.model_a)} − ${esc(NAME[r.model_b] ?? r.model_b)}</b><br>`
           + `mean difference <span class="mono">${r.mean_diff >= 0 ? "+" : "−"}${Math.abs(r.mean_diff).toFixed(5)}</span><br>`
@@ -150,7 +156,7 @@ export function createEvaluation(root, ev) {
   // --- Over time ---------------------------------------------------------------------------------
   function renderTime() {
     const node = $("ev-time");
-    const width = Math.max(node.clientWidth, 360), M = { l: 46, r: 96, t: 26, b: 26 }, H = 230;
+    const width = Math.max(node.clientWidth, 280), narrow = width < 520, M = { l: 46, r: narrow ? 78 : 96, t: 26, b: 26 }, H = 230;
     const P = ev.periods, models = ["LightGBM LambdaRank (supplementary)", "LightGBM", "Logistic regression", "Item-CF"];
     const x = d3.scalePoint(P.map((p) => p.label), [M.l, width - M.r]).padding(0.3);
     const vals = P.flatMap((p) => models.map((m) => p[metric][m]).filter((v) => v != null));
@@ -159,11 +165,11 @@ export function createEvaluation(root, ev) {
       .attr("role", "img").attr("aria-label", `${METRIC[metric]} by period for each ranker`);
     svg.selectAll("*").remove();
     svg.append("g").attr("class", "tk-axis").attr("transform", `translate(${M.l},0)`).call(d3.axisLeft(y).ticks(5).tickSize(3).tickFormat(d3.format(".3f")));
-    svg.append("g").attr("class", "tk-axis").attr("transform", `translate(0,${H - M.b})`).call(d3.axisBottom(x).tickSize(3));
+    svg.append("g").attr("class", "tk-axis").attr("transform", `translate(0,${H - M.b})`).call(d3.axisBottom(x).tickSize(3).tickFormat((v) => (narrow ? v.split("–")[0] : v)));
     const split = (x(P[1].label) + x(P[2].label)) / 2;
     svg.append("line").attr("class", "lens-guide").attr("x1", split).attr("x2", split).attr("y1", 8).attr("y2", H - M.b);
-    svg.append("text").attr("class", "lens-note").attr("x", split - 6).attr("y", 12).attr("text-anchor", "end").text("validation · train-only models");
-    svg.append("text").attr("class", "lens-note").attr("x", split + 6).attr("y", 12).text("test · final models");
+    svg.append("text").attr("class", "lens-note").attr("x", split - 6).attr("y", 12).attr("text-anchor", "end").text(narrow ? "validation" : "validation · train-only models");
+    svg.append("text").attr("class", "lens-note").attr("x", split + 6).attr("y", 12).text(narrow ? "test" : "test · final models");
     const ends = [];
     for (const m of models) {
       const cls = KIND(m) === "supp" ? "supp" : KIND(m) === "learned" ? "learned" : "base";
@@ -190,7 +196,8 @@ export function createEvaluation(root, ev) {
   // --- Seeds -------------------------------------------------------------------------------------
   function renderSeeds() {
     const node = $("ev-seeds");
-    const width = Math.max(node.clientWidth, 360), LABEL = 178, VAL = 120, ROW = 32, TOP = 6, AX = 24;
+    const width = Math.max(node.clientWidth, 280), narrow = width < 520;
+    const LABEL = narrow ? 84 : 178, VAL = narrow ? 8 : 120, ROW = narrow ? 42 : 32, TOP = 6, AX = 24;
     const models = ORDER.filter((m) => ev.seeds[m] && KIND(m) !== "base");
     const all = models.flatMap((m) => Object.values(ev.seeds[m]));
     const cf = ev.seeds["Item-CF"] ? Object.values(ev.seeds["Item-CF"])[0] : null;
@@ -200,20 +207,20 @@ export function createEvaluation(root, ev) {
       .attr("role", "img").attr("aria-label", "Test NDCG@10 across sampling seeds");
     svg.selectAll("*").remove();
     svg.append("g").attr("class", "tk-axis").attr("transform", `translate(0,${TOP + models.length * ROW + 8})`)
-      .call(d3.axisBottom(x).ticks(4).tickSize(3).tickFormat(d3.format(".3f")));
+      .call(d3.axisBottom(x).ticks(narrow ? 3 : 4).tickSize(3).tickFormat(d3.format(".3f")));
     if (cf) {
       svg.append("line").attr("class", "diag").attr("x1", x(cf)).attr("x2", x(cf)).attr("y1", TOP).attr("y2", TOP + models.length * ROW + 8);
       svg.append("text").attr("class", "lens-note halo").attr("x", x(cf) + 4).attr("y", TOP + 2).attr("dy", "0.7em").text(`Item-CF ${f4(cf)}`);
     }
     models.forEach((m, k) => {
-      const cy = TOP + (k + 0.5) * ROW, v = ev.seeds[m], xs = Object.values(v), g = svg.append("g").attr("class", "acc learned");
-      g.append("text").attr("class", "lab").attr("x", 0).attr("y", cy).attr("dy", "0.35em").text(NAME[m]);
+      const cy = TOP + (k + 0.5) * ROW - (narrow ? 6 : 0), v = ev.seeds[m], xs = Object.values(v), g = svg.append("g").attr("class", "acc learned");
+      g.append("text").attr("class", "lab").attr("x", 0).attr("y", cy).attr("dy", "0.35em").text(narrow ? SHORT[m] ?? NAME[m] : NAME[m]);
       g.append("line").attr("class", "range").attr("x1", x(d3.min(xs))).attr("x2", x(d3.max(xs))).attr("y1", cy).attr("y2", cy);
       for (const [seed, val] of Object.entries(v)) {
         g.append("circle").attr("cx", x(val)).attr("cy", cy).attr("r", 4.5).attr("class", seed === "42" ? "pt" : "pt hollow")
           .on("pointermove", (e) => showTip(e, `<b>${esc(NAME[m])}</b> · seed ${seed}<br>NDCG@10 <span class="mono">${f4(val)}</span>`)).on("pointerleave", hideTip);
       }
-      g.append("text").attr("class", "val").attr("x", width - VAL + 10).attr("y", cy).attr("dy", "0.35em").text(`range ${f4(d3.max(xs) - d3.min(xs))}`);
+      g.append("text").attr("class", narrow ? "sub" : "val").attr("x", narrow ? 0 : width - VAL + 10).attr("y", narrow ? cy + 15 : cy).attr("dy", "0.35em").text(`range ${f4(d3.max(xs) - d3.min(xs))}`);
     });
   }
 
@@ -229,15 +236,16 @@ export function createEvaluation(root, ev) {
       <li><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="var(--ink)"/></svg>After Platt scaling</li>
       <li><svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3" stroke="var(--ink-3)" stroke-dasharray="3 3"/></svg>Perfect calibration</li>
       <li><i style="background:var(--track)"></i>Rows per bin (after Platt)</li>`;
-    const width = Math.max(node.clientWidth, 600), GAP = 22, COLS = names.length;
+    // three panels side by side; one per row on a phone
+    const width = Math.max(node.clientWidth, 280), GAP = 22, COLS = width < 600 ? 1 : names.length, ROWS = Math.ceil(names.length / COLS);
     const cell = Math.min(330, (width - GAP * (COLS - 1)) / COLS), M = { l: 52, r: 12, t: 22, b: 26 }, HIST = 46;
-    const ph = cell - 20;
+    const ph = cell - 20, PH = ph + HIST + 30;
     const lo = 1e-5;
     const svg = d3.select(node).selectAll("svg").data([0]).join("svg").attr("width", COLS * cell + GAP * (COLS - 1))
-      .attr("height", ph + HIST + 30).attr("role", "img").attr("aria-label", "Reliability diagrams before and after Platt scaling");
+      .attr("height", ROWS * PH + (ROWS - 1) * GAP).attr("role", "img").attr("aria-label", "Reliability diagrams before and after Platt scaling");
     svg.selectAll("*").remove();
     names.forEach((m, k) => {
-      const ox = k * (cell + GAP), g = svg.append("g").attr("transform", `translate(${ox},0)`);
+      const ox = (k % COLS) * (cell + GAP), oy = Math.floor(k / COLS) * (PH + GAP), g = svg.append("g").attr("transform", `translate(${ox},${oy})`);
       const x = d3.scaleLog([lo, 1], [M.l, cell - M.r]), y = d3.scaleLog([lo, 1], [ph - M.b, M.t]);
       const cl = (v) => Math.max(lo, v);
       g.append("text").attr("class", "lens-col").attr("x", M.l).attr("y", 12).text(m === "Popularity" ? "Popularity (reference)" : m);
@@ -245,8 +253,9 @@ export function createEvaluation(root, ev) {
       g.append("g").attr("class", "tk-axis").attr("transform", `translate(${M.l},0)`).call(d3.axisLeft(y).tickValues([1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]).tickFormat(pctTick).tickSize(3));
       g.append("line").attr("class", "diag ref").attr("x1", x(lo)).attr("y1", y(lo)).attr("x2", x(1)).attr("y2", y(1));
       const ang = (Math.atan2(y(1) - y(lo), x(1) - x(lo)) * 180) / Math.PI;
-      g.append("text").attr("class", "tk halo").attr("transform", `translate(${x(2e-4)},${y(2e-4) + 12}) rotate(${ang})`).attr("text-anchor", "middle").text("perfectly calibrated");
-      if (k === 0) {
+      // the in-plot label would cross the models' bins; the key names the diagonal for them
+      if (m === "Popularity") g.append("text").attr("class", "tk halo").attr("transform", `translate(${x(2e-4)},${y(2e-4) + 12}) rotate(${ang})`).attr("text-anchor", "middle").text("perfectly calibrated");
+      if (k % COLS === 0) {
         g.append("text").attr("class", "tk").attr("transform", `translate(10,${(ph - M.b + M.t) / 2}) rotate(-90)`).attr("text-anchor", "middle").text("share visited");
       }
       g.append("text").attr("class", "tk").attr("x", cell - M.r).attr("y", ph - M.b - 5).attr("text-anchor", "end").text("predicted →");

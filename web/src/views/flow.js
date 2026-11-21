@@ -7,8 +7,9 @@ const ROW = 26, TOP = 46, TOPN = 10;
 
 export function renderFlow(root, data, handlers) {
   const { c, ranks, stepNotes } = data;          // ranks: { default, model, distance, popularity, diversity } (1-based)
-  const width = Math.max(root.clientWidth, 640);
-  const left = 196, right = 200;
+  // On a phone the chart keeps a usable column spacing and scrolls sideways; headers shorten when columns are tight.
+  const width = Math.max(root.clientWidth, 600), tight = width < 820;
+  const left = tight ? 150 : 196, right = tight ? 156 : 200;
   const belowY = TOP + TOPN * ROW + 22;
   const height = belowY + 34;
   const x = d3.scalePoint(STEPS.map((s) => s.key), [left, width - right]);
@@ -30,7 +31,7 @@ export function renderFlow(root, data, handlers) {
     return g;
   });
   cols.select("line").attr("x1", (d) => x(d.key)).attr("x2", (d) => x(d.key)).attr("y1", TOP - 6).attr("y2", belowY + 10);
-  cols.select(".col-label").attr("x", (d) => x(d.key)).attr("y", 14).text((d) => d.label);
+  cols.select(".col-label").attr("x", (d) => x(d.key)).attr("y", 14).text((d) => (tight ? d.short ?? d.label : d.label));
   cols.select(".col-sub").attr("x", (d) => x(d.key)).attr("y", 30).text((d) => stepNotes[d.key]);
 
   const ticks = svg.selectAll("text.rank-tick").data(d3.range(1, TOPN + 1)).join("text").attr("class", "rank-tick")
@@ -69,9 +70,9 @@ export function renderFlow(root, data, handlers) {
       .attr("fill", (s) => (s.key === "diversity" && ranks.diversity[i] <= TOPN ? "var(--ink)" : "var(--panel)"))
       .attr("stroke", (s) => (ranks[s.key][i] <= TOPN ? "var(--ink-2)" : "var(--line-strong)")).attr("stroke-width", 1.5);
     const d0 = ranks.default[i], d1 = ranks.diversity[i];
-    g.select(".name.left").attr("x", left - 10).attr("y", y(d0)).text(d0 <= TOPN ? truncate(c.candidates.name[i], 21) : "")
+    g.select(".name.left").attr("x", left - 10).attr("y", y(d0)).text(d0 <= TOPN ? truncate(c.candidates.name[i], tight ? 16 : 21) : "")
       .classed("muted", d1 > TOPN);
-    g.select(".name.right").attr("x", width - right + 10).attr("y", y(d1)).text(d1 <= TOPN ? truncate(c.candidates.name[i], 26) : "");
+    g.select(".name.right").attr("x", width - right + 10).attr("y", y(d1)).text(d1 <= TOPN ? truncate(c.candidates.name[i], tight ? 18 : 26) : "");
   });
 }
 

@@ -90,14 +90,14 @@ export function renderLedger(root, ctx) {
   }
   const lo = Math.min(0, ...rows.map((r) => Math.min(r.x0, r.x1)), cutoff ?? 0);
   const hi = Math.max(1, ...rows.map((r) => Math.max(r.x0, r.x1)), cutoff ?? 0);
-  const width = Math.max(root.clientWidth, 420), labelW = 188, valueW = 62, rowH = 24, top = 8;
+  const width = Math.max(root.clientWidth, 300), labelW = width < 460 ? 150 : 188, valueW = 62, rowH = 24, top = 8;
   const height = top + rows.length * rowH + 30;
   const x = d3.scaleLinear([lo, hi], [labelW, width - valueW]).nice();
 
   const svg = d3.select(root).selectAll("svg").data([0]).join("svg").attr("width", width).attr("height", height)
     .attr("role", "img").attr("aria-label", `Score ledger for ${c.candidates.name[i]}`);
   svg.selectAll("g.axis").data([0]).join("g").attr("class", "axis").attr("transform", `translate(0,${top + rows.length * rowH + 4})`)
-    .call(d3.axisBottom(x).ticks(5).tickSize(-rows.length * rowH - 4).tickFormat(d3.format(".1f")))
+    .call(d3.axisBottom(x).ticks(width < 460 ? 3 : 5).tickSize(-rows.length * rowH - 4).tickFormat(d3.format(".1f")))
     .call((g) => g.select(".domain").remove());
   svg.selectAll("line.zero").data([0]).join("line").attr("class", "zero").attr("x1", x(0)).attr("x2", x(0))
     .attr("y1", top - 4).attr("y2", top + rows.length * rowH);
@@ -109,7 +109,7 @@ export function renderLedger(root, ctx) {
 
   const g = svg.selectAll("g.row").data(rows, (r) => r.label).join((e) => {
     const r = e.append("g").attr("class", "row");
-    r.append("text").attr("class", "lab").attr("x", 0).attr("dy", "0.35em");
+    r.append("text").attr("class", "lab").attr("x", 2).attr("dy", "0.35em");
     r.append("rect").attr("class", "ghost");
     r.append("rect").attr("class", "bar");
     r.append("line").attr("class", "conn");
@@ -117,7 +117,9 @@ export function renderLedger(root, ctx) {
     return r;
   });
   g.attr("transform", (_, k) => `translate(0,${top + k * rowH + rowH / 2})`).attr("data-kind", (r) => r.kind);
-  g.select(".lab").text((r) => r.label + (r.scaled ? ` × ${theta.w_h.toFixed(2)}` : ""));
+  // on a phone the label column is narrower: drop the parenthetical ("Your history (similar places)")
+  const lab = (t) => (width < 460 ? t.replace(/ \(.*\)$/, "") : t);
+  g.select(".lab").text((r) => lab(r.label) + (r.scaled ? ` × ${theta.w_h.toFixed(2)}` : ""));
   const color = (r) => (r.kind === "model" ? hueVar("model") : r.kind === "control" ? hueVar("control") : "var(--ink-2)");
   g.select(".bar").attr("x", (r) => x(Math.min(r.x0, r.x1))).attr("width", (r) => Math.max(1, Math.abs(x(r.x1) - x(r.x0))))
     .attr("y", -7).attr("height", 14).attr("rx", 2).attr("fill", color).attr("opacity", (r) => (r.off ? 0.25 : 1));
@@ -164,7 +166,7 @@ export function renderContrast(root, ctx) {
   rows.push({ kind: "control", label: "Popularity penalty", value: A.pop - B.pop });
   if (theta.boost) rows.push({ kind: "control", label: "Neighborhood boost", value: A.boost - B.boost });
   rows.push({ kind: "total", label: "Steered score gap", value: A.s2 - B.s2 });
-  const width = Math.max(root.clientWidth, 360), labelW = 188, valueW = 56, rowH = 24, top = 22;
+  const width = Math.max(root.clientWidth, 300), labelW = width < 460 ? 150 : 188, valueW = 56, rowH = 24, top = 22;
   const height = top + rows.length * rowH + 8;
   const m = Math.max(0.05, ...rows.map((r) => Math.abs(r.value)));
   const x = d3.scaleLinear([-m, m], [labelW, width - valueW]);
@@ -175,13 +177,13 @@ export function renderContrast(root, ctx) {
   svg.selectAll("line.zero").data([0]).join("line").attr("class", "zero").attr("x1", x(0)).attr("x2", x(0)).attr("y1", top - 4).attr("y2", height - 4);
   const g = svg.selectAll("g.row").data(rows, (r) => r.label).join((e) => {
     const r = e.append("g").attr("class", "row");
-    r.append("text").attr("class", "lab").attr("x", 0).attr("dy", "0.35em");
+    r.append("text").attr("class", "lab").attr("x", 2).attr("dy", "0.35em");
     r.append("rect").attr("class", "bar");
     r.append("text").attr("class", "val").attr("dy", "0.35em").attr("text-anchor", "end");
     return r;
   });
   g.attr("transform", (_, k) => `translate(0,${top + k * rowH + rowH / 2})`).attr("data-kind", (r) => r.kind);
-  g.select(".lab").text((r) => r.label);
+  g.select(".lab").text((r) => (width < 460 ? r.label.replace(/ \(.*\)$/, "") : r.label));
   g.select(".bar").attr("x", (r) => x(Math.min(0, r.value))).attr("width", (r) => Math.max(1, Math.abs(x(r.value) - x(0))))
     .attr("y", -7).attr("height", 14).attr("rx", 2)
     .attr("fill", (r) => (r.kind === "model" ? hueVar("model") : r.kind === "control" ? hueVar("control") : "var(--ink-2)"));

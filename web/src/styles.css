@@ -75,17 +75,19 @@ select:hover { border-color: var(--ink-3); }
 .segmented button[aria-checked="true"] { background: var(--panel); color: var(--ink); box-shadow: var(--shadow); }
 
 /* Layout */
-.layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: calc(100vh - 53px); }
+.layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: calc(100vh - 55px); }
 .console { background: var(--rail); border-right: 1px solid var(--line); padding: 18px 18px 32px; display: grid;
   gap: 18px; align-content: start; }
 .workspace { padding: 18px 20px 40px; display: grid; gap: 16px; align-content: start; min-width: 0; }
-.split { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; }
+.split { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; min-width: 0; }
 .panel-head { display: grid; gap: 4px; margin-bottom: 10px; }
 .panel-head h2 { font-size: 15px; }
 .panel-sub { margin: 0; color: var(--ink-2); font-size: 12.5px; max-width: 75ch; }
 .summary { margin: 0; font-size: 15px; color: var(--ink); max-width: 95ch; }
 .summary b { font-weight: 600; }
+/* numbers inside sentences stay in the text face, with aligned figures; tables and chips keep the mono face */
+.summary .num, .solution p .num { font-family: inherit; font-weight: 500; white-space: nowrap; }
 
 /* Console */
 .console h2 { font-size: 13px; color: var(--ink-2); font-weight: 500; }
@@ -108,6 +110,7 @@ input[type="range"]:disabled { opacity: 0.4; }
 .solution .mono { color: var(--ink); }
 .solution p { margin: 0; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chips.theta { display: grid; grid-template-columns: repeat(2, max-content); }
 .chip { font: 500 12px var(--mono); border-radius: 5px; padding: 2px 7px; }
 .chip.model { background: var(--model-tint); color: var(--ink); }
 .chip.control { background: var(--control-tint); color: var(--ink); }
@@ -180,7 +183,8 @@ input[type="range"]:disabled { opacity: 0.4; }
 .map .pin, .map .gone { cursor: pointer; }
 .map.has-hover .pin, .map.has-hover .gone { opacity: 0.25; }
 .map.has-hover .pin.hover, .map.has-hover .gone.hover { opacity: 1; }
-.map-note { position: absolute; left: 8px; bottom: 6px; font-size: 11px; color: var(--ink-3); }
+.map-note { position: absolute; left: 8px; bottom: 8px; font-size: 11px; color: var(--ink-2); pointer-events: none;
+  background: color-mix(in oklab, var(--panel) 88%, transparent); border-radius: 4px; padding: 1px 6px; max-width: calc(100% - 16px); }
 
 /* Lists */
 .toplist { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
@@ -213,6 +217,8 @@ input[type="range"]:disabled { opacity: 0.4; }
 
 /* Ledger */
 .ledger-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 28px; }
+.ledger-main, .ledger-side, .field { min-width: 0; }
+.ledger-side select { width: 100%; }
 .ledger { width: 100%; overflow-x: auto; }
 .ledger svg { display: block; font-family: var(--font); }
 .ledger .lab { font-size: 12.5px; fill: var(--ink); }
@@ -240,7 +246,8 @@ table.feat td.eff { white-space: nowrap; text-align: right; }
 .mini i { position: absolute; top: 0; height: 6px; border-radius: 2px; background: var(--model); }
 .mini.pos i { left: 0; }
 .mini.neg i { right: 0; background: var(--line-strong); }
-.toplist li.selected, .exited li.selected { box-shadow: inset 3px 0 0 var(--ink); background: var(--bg); }
+.toplist li.selected, .exited li.selected { box-shadow: inset 0 0 0 1.5px var(--ink); background: var(--bg); border-radius: 6px; }
+.toplist li:focus-visible, .exited li:focus-visible { outline-offset: -2px; border-radius: 6px; }
 .flow .item.selected .name { font-weight: 600; }
 .map .pin.selected circle { stroke: var(--model); stroke-width: 3; }
 
@@ -282,7 +289,7 @@ table.feat td.eff { white-space: nowrap; text-align: right; }
 #lens-slope.has-hover .it { opacity: 0.2; }
 #lens-slope.has-hover .it.hover { opacity: 1; }
 #lens-slope .it.hover path { stroke-width: 2.5; }
-.swarm-key { display: flex; align-items: center; gap: 14px; font-size: 12px; color: var(--ink-2); }
+.swarm-key { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: 12px; color: var(--ink-2); }
 .swarm-key .ramp { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-3); }
 .swarm-key .ramp i { display: inline-block; width: 72px; height: 8px; border-radius: 2px; }
 .lens .ring { fill: none; pointer-events: none; }
@@ -299,7 +306,9 @@ table.feat td.eff { white-space: nowrap; text-align: right; }
 .lens .pt.top { fill: var(--ink-2); }
 .lens .pt.clip { fill: var(--panel); stroke: var(--ink-3); stroke-width: 1.2; }
 .lens-acc { margin-top: 4px; }
-.lens-acc td.mono { white-space: nowrap; }
+.lens td.mono { white-space: nowrap; }
+.lens-acc td.mono:last-child { white-space: normal; }
+.lens .mono-sub { font-family: var(--mono); }
 /* Evaluation (V7): learned rankers in ink, baselines muted, the supplementary listwise model hollow. */
 .eval-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
 .lens .acc .ci, .lens .rel .ci { stroke: var(--ink-2); stroke-width: 2; stroke-linecap: round; }
@@ -348,6 +357,13 @@ table.feat td.eff { white-space: nowrap; text-align: right; }
 .lens .to-arrow { fill: var(--ink-3); }
 #tradeoff .hit { cursor: pointer; }
 .lens-tip .muted { color: var(--ink-3); }
+
+/* The control rail stays in view while the workspace scrolls (two-column layout only). */
+@media (min-width: 821px) {
+  .layout { background: linear-gradient(to right, var(--rail) 299px, var(--line) 299px 300px, transparent 300px); }
+  .console { position: sticky; top: 55px; align-self: start; max-height: calc(100vh - 55px); overflow-y: auto;
+    border-right: 0; background: transparent; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+}
 
 @media (max-width: 1100px) {
   .split, .ledger-grid, .lens-row { grid-template-columns: minmax(0, 1fr); }
