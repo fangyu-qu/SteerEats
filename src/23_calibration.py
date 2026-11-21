@@ -21,6 +21,8 @@ score. Constant base rate: perfectly calibrated (ECE 0) and useless (AUC 0.5).
 Scores: Brier, Brier skill (1 - Brier / Brier of the base rate), log-loss, ECE with 15 equal-mass bins
 (and 15 equal-width bins, to show how binning moves ECE), pooled ROC AUC. Reliability bins are
 log-spaced in predicted probability, with counts and Wilson 95% intervals.
+A single Platt fit on all test rows (platt_all) is also saved; the trade-off view (step 25) uses it to turn
+a top 10 into predicted visits. It is never scored on the rows it was fitted on.
 Outputs: outputs/calibration/CALIBRATION.md, calibration.json
 """
 import json
@@ -144,7 +146,8 @@ def main():
             a, b = platt(sc[fold != k], y[fold != k])
             p[fold == k] = sigmoid(a * sc[fold == k] + b)
             coefs[name].append([a, b])
-        res = dict(after=scores(p, y), reliability=reliability(p, y), platt_folds=coefs[name])
+        # one fit on all test rows, for display only (the trade-off view's predicted visits)
+        res = dict(after=scores(p, y), reliability=reliability(p, y), platt_folds=coefs[name], platt_all=list(platt(sc, y)))
         if name != "Popularity":
             raw = sigmoid(sc)
             res.update(before=scores(raw, y), reliability_before=reliability(raw, y))

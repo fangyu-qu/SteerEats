@@ -6,7 +6,9 @@ const POP_OPTIONS = [[null, "No preference"], [0.5, "Average below the 50th perc
   [0.3, "Below the 30th percentile"], [0.2, "Below the 20th percentile"]];
 const CUI_OPTIONS = [[null, "No preference"], [5, "At least 5 cuisine groups"], [6, "At least 6"], [7, "At least 7"], [8, "At least 8"]];
 
-export function mountConsole(root, state, onChange, actions = {}) {
+export function mountConsole(root, state, onChangeRaw, actions = {}) {
+  // Any console control leaves a setting loaded from the trade-off view and returns to outcome targets.
+  const onChange = () => { state.thetaOverride = null; onChangeRaw(); };
   root.innerHTML = `
     <h2>Steer your recommendations</h2>
     <div class="ctl">
@@ -54,7 +56,10 @@ export function mountConsole(root, state, onChange, actions = {}) {
   $("ctl-reset").addEventListener("click", () => {
     state.w_h = 1; state.targets = { km: null, popularity: null, cuisines: null }; state.boostNta = null; sync(); onChange();
   });
-  root.addEventListener("click", (e) => { if (e.target.closest("#boost-clear")) actions.clearBoost?.(); });
+  root.addEventListener("click", (e) => {
+    if (e.target.closest("#boost-clear")) actions.clearBoost?.();
+    if (e.target.closest("#loaded-clear")) actions.clearLoaded?.();
+  });
   sync();
   return { sync };
 }
@@ -77,13 +82,16 @@ export function renderSolution(root, state, result) {
   const th = solved.theta, o = other.theta;
   const fmt = (v) => v.toFixed(2);
   const anyTarget = t.km != null || t.popularity != null || t.cuisines != null;
+  const loaded = solved.loaded;
   const otherName = MODEL_NAMES[state.model === "lr" ? "lgbm" : "lr"];
   root.querySelector("#solution").innerHTML = `
-    ${badges.length ? `<div class="chips">${badges.join("")}</div>` : `<p>No targets set. The list is the model's own ranking${state.w_h < 1 ? ", with your history weight applied" : ""}.</p>`}
+    ${loaded ? `<div class="boost-chip"><span>Setting loaded from the trade-off view. Targets are paused; changing any control goes back to them.</span><button type="button" id="loaded-clear">Clear</button></div>`
+      : badges.length ? `<div class="chips">${badges.join("")}</div>` : `<p>No targets set. The list is the model's own ranking${state.w_h < 1 ? ", with your history weight applied" : ""}.</p>`}
     <p>${MODEL_NAMES[state.model]} used</p>
     <div class="chips"><span class="chip model">history ${fmt(th.w_h)}</span><span class="chip control">α ${fmt(th.alpha)}</span>
       <span class="chip control">β ${fmt(th.beta)}</span><span class="chip diversity">λ ${fmt(th.lam / LAM_MAX)}</span></div>
     ${boost ? `<p>Neighborhood boost <span class="mono">+${boost.amount.toFixed(2)}</span>; ${otherName} would need <span class="mono">+${boost.other.toFixed(2)}</span>.</p>` : ""}
+    ${loaded ? `<p>${otherName} uses the same setting.</p>` : ""}
     ${anyTarget ? `<p>${otherName} would need α <span class="mono">${fmt(o.alpha)}</span>, β <span class="mono">${fmt(o.beta)}</span>,
       λ <span class="mono">${fmt(o.lam / LAM_MAX)}</span> for the same targets.</p>` : ""}`;
 }

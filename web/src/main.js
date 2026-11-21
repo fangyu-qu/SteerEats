@@ -1,6 +1,6 @@
 // SteerEats app: loads a demo case, solves the user's outcome targets per model, and renders the linked views.
 import * as d3 from "d3";
-import { LAM_MAX, THETA0, finalRanks, outcomes, shapleyControls, similarity, solveBoost, solveTargets, stageLog, stages, steeringCost } from "./steer.js";
+import { LAM_MAX, THETA0, finalRanks, outcomes, shapleyControls, similarity, solveBoost, solveTargets, stageLog, stages, steeringCost, topK } from "./steer.js";
 import { MODEL_NAMES, STEPS, esc, hueVar } from "./views/common.js";
 import { mountConsole, renderSolution } from "./views/console.js";
 import { highlightFlow, renderFlow } from "./views/flow.js";
@@ -9,17 +9,19 @@ import { highlightList, markSelected, renderList } from "./views/list.js";
 import { renderContrast, renderLedger } from "./views/ledger.js";
 import { createLens } from "./views/lens.js";
 import { createEvaluation } from "./views/evaluation.js";
+import { createTradeoff } from "./views/tradeoff.js";
 
 const STORY = { local_manhattan: "Manhattan regular", popularity_dominated: "Popular-places fan", models_disagree: "Models disagree" };
 const state = {
   model: "lgbm", w_h: 1, kmDraft: 2, targets: { km: null, popularity: null, cuisines: null },
   c: null, sim: null, caseId: null, hover: null, result: null, selected: null, contrast: null,
   boostNta: null, costCache: new Map(), ntaCodes: [],
+  thetaOverride: null, // a grid setting loaded from the trade-off view; targets are paused while it is set
 };
 const el = (id) => document.getElementById(id);
 
 async function boot() {
-  const [index, nta, boroughs, ntaCodes, lensPop, evaluation] = await Promise.all(["/data/cases/index.json", "/data/nyc_nta.geojson", "/data/nyc_boroughs.geojson", "/data/nta_index.json", "/data/model_lens.json", "/data/evaluation.json"]
+  const [index, nta, boroughs, ntaCodes, lensPop, evaluation, tradeoff] = await Promise.all(["/data/cases/index.json", "/data/nyc_nta.geojson", "/data/nyc_boroughs.geojson", "/data/nta_index.json", "/data/model_lens.json", "/data/evaluation.json", "/data/tradeoff.json"]
     .map((u) => fetch(u).then((r) => { if (!r.ok) throw new Error(`Could not load ${u}`); return r.json(); })));
   state.ntaCodes = ntaCodes;
   el("cutoff").textContent = `Snapshot ${index.cutoff} · test period Aug 2020 – Apr 2021`;
@@ -28,7 +30,7 @@ async function boot() {
     `<optgroup label="Stories">${scripted.map((x) => `<option value="${x.file}">${STORY[x.story] ?? x.story} · ${esc(x.home_borough)}</option>`).join("")}</optgroup>` +
     `<optgroup label="Other test users">${others.map((x) => `<option value="${x.file}">User ${x.id.slice(-2)} · ${esc(x.home_borough)}</option>`).join("")}</optgroup>`;
   el("case-select").addEventListener("change", (e) => loadCase(e.target.value));
-  document.querySelectorAll(".segmented button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll(".segmented button[data-model]").forEach((b) => b.addEventListener("click", () => {
     setModel(b.dataset.model);
     update({ refit: true });
   }));
@@ -36,17 +38,18 @@ async function boot() {
     ["diversity", "Variety moved it"], [null, "No change at that step"]]
     .map(([h, t]) => `<li><i style="background:${hueVar(h)}"></i>${t}</li>`).join("");
   views.map = createMap(el("map"), { nta, boroughs, codes: ntaCodes }, { hover: setHover, select, boost: toggleBoost });
+  views.tradeoff = createTradeoff(el("tradeoff"), tradeoff, { load: loadTheta });
   views.lens = createLens(el("lens"), lensPop, { hover: setHover, select });
   views.evaluation = createEvaluation(el("evaluation"), evaluation);
   el("contrast-select").addEventListener("change", (e) => { state.contrast = e.target.value === "" ? null : +e.target.value; renderWhy(); });
   const fromHash = readHash(index);
-  views.console = mountConsole(el("console"), state, () => schedule(), { clearBoost: () => toggleBoost(null) });
+  views.console = mountConsole(el("console"), state, () => schedule(), { clearBoost: () => toggleBoost(null), clearLoaded: () => { state.thetaOverride = null; update({ refit: false }); } });
   setModel(state.model);
-  window.addEventListener("resize", () => { schedule(false); views.evaluation.render(); });
+  window.addEventListener("resize", () => { schedule(false); views.evaluation.render(); views.tradeoff.render(); });
   await loadCase(fromHash ?? index.cases[0].file);
 }
 
-// Hash keys: case=demo_03, model=lr|lgbm, wh=0.5, km=2, pop=0.4, cui=6
+// Hash keys: case=demo_03, model=lr|lgbm, wh=0.5, km=2, pop=0.4, cui=6, th=w_h,alpha,beta,lam (loaded grid setting)
 function readHash(index) {
   const h = new URLSearchParams(location.hash.slice(1));
   const num = (k) => (h.has(k) && h.get(k) !== "" && Number.isFinite(+h.get(k)) ? +h.get(k) : null);
@@ -57,6 +60,11 @@ function readHash(index) {
   if (num("cui") != null) state.targets.cuisines = num("cui");
   if (num("sel") != null) state.pendingSel = num("sel");
   if (num("boost") != null) state.pendingBoost = num("boost");
+  const th = (h.get("th") ?? "").split(",").map(Number);
+  if (th.length === 4 && th.every((v) => Number.isFinite(v) && v >= 0 && v <= 1)) {
+    state.thetaOverride = { w_h: th[0], alpha: th[1], beta: th[2], lam: Math.min(th[3], LAM_MAX) };
+    state.w_h = th[0]; state.targets = { km: null, popularity: null, cuisines: null };
+  }
   const want = h.get("case");
   const hit = index.cases.find((x) => x.id === want || x.file === want);
   return hit ? hit.file : null;
@@ -66,7 +74,8 @@ function writeHash() {
   const h = new URLSearchParams();
   h.set("case", state.caseId.replace(".json", ""));
   h.set("model", state.model);
-  if (state.w_h !== 1) h.set("wh", state.w_h);
+  if (state.thetaOverride) { const t = state.thetaOverride; h.set("th", [t.w_h, t.alpha, t.beta, t.lam].join(",")); }
+  else if (state.w_h !== 1) h.set("wh", state.w_h);
   if (state.targets.km != null) h.set("km", state.targets.km);
   if (state.targets.popularity != null) h.set("pop", state.targets.popularity);
   if (state.targets.cuisines != null) h.set("cui", state.targets.cuisines);
@@ -77,7 +86,7 @@ function writeHash() {
 
 function setModel(m) {
   state.model = m;
-  document.querySelectorAll(".segmented button").forEach((x) => x.setAttribute("aria-checked", String(x.dataset.model === m)));
+  document.querySelectorAll(".segmented button[data-model]").forEach((x) => x.setAttribute("aria-checked", String(x.dataset.model === m)));
 }
 
 async function loadCase(file) {
@@ -101,8 +110,8 @@ function schedule(refit = true) {
 function compute() {
   const { c, sim, model } = state;
   const otherModel = model === "lr" ? "lgbm" : "lr";
-  const solved = solveTargets(c, model, state.targets, state.w_h);
-  const other = solveTargets(c, otherModel, state.targets, state.w_h);
+  const solved = solveOrLoad(c, model);
+  const other = solveOrLoad(c, otherModel);
   let theta = solved.theta, otherTheta = other.theta, boost = null;
   if (state.boostNta != null) {
     const b = solveBoost(c, model, theta, state.boostNta);
@@ -133,6 +142,21 @@ function compute() {
   const off = (t) => t.w_h !== 1 || t.alpha || t.beta || t.lam || t.boost;
   const lens = { finals, defaults: state.costCache.get(dkey), steered: off(theta) || off(otherTheta) };
   return { solved, other, theta, boost, st, before, after, top, defTop, gone, phi: sh.phi, cost: state.costCache.get(key), lens };
+}
+
+// A setting loaded from the trade-off view is used as is, for both models; otherwise the targets are solved.
+function solveOrLoad(c, m) {
+  if (!state.thetaOverride) return solveTargets(c, m, state.targets, state.w_h);
+  const theta = { ...THETA0, ...state.thetaOverride }, top = topK(c, theta, m);
+  return { theta, top, outcomes: outcomes(c, top), met: { km: true, popularity: true, cuisines: true }, loaded: true };
+}
+
+function loadTheta(t) {
+  state.thetaOverride = { w_h: t.w_h, alpha: t.alpha, beta: t.beta, lam: t.lam };
+  state.w_h = t.w_h;
+  state.targets = { km: null, popularity: null, cuisines: null };
+  views.console.sync();
+  update({ refit: false });
 }
 
 function stepNotes(theta) {
@@ -176,6 +200,7 @@ function update({ refit }) {
     home: { lat: c.user.home_lat, lon: c.user.home_lon } }, { refit });
   markSelected([el("list"), el("exited")], state.selected);
   renderWhy();
+  views.tradeoff.update({ c, model: state.model, theta: r.theta });
   views.lens.update({ c, model: state.model, selected: state.selected, ...r.lens });
   setHover(state.hover);
 }
