@@ -218,6 +218,25 @@ lower than either model, which is why ECE is reported with AUC and Brier skill. 
 (train-only models, Platt fitted on validation) under-predicts on test (mean 0.37% and 0.29%), a sign of the
 temporal shift between the windows. Platt scaling is monotone per user, so Recall@10 and NDCG@10 do not change.
 
+## Trade-off view (November 21, 2026)
+
+```bash
+python src/25_export_tradeoff.py   # joint-grid rows with paired 95% intervals for the web view; demo-case expectations
+node tests/check_tradeoff.mjs      # browser grid outcomes, predicted visits and frontiers equal Python's
+```
+
+The view (V5) puts every setting of the RQ1 joint grid (192 per model) on two linked scatters: this user, where
+relevance is the model's own predicted visits in the top 10 (Platt-calibrated, one fit per model on all test rows,
+now saved by step 23 as `platt_all`), and the 2,000 grid users, where relevance is measured NDCG@10. Both show
+the share kept relative to the model's own list, a Pareto staircase, and the current setting; clicking a dot loads
+that setting. Per-user relevance is the model's estimate, not a measurement, because most users have 0 or 1
+later-reviewed places among their candidates. Over the 2,000 users, no logistic-regression setting has an NDCG@10
+change whose paired 95% interval includes zero; for LightGBM two do: beta = 0.25 (−0.0007 [−0.0043, +0.0027])
+and alpha = beta = 0.25 (−0.0036 [−0.0073, +0.0002]) (`outputs/rq1/TRADEOFF.md`). Writing the browser check found
+that step 21 kept settings tied on the steered quantity but lower in NDCG@10 (several variety settings reach the
+cap of 10 cuisine groups); with the tie fixed, `frontiers.csv` lost 5 dominated rows and the matched-outcome table
+is unchanged.
+
 ## Raw data (`data/raw`, not in git)
 
 | File | Source | Size |

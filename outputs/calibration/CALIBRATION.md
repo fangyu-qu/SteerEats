@@ -27,4 +27,4 @@ Platt coefficients (a, b) per fold:
 | LightGBM | 0.0050 | 0.00254 | 0.7510 | 0.00289 | (1.102, -2.696) |
 | Popularity | 0.0000 | 0.00132 | 0.5190 | 0.00532 | (0.057, -5.597) |
 
-Runtime 182 s.
+Runtime 188 s.

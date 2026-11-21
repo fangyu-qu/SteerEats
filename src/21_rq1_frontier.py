@@ -31,7 +31,9 @@ TARGETS = [  # (quantity, direction, threshold, description)
 
 
 def frontier(g, q, better_low):
-    g = g.sort_values(q, ascending=better_low)
+    # Ties in q put the higher NDCG@10 first, so a setting tied with a better one is not kept
+    # (several variety settings reach the cap of 10 cuisine groups).
+    g = g.sort_values([q, "ndcg"], ascending=[better_low, False], kind="stable")
     best, keep = -1.0, []
     for _, r in g.iterrows():
         if r.ndcg > best:
