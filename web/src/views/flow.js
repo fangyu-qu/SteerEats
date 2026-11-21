@@ -1,9 +1,12 @@
 // Rank flow (V2): a bump chart from the model's default ranking through each steering step.
 // Lines keep their identity across steps (object constancy); the step that moved a restaurant colors its segment.
+// When a control changes, each line glides to its new ranks (320 ms, ease-out); places that join or leave the
+// chart fade. No motion on a new case or width, or when the reader asks for reduced motion.
 import * as d3 from "d3";
 import { STEPS, hueVar, truncate } from "./common.js";
 
-const ROW = 26, TOP = 46, TOPN = 10;
+const ROW = 26, TOP = 46, TOPN = 10, DURATION = 320;
+const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 export function renderFlow(root, data, handlers) {
   const { c, ranks, stepNotes } = data;          // ranks: { default, model, distance, popularity, diversity } (1-based)
@@ -18,6 +21,11 @@ export function renderFlow(root, data, handlers) {
   const n = c.candidates.name.length;
   const ids = [];
   for (let i = 0; i < n; i++) if (STEPS.some((s) => ranks[s.key][i] <= TOPN)) ids.push(i);
+
+  const animate = root.dataset.case === c.id && +root.dataset.width === width && !reducedMotion();
+  root.dataset.case = c.id; root.dataset.width = width;
+  const T = animate ? d3.transition("flow").duration(DURATION).ease(d3.easeCubicOut) : null;
+  const tw = (sel) => (T ? sel.transition(T) : sel);
 
   const svg = d3.select(root).selectAll("svg").data([0]).join("svg").attr("width", width).attr("height", height)
     .attr("role", "img").attr("aria-label", "Bump chart of the top 10 across the steering steps");
@@ -48,31 +56,36 @@ export function renderFlow(root, data, handlers) {
   };
   const segs = STEPS.slice(1).map((s, k) => ({ from: STEPS[k], to: s, path: link(STEPS[k], s) }));
   const items = svg.selectAll("g.item").data(ids, (i) => i).join((e) => {
-    const g = e.append("g").attr("class", "item");
+    const g = e.append("g").attr("class", "item").style("opacity", T ? 0 : null);
+    if (T) g.transition(T).style("opacity", 1);
     segs.forEach(() => g.append("path").attr("class", "seg"));
     g.append("g").attr("class", "dots");
     g.append("text").attr("class", "name left").attr("text-anchor", "end").attr("dy", "0.35em");
     g.append("text").attr("class", "name right").attr("text-anchor", "start").attr("dy", "0.35em");
     return g;
-  });
+  }, (u) => u, (ex) => (T ? ex.interrupt("flow").transition(T).style("opacity", 0).remove() : ex.remove()));
   items.attr("data-id", (i) => i).classed("selected", (i) => i === data.selected)
     .on("pointerenter", (_, i) => handlers.hover(i)).on("pointerleave", () => handlers.hover(null))
     .on("click", (_, i) => handlers.select?.(i));
   items.each(function (i) {
     const g = d3.select(this);
-    g.selectAll("path.seg").data(segs).attr("d", (s) => s.path(i)).attr("stroke", (s) => {
+    tw(g.selectAll("path.seg").data(segs)).attr("d", (s) => s.path(i));
+    g.selectAll("path.seg").attr("stroke", (s) => {
       const a = ranks[s.from.key][i], b = ranks[s.to.key][i];
       if (a > TOPN && b > TOPN) return "var(--line)";
       return a !== b ? hueVar(s.to.hue) : "var(--track)";
     });
-    g.select(".dots").selectAll("circle").data(STEPS).join("circle").attr("cx", (s) => x(s.key))
-      .attr("cy", (s) => y(ranks[s.key][i])).attr("r", (s) => (s.key === "diversity" && ranks.diversity[i] <= TOPN ? 4.5 : 3))
+    const dots = g.select(".dots").selectAll("circle").data(STEPS).join("circle").attr("cx", (s) => x(s.key));
+    tw(dots).attr("cy", (s) => y(ranks[s.key][i]));
+    dots.attr("r", (s) => (s.key === "diversity" && ranks.diversity[i] <= TOPN ? 4.5 : 3))
       .attr("fill", (s) => (s.key === "diversity" && ranks.diversity[i] <= TOPN ? "var(--ink)" : "var(--panel)"))
       .attr("stroke", (s) => (ranks[s.key][i] <= TOPN ? "var(--ink-2)" : "var(--line-strong)")).attr("stroke-width", 1.5);
     const d0 = ranks.default[i], d1 = ranks.diversity[i];
-    g.select(".name.left").attr("x", left - 10).attr("y", y(d0)).text(d0 <= TOPN ? truncate(c.candidates.name[i], tight ? 16 : 21) : "")
+    tw(g.select(".name.left")).attr("y", y(d0));
+    g.select(".name.left").attr("x", left - 10).text(d0 <= TOPN ? truncate(c.candidates.name[i], tight ? 16 : 21) : "")
       .classed("muted", d1 > TOPN);
-    g.select(".name.right").attr("x", width - right + 10).attr("y", y(d1)).text(d1 <= TOPN ? truncate(c.candidates.name[i], tight ? 18 : 26) : "");
+    tw(g.select(".name.right")).attr("y", y(d1));
+    g.select(".name.right").attr("x", width - right + 10).text(d1 <= TOPN ? truncate(c.candidates.name[i], tight ? 18 : 26) : "");
   });
 }
 

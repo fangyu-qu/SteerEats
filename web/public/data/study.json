@@ -1,0 +1,136 @@
+{
+ "version": 1,
+ "sets": {
+  "A": [
+   {
+    "kind": "why",
+    "case": "demo_04",
+    "state": {
+     "model": "lgbm",
+     "wh": 1.0,
+     "km": null,
+     "pop": 0.3,
+     "cui": 6
+    },
+    "place": "Seafood City",
+    "nta": "Pelham Bay-Country Club-City Island",
+    "index": 2,
+    "options": [
+     "History weight",
+     "Distance",
+     "Popularity",
+     "Variety"
+    ],
+    "answer": "Popularity",
+    "evidence": {
+     "share": 1.604,
+     "rank_before": 2,
+     "rank_after": 26
+    }
+   },
+   {
+    "kind": "reach",
+    "case": "demo_11",
+    "state": {
+     "model": "lgbm"
+    },
+    "borough": "Queens",
+    "keep": 8,
+    "evidence": {
+     "console": {
+      "wh": 0.9,
+      "km": null,
+      "popularity": null,
+      "cuisines": 7
+     }
+    }
+   },
+   {
+    "kind": "model",
+    "case": "demo_06",
+    "state": {
+     "model": "lr"
+    },
+    "group": "Collaborative",
+    "group_text": "your history (places like ones you reviewed)",
+    "options": [
+     "Logistic regression",
+     "LightGBM"
+    ],
+    "answer": "LightGBM",
+    "evidence": {
+     "lr": 0.116,
+     "lgbm": 0.215
+    }
+   }
+  ],
+  "B": [
+   {
+    "kind": "why",
+    "case": "demo_05",
+    "state": {
+     "model": "lgbm",
+     "wh": 1.0,
+     "km": 1.5,
+     "pop": 0.4,
+     "cui": null
+    },
+    "place": "White Castle",
+    "nta": "Westchester Square",
+    "index": 25,
+    "options": [
+     "History weight",
+     "Distance",
+     "Popularity",
+     "Variety"
+    ],
+    "answer": "Popularity",
+    "evidence": {
+     "share": 2.167,
+     "rank_before": 2,
+     "rank_after": 11
+    }
+   },
+   {
+    "kind": "reach",
+    "case": "demo_14",
+    "state": {
+     "model": "lgbm"
+    },
+    "borough": "Staten Island",
+    "keep": 8,
+    "evidence": {
+     "console": {
+      "wh": 1.0,
+      "km": null,
+      "popularity": null,
+      "cuisines": 7
+     }
+    }
+   },
+   {
+    "kind": "model",
+    "case": "demo_07",
+    "state": {
+     "model": "lr"
+    },
+    "group": "Collaborative",
+    "group_text": "your history (places like ones you reviewed)",
+    "options": [
+     "Logistic regression",
+     "LightGBM"
+    ],
+    "answer": "LightGBM",
+    "evidence": {
+     "lr": 0.106,
+     "lgbm": 0.223
+    }
+   }
+  ]
+ },
+ "likert": [
+  "I understood why the list changed.",
+  "I could steer the list toward what I wanted.",
+  "I trust the recommendations."
+ ]
+}

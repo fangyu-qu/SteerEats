@@ -17,7 +17,7 @@ export function createMap(root, geo, handlers) {
   const codeIdx = new Map(geo.codes.map((code, k) => [code, k]));
   svg.append("defs").html(`<pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
     <line x1="0" y1="0" x2="0" y2="6" class="hatch-line"></line></pattern>`);
-  let projection, path, transform = d3.zoomIdentity, last = null, w = 0, h = 0;
+  let projection, path, transform = d3.zoomIdentity, last = null, w = 0, h = 0, brushed = [];
 
   const zoom = d3.zoom().scaleExtent([1, 40]).on("zoom", (e) => {
     transform = e.transform;
@@ -77,6 +77,11 @@ export function createMap(root, geo, handlers) {
     overlay.selectAll("text.ring-label").data(RINGS_KM).join("text").attr("class", "ring-label")
       .attr("text-anchor", "middle").attr("dy", "-0.3em")
       .attr("transform", (km) => `translate(${xy(home.lon, home.lat + km / 110.574)})`).text((km) => `${km} km`);
+    // candidates brushed in the similarity map (S1), under the pins
+    overlay.selectAll("circle.brushed").data(brushed.filter((i) => !top.includes(i)), (i) => i).join("circle").attr("class", "brushed").attr("r", 4)
+      .attr("transform", (i) => `translate(${xy(c.candidates.lon[i], c.candidates.lat[i])})`)
+      .on("pointerenter", (_, i) => handlers.hover(i)).on("pointerleave", () => handlers.hover(null)).on("click", (_, i) => handlers.select(i))
+      .selectAll("title").data((i) => [i]).join("title").text((i) => `${c.candidates.name[i]} (brushed in the similarity map)`);
     const goneSel = overlay.selectAll("g.gone").data(gone, (i) => i).join((e) => {
       const g = e.append("g").attr("class", "gone");
       g.append("circle").attr("r", 5);
@@ -132,6 +137,14 @@ export function createMap(root, geo, handlers) {
       if (refit) {
         const pts = [[home.lon, home.lat], ...top.concat(gone).map((i) => [c.candidates.lon[i], c.candidates.lat[i]])];
         fitTo(pts);
+      }
+    },
+    setBrushed(ids) {
+      brushed = ids ?? [];
+      place();
+      if (brushed.length && last) {
+        const { c, home } = last;
+        fitTo([[home.lon, home.lat], ...brushed.map((i) => [c.candidates.lon[i], c.candidates.lat[i]])]);
       }
     },
     highlight(id) {
