@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SteerEats</title>
+  <meta name="description" content="Steer NYC restaurant recommendations and see why the list changed.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18 C8 18 9 6 13 6 S18 12 20 12" /><circle cx="4" cy="18" r="2.2" /><circle cx="20" cy="12" r="2.2" /></svg>
+      <span>SteerEats</span>
+    </div>
+    <label class="field inline" for="case-select"><span>Test user</span>
+      <select id="case-select"></select>
+    </label>
+    <div class="segmented" role="radiogroup" aria-label="Ranking model">
+      <button type="button" role="radio" data-model="lr" aria-checked="false">Logistic regression</button>
+      <button type="button" role="radio" data-model="lgbm" aria-checked="true">LightGBM</button>
+    </div>
+    <p class="cutoff" id="cutoff"></p>
+  </header>
+
+  <div class="layout">
+    <aside class="console" id="console" aria-label="Steering controls"></aside>
+
+    <main class="workspace">
+      <p class="summary" id="summary" aria-live="polite"></p>
+      <section class="panel flow-panel" aria-labelledby="flow-title">
+        <header class="panel-head">
+          <h2 id="flow-title">How the list changed</h2>
+          <p class="panel-sub">Each line is a restaurant. Read left to right: the model's default ranking, then each step of your steering. A colored segment shows the step that moved it.</p>
+          <ul class="key" id="flow-key"></ul>
+        </header>
+        <div id="flow" class="flow"></div>
+      </section>
+
+      <div class="split">
+        <section class="panel map-panel" aria-labelledby="map-title">
+          <header class="panel-head">
+            <h2 id="map-title">Where the list went</h2>
+            <p class="panel-sub">Your usual area with 1, 2 and 5 km rings. Numbers are your new top 10; hollow dots are places that left it.</p>
+          </header>
+          <div id="map" class="map"></div>
+        </section>
+        <section class="panel list-panel" aria-labelledby="list-title">
+          <header class="panel-head">
+            <h2 id="list-title">Your top 10</h2>
+            <p class="panel-sub">Why each place moved, in places gained (+) or lost (−), split across your controls. The split uses exact Shapley values, so it does not depend on the order of the steps.</p>
+          </header>
+          <ol id="list" class="toplist"></ol>
+          <h3 class="subhead">Left your top 10</h3>
+          <ul id="exited" class="exited"></ul>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
