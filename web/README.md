@@ -18,6 +18,7 @@ max popularity percentile, min cuisine groups, selected candidate, boosted neigh
 | `src/main.js` | state, loading, solving targets per model, linking views |
 | `src/steer.js` | steering math, change accounting (fixed order and Shapley), outcome-target solver |
 | `src/views/console.js` | V1 steering console with outcome targets |
+| `src/views/preview.js`, `src/preview.js` | previews under each control: predicted visits kept across the control's range, targets re-solved at every value; hover to read, click to set |
 | `src/views/flow.js` | V2 rank flow (bump chart across steering steps) |
 | `src/views/map.js` | V4 map: neighborhoods shaded by steering cost, click-to-boost, usual area, distance rings, new and departed places |
 | `src/views/list.js` | top 10 with Shapley attribution of each rank change |
@@ -37,4 +38,4 @@ max popularity percentile, min cuisine groups, selected candidate, boosted neigh
 
 ![Evaluation](../docs/img/ui-v0-evaluation.png)
 
-Checks: `node tests/replay.mjs` (browser equals Python) `node tests/check_ledger.mjs` (ledger bars are exact SHAP values that sum to the steered score) `node tests/check_lens.mjs` (model-lens statistics equal `src/22_model_lens.py`) and `node tests/check_tradeoff.mjs` (trade-off points and frontiers equal `src/25_export_tradeoff.py` and `src/21_rq1_frontier.py`).
+Checks: `node tests/replay.mjs` (browser equals Python) `node tests/check_ledger.mjs` (ledger bars are exact SHAP values that sum to the steered score) `node tests/check_lens.mjs` (model-lens statistics equal `src/22_model_lens.py`) `node tests/check_tradeoff.mjs` (trade-off points and frontiers equal `src/25_export_tradeoff.py` and `src/21_rq1_frontier.py`) and `node tests/check_preview.mjs` (console previews equal `src/steering.py`).

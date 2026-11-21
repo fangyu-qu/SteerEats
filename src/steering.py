@@ -182,9 +182,14 @@ def top_k(case, theta, model, k=10):
 
 
 def outcomes(case, top):
-    # Plain left-to-right sums, the same order as the browser, so threshold checks agree exactly.
-    km = sum(float(case["candidates"]["distance_km"][i]) for i in top) / len(top)
-    pop = sum(float(case["popularity_n"][i]) for i in top) / len(top)
+    # Plain left-to-right sums, the same order as the browser, so threshold checks agree exactly. Not sum():
+    # from Python 3.12 it compensates rounding, which can land the mean on the other side of a target.
+    km = pop = 0.0
+    for i in top:
+        km += float(case["candidates"]["distance_km"][i])
+        pop += float(case["popularity_n"][i])
+    km /= len(top)
+    pop /= len(top)
     return {"km": km, "popularity": pop,
             "cuisines": len(set(np.asarray(case["cuisine"])[top].tolist()))}
 

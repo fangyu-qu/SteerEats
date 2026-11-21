@@ -13,22 +13,27 @@ export function mountConsole(root, state, onChangeRaw, actions = {}) {
   const onChange = () => { state.thetaOverride = null; onChangeRaw(); };
   root.innerHTML = `
     <h2>Steer your recommendations</h2>
+    <p class="ctl-help spark-intro">The small chart under each control shows how much of the model's predicted visits for this user the top 10 keeps across that control's range (top line = the model's own list). Grey: the target cannot be met. Hover to read a value, click to set it. <span id="spark-note"></span></p>
     <div class="ctl">
       <div class="ctl-top"><label for="ctl-wh">How much your past visits count</label><span class="ctl-value" id="val-wh"></span></div>
       <div class="range-wrap"><input id="ctl-wh" type="range" min="0" max="1" step="0.05"><span class="ghost" style="right:0" title="Model default"></span></div>
+      <div class="spark" id="spark-w_h"><div class="sp-svg"></div><p class="spark-read" role="status" hidden></p></div>
       <p class="ctl-help">Scales the part of each score that comes from places like ones you reviewed.</p>
     </div>
     <div class="ctl">
       <div class="ctl-top"><label class="switch" for="ctl-km-on"><input id="ctl-km-on" type="checkbox"> Keep it close</label><span class="ctl-value" id="val-km"></span></div>
       <input id="ctl-km" type="range" min="0.5" max="6" step="0.25" aria-label="Maximum average distance in kilometres">
+      <div class="spark" id="spark-km"><div class="sp-svg"></div><p class="spark-read" role="status" hidden></p></div>
       <p class="ctl-help">Average distance of the top 10 from your usual area.</p>
     </div>
     <div class="ctl">
       <label class="field" for="ctl-pop"><span>Less mainstream</span><select id="ctl-pop">${POP_OPTIONS.map(([v, t]) => `<option value="${v ?? ""}">${t}</option>`).join("")}</select></label>
+      <div class="spark" id="spark-popularity"><div class="sp-svg"></div><p class="spark-read" role="status" hidden></p></div>
       <p class="ctl-help">Popularity is each place's percentile among your candidates, by reviews in the past year.</p>
     </div>
     <div class="ctl">
       <label class="field" for="ctl-cui"><span>Cuisine variety</span><select id="ctl-cui">${CUI_OPTIONS.map(([v, t]) => `<option value="${v ?? ""}">${t}</option>`).join("")}</select></label>
+      <div class="spark" id="spark-cuisines"><div class="sp-svg"></div><p class="spark-read" role="status" hidden></p></div>
     </div>
     <div class="ctl" id="boost-ctl">
       <span class="ctl-top"><span class="lbl">Neighborhood</span></span>
