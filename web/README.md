@@ -10,6 +10,21 @@ npm run dev        # http://localhost:5173
 npm run build      # static site in web/dist
 ```
 
+## Deployment
+
+The built site is static and uses relative paths (`vite.config.js`), so it runs from any folder.
+
+- **GitHub Pages** (`.github/workflows/deploy-pages.yml`): every push to `main` that touches `web/`, `tests/` or
+  `outputs/rq1/frontiers.csv` installs, runs the five browser checks, builds and publishes to
+  https://fangyu-qu.github.io/SteerEats/. Nothing is published if a check fails. It can also be run by hand
+  (Actions > Deploy to GitHub Pages > Run workflow). One-time setup by a repository admin: Settings > Pages >
+  Build and deployment > Source: **GitHub Actions**.
+- **Netlify** (fallback, `netlify.toml`): import the repository; the same checks run before the build.
+- **Locally**: `npm run build`, then serve `web/dist` with any static server.
+
+The deployed demo holds only the 24 committed `demo_*.json` cases (home location rounded to two decimals) and
+aggregate files; no per-user rows.
+
 Deep links: `#case=demo_03&model=lr&wh=0.5&km=2&pop=0.4&cui=6&sel=12&boost=11` (case, model, history weight, max average km,
 max popularity percentile, min cuisine groups, selected candidate, boosted neighborhood index).
 
