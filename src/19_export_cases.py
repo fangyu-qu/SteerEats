@@ -52,14 +52,14 @@ SOLVER_TARGETS = [
     {"km": 2.5, "popularity": 0.5, "cuisines": 6},
     {"km": 0.6, "popularity": 0.2, "cuisines": 9},
 ]
-REPLAY_THETAS = [
+REPLAY_THETAS = [  # full theta dicts; boost settings are added per case
     dict(steering.THETA0),
-    {"w_h": 0.0, "alpha": 0.0, "beta": 0.0, "lam": 0.0},
-    {"w_h": 1.0, "alpha": 0.5, "beta": 0.0, "lam": 0.0},
-    {"w_h": 1.0, "alpha": 0.0, "beta": 0.5, "lam": 0.0},
-    {"w_h": 1.0, "alpha": 0.0, "beta": 0.0, "lam": 0.5},
-    {"w_h": 0.5, "alpha": 0.3, "beta": 0.2, "lam": 0.4},
-    {"w_h": 0.2, "alpha": 1.0, "beta": 1.0, "lam": 1.0},
+    {"w_h": 0.0, "alpha": 0.0, "beta": 0.0, "lam": 0.0, "boost": 0.0, "boost_nta": -1},
+    {"w_h": 1.0, "alpha": 0.5, "beta": 0.0, "lam": 0.0, "boost": 0.0, "boost_nta": -1},
+    {"w_h": 1.0, "alpha": 0.0, "beta": 0.5, "lam": 0.0, "boost": 0.0, "boost_nta": -1},
+    {"w_h": 1.0, "alpha": 0.0, "beta": 0.0, "lam": 0.5, "boost": 0.0, "boost_nta": -1},
+    {"w_h": 0.5, "alpha": 0.3, "beta": 0.2, "lam": 0.4, "boost": 0.0, "boost_nta": -1},
+    {"w_h": 0.2, "alpha": 1.0, "beta": 1.0, "lam": 1.0, "boost": 0.0, "boost_nta": -1},
 ]
 
 
@@ -186,7 +186,11 @@ def main():
         reread = json.loads(path.read_text())
         sim = steering.similarity(reread)
         exp = []
-        for th in REPLAY_THETAS:
+        # Boost settings use a neighbourhood that is not in the default top 10: that of the 40th candidate.
+        far = int(reread["nta"][int(np.argsort(steering.final_ranks(reread, steering.THETA0, "lgbm", sim))[39])])
+        boosted = [dict(steering.THETA0, boost=0.3, boost_nta=far),
+                   {"w_h": 0.5, "alpha": 0.3, "beta": 0.2, "lam": 0.4, "boost": 0.5, "boost_nta": far}]
+        for th in REPLAY_THETAS + boosted:
             for m in ("lr", "lgbm"):
                 fin = steering.final_ranks(reread, th, m, sim)
                 log = steering.stage_log(reread, th, m, sim)
@@ -201,7 +205,12 @@ def main():
                 top10 = [int(i) for i in np.argsort(steering.final_ranks(reread, res["theta"], m, sim))[:10]]
                 assert top10 == res["top"], "top_k disagrees with final_ranks"
                 solver.append(dict(targets=tg, model=m, theta=res["theta"], top=res["top"], met=res["met"]))
-        expected[demo["id"]] = {"thetas": exp, "solver": solver}
+        boost = []
+        for base_t in (dict(steering.THETA0), {"w_h": 1.0, "alpha": 0.5, "beta": 0.0, "lam": 0.2, "boost": 0.0, "boost_nta": -1}):
+            for m in ("lr", "lgbm"):
+                t, ok = steering.solve_boost(reread, m, base_t, far)
+                boost.append(dict(base=base_t, nta=far, model=m, boost=t["boost"], reached=ok))
+        expected[demo["id"]] = {"thetas": exp, "solver": solver, "boost": boost}
         print(f"case {case_id} ({demo['story']}): {len(ids)} candidates, {int(np.sum(full['relevant']))} later liked; "
               f"SHAP residual lr {model_part['lr']['shap_residual_max']:.1e}, lgbm {model_part['lgbm']['shap_residual_max']:.1e}",
               flush=True)

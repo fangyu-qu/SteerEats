@@ -5,7 +5,7 @@ const CONTROLS = ["w_h", "alpha", "beta", "lam"];
 
 function why(phi, i) {
   // phi[c][i] is the control's share of (new rank - default rank); negative = helped it move up.
-  const parts = CONTROLS.map((k) => ({ k, v: -phi[k][i] })).filter((p) => Math.abs(p.v) >= 0.5)
+  const parts = CONTROLS.concat(phi.boost ? ["boost"] : []).map((k) => ({ k, v: -phi[k][i] })).filter((p) => Math.abs(p.v) >= 0.5)
     .sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
   const total = parts.reduce((a, p) => a + Math.abs(p.v), 0);
   const bar = total

@@ -55,7 +55,9 @@ export function ledgerData(c, model, theta, ranks, i) {
   const s0 = (z - zmin) / R;
   const base = s0 - groups.reduce((a, g) => a + g.value, 0);   // typical candidate, on this user's scale
   const dist = -theta.alpha * c.distance_n[i], pop = -theta.beta * c.popularity_n[i];
-  return { i, R, base, groups, s0, dist, pop, s2: s0 + dist + pop, ranks: { default: ranks.default[i], s2: ranks.popularity[i], final: ranks.diversity[i] } };
+  const boost = theta.boost && c.nta[i] === theta.boost_nta ? theta.boost : 0;
+  return { i, R, base, groups, s0, dist, pop, boost, s2: s0 + dist + pop + boost,
+    ranks: { default: ranks.default[i], s2: ranks.boost[i], final: ranks.diversity[i] } };
 }
 
 function steeredAt(c, model, theta, i) {
@@ -63,14 +65,14 @@ function steeredAt(c, model, theta, i) {
   let zmin = Infinity, zmax = -Infinity;
   for (let k = 0; k < n; k++) { const z = m.noncollab[k] + theta.w_h * m.collab[k]; if (z < zmin) zmin = z; if (z > zmax) zmax = z; }
   const s0 = (m.noncollab[i] + theta.w_h * m.collab[i] - zmin) / (zmax - zmin || 1);
-  return s0 - theta.alpha * c.distance_n[i] - theta.beta * c.popularity_n[i];
+  return s0 - theta.alpha * c.distance_n[i] - theta.beta * c.popularity_n[i] + (theta.boost && c.nta[i] === theta.boost_nta ? theta.boost : 0);
 }
 
 export function renderLedger(root, ctx) {
   const { c, model, theta, ranks, i } = ctx;
   const L = ledgerData(c, model, theta, ranks, i);
   const n = c.cuisine.length;
-  const tenth = [...Array(n).keys()].find((k) => ranks.popularity[k] === 10);
+  const tenth = [...Array(n).keys()].find((k) => ranks.boost[k] === 10);
   const cutoff = tenth != null ? steeredAt(c, model, theta, tenth) : null;
 
   const rows = [{ kind: "start", label: "Typical candidate", value: L.base }];
@@ -78,6 +80,7 @@ export function renderLedger(root, ctx) {
   rows.push({ kind: "subtotal", label: "Model score", value: L.s0 });
   rows.push({ kind: "control", label: "Distance penalty", value: L.dist, off: theta.alpha === 0 });
   rows.push({ kind: "control", label: "Popularity penalty", value: L.pop, off: theta.beta === 0 });
+  if (theta.boost) rows.push({ kind: "control", label: "Neighborhood boost", value: L.boost, off: L.boost === 0 });
   rows.push({ kind: "total", label: "Steered score", value: L.s2 });
 
   let run = 0;
@@ -159,6 +162,7 @@ export function renderContrast(root, ctx) {
     .sort((p, q) => Math.abs(q.value) - Math.abs(p.value));
   rows.push({ kind: "control", label: "Distance penalty", value: A.dist - B.dist });
   rows.push({ kind: "control", label: "Popularity penalty", value: A.pop - B.pop });
+  if (theta.boost) rows.push({ kind: "control", label: "Neighborhood boost", value: A.boost - B.boost });
   rows.push({ kind: "total", label: "Steered score gap", value: A.s2 - B.s2 });
   const width = Math.max(root.clientWidth, 360), labelW = 188, valueW = 56, rowH = 24, top = 22;
   const height = top + rows.length * rowH + 8;
