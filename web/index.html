@@ -58,6 +58,25 @@
           <ul id="exited" class="exited"></ul>
         </section>
       </div>
+
+      <section class="panel ledger-panel" aria-labelledby="ledger-title">
+        <header class="panel-head">
+          <h2 id="ledger-title">Why this place</h2>
+          <p class="panel-sub">Click any restaurant in the chart, map or list. The ledger builds its score from the typical candidate: blue bars are the model's reasons (SHAP), orange bars are your steering, and the variety step moves ranks at the end.</p>
+        </header>
+        <div class="ledger-grid">
+          <div class="ledger-main">
+            <div id="ledger-notes" class="ledger-notes"></div>
+            <div id="ledger" class="ledger"></div>
+            <div id="ledger-detail"></div>
+          </div>
+          <div class="ledger-side">
+            <label class="field" for="contrast-select"><span>Compare with</span><select id="contrast-select"></select></label>
+            <p id="contrast-caption" class="contrast-caption"></p>
+            <div id="contrast" class="ledger"></div>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
   <script type="module" src="/src/main.js"></script>

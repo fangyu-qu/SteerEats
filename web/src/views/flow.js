@@ -54,7 +54,7 @@ export function renderFlow(root, data, handlers) {
     g.append("text").attr("class", "name right").attr("text-anchor", "start").attr("dy", "0.35em");
     return g;
   });
-  items.attr("data-id", (i) => i)
+  items.attr("data-id", (i) => i).classed("selected", (i) => i === data.selected)
     .on("pointerenter", (_, i) => handlers.hover(i)).on("pointerleave", () => handlers.hover(null))
     .on("click", (_, i) => handlers.select?.(i));
   items.each(function (i) {
