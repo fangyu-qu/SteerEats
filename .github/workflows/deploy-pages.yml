@@ -1,0 +1,58 @@
+# Build the SteerEats interface and publish it to GitHub Pages (https://fangyu-qu.github.io/SteerEats/).
+# Runs on pushes to main that touch the app or what it checks against, and on demand. The browser checks
+# (browser equals Python on the committed demo cases) must pass before anything is published.
+# One-time setup by a repository admin: Settings > Pages > Build and deployment > Source: GitHub Actions.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ["web/**", "tests/**", "outputs/rq1/frontiers.csv", ".github/workflows/deploy-pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install
+        run: npm ci
+        working-directory: web
+      - name: Browser checks
+        run: |
+          node tests/replay.mjs
+          node tests/check_ledger.mjs
+          node tests/check_lens.mjs
+          node tests/check_tradeoff.mjs
+          node tests/check_preview.mjs
+      - name: Build
+        run: npm run build
+        working-directory: web
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

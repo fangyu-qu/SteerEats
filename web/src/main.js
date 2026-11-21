@@ -22,10 +22,12 @@ const state = {
   thetaOverride: null, // a grid setting loaded from the trade-off view; targets are paused while it is set
 };
 const el = (id) => document.getElementById(id);
+// data files live next to the page, wherever the site is served from (vite.config.js sets a relative base)
+const DATA = `${import.meta.env.BASE_URL}data/`;
 
 async function boot() {
-  const [index, nta, boroughs, ntaCodes, lensPop, evaluation, tradeoff] = await Promise.all(["/data/cases/index.json", "/data/nyc_nta.geojson", "/data/nyc_boroughs.geojson", "/data/nta_index.json", "/data/model_lens.json", "/data/evaluation.json", "/data/tradeoff.json"]
-    .map((u) => fetch(u).then((r) => { if (!r.ok) throw new Error(`Could not load ${u}`); return r.json(); })));
+  const [index, nta, boroughs, ntaCodes, lensPop, evaluation, tradeoff] = await Promise.all(["cases/index.json", "nyc_nta.geojson", "nyc_boroughs.geojson", "nta_index.json", "model_lens.json", "evaluation.json", "tradeoff.json"]
+    .map((f) => DATA + f).map((u) => fetch(u).then((r) => { if (!r.ok) throw new Error(`Could not load ${u}`); return r.json(); })));
   state.ntaCodes = ntaCodes;
   el("cutoff").textContent = `Snapshot ${index.cutoff} · test period Aug 2020 – Apr 2021`;
   const scripted = index.cases.filter((x) => x.story !== "random"), others = index.cases.filter((x) => x.story === "random");
@@ -97,7 +99,7 @@ function setModel(m) {
 }
 
 async function loadCase(file) {
-  const c = await fetch(`/data/cases/${file}`).then((r) => r.json());
+  const c = await fetch(`${DATA}cases/${file}`).then((r) => { if (!r.ok) throw new Error(`Could not load ${file}`); return r.json(); });
   state.c = c; state.sim = similarity(c); state.caseId = file; state.contrast = null;
   state.selected = state.pendingSel != null && state.pendingSel < c.cuisine.length ? state.pendingSel : null;
   state.pendingSel = null;
@@ -289,6 +291,6 @@ function setHover(id) {
 }
 
 boot().catch((err) => {
-  el("summary").textContent = `The app could not start: ${err.message}. Run it with "npm run dev" from the web folder.`;
+  el("summary").textContent = `The app could not start: ${err.message}.` + (import.meta.env.DEV ? ' Run it with "npm run dev" from the web folder.' : " Reload the page to try again.");
   console.error(err);
 });
