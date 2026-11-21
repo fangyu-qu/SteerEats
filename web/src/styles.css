@@ -381,6 +381,48 @@ table.feat td.eff { white-space: nowrap; text-align: right; }
 #tradeoff .hit { cursor: pointer; }
 .lens-tip .muted { color: var(--ink-3); }
 
+/* Similarity map (S1): neutral background, candidates and the top 10 in ink, brushed candidates ringed */
+.lens { grid-template-columns: minmax(0, 1fr); }
+.scroll-x { overflow-x: auto; }
+.sim-cap { margin: 0; font-size: 12.5px; color: var(--ink-2); max-width: 95ch; }
+.sim-cap b { color: var(--ink); font-weight: 600; }
+.sim-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.sim-plot { position: relative; width: 100%; }
+.sim-plot canvas { display: block; }
+.sim-plot svg { position: absolute; inset: 0; overflow: visible; font-family: var(--font); }
+.sim-note { margin: -8px 0 0; font-size: 12.5px; color: var(--ink-2); min-height: 1.4em; }
+.lens .sim-cand { fill: var(--panel); stroke: var(--ink-3); stroke-width: 1.3; }
+.lens .sim-gone { fill: var(--panel); stroke: var(--ink); stroke-width: 1.6; }
+.lens .sim-pin circle { fill: var(--ink); stroke: var(--panel); stroke-width: 1.5; }
+.lens .sim-pin text { font: 600 9.5px var(--mono); fill: var(--panel); text-anchor: middle; pointer-events: none; }
+.lens .ring.brushed { stroke: var(--focus); stroke-width: 1.5; }
+.sim-brush .selection { fill: var(--focus); fill-opacity: 0.08; stroke: var(--focus); }
+.map .brushed { fill: var(--panel); stroke: var(--focus); stroke-width: 2; cursor: pointer; }
+@media (max-width: 1100px) { .sim-row { grid-template-columns: minmax(0, 1fr); } }
+
+/* Study mode (#study=P1): a task bar along the bottom; the list-only condition hides every explanation view */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.btn-primary { font: 600 13px var(--font); color: var(--panel); background: var(--ink); border: 1px solid var(--ink);
+  border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+.btn-primary:hover { background: var(--ink-2); }
+body.study { padding-bottom: 150px; }
+.study-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; gap: 20px; align-items: flex-end;
+  justify-content: space-between; padding: 12px 20px 14px; background: var(--panel); border-top: 1px solid var(--line-strong);
+  box-shadow: 0 -4px 14px rgb(20 25 30 / 0.08); }
+.study-bar p { margin: 0 0 4px; max-width: 90ch; }
+.study-bar .sb-main { min-width: 0; }
+.study-bar .sb-kicker { font-size: 12px; color: var(--ink-3); }
+.study-bar .sb-actions { display: flex; gap: 8px; flex: none; }
+.sb-opts, .sb-likert { border: 0; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; }
+.sb-likert legend { font-size: 13px; padding: 0; margin-bottom: 2px; }
+.sb-opts.need, .sb-likert.need { outline: 1.5px solid var(--miss); outline-offset: 4px; border-radius: 4px; }
+body.study-list .flow-panel, body.study-list .map-panel, body.study-list .ledger-panel, body.study-list .section-label,
+body.study-list .lens-panel, body.study-list #summary, body.study-list .toplist .why, body.study-list .subhead,
+body.study-list #exited, body.study-list .spark, body.study-list .spark-intro, body.study-list .solution,
+body.study-list #boost-ctl { display: none; }
+body.study-list .split { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 820px) { .study-bar { flex-direction: column; align-items: stretch; } }
+
 /* The control rail stays in view while the workspace scrolls (two-column layout only). */
 @media (min-width: 821px) {
   .layout { background: linear-gradient(to right, var(--rail) 299px, var(--line) 299px 300px, transparent 300px); }

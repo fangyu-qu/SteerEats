@@ -39,6 +39,8 @@ max popularity percentile, min cuisine groups, selected candidate, boosted neigh
 | `src/views/list.js` | top 10 with Shapley attribution of each rank change |
 | `src/views/ledger.js` | V3 score ledger (SHAP groups + steering on one normalized scale) and "why A over B" contrast |
 | `src/views/tradeoff.js`, `src/tradeoff.js` | V5 trade-off space: the 192 grid settings for this user (predicted visits kept) and for 2,000 test users (NDCG@10 kept, paired 95% intervals), Pareto staircases, linked hover, click a dot to load its setting |
+| `src/views/similarity.js` | S1 similarity map: UMAP and PCA of restaurant factors, this user's candidates, highlight a borough or cuisine, brush to show candidates on the map, faithfulness table |
+| `src/study.js` | user-study mode (`#study=P1`): counterbalanced full vs list-only conditions, timed and scored tasks, ratings, results download |
 | `src/views/lens.js`, `src/lens.js` | V6 model lens: both top 10s as a slope chart, the user against all 8,025 test users, side-by-side SHAP beeswarms, SHAP reliance by group, per-group attribution agreement |
 | `src/views/evaluation.js` | V7 evaluation: Recall@10 / NDCG@10 with 95% bootstrap intervals, paired differences, periods, sampling seeds, reliability diagrams before and after Platt scaling |
 | `public/data/` | demo cases, simplified NTA and borough boundaries, NTA code index |
@@ -50,6 +52,8 @@ max popularity percentile, min cuisine groups, selected candidate, boosted neigh
 ![Console previews](../docs/img/ui-v0-console-previews.png)
 
 ![Trade-off space](../docs/img/ui-v0-tradeoff.png)
+
+![Similarity map](../docs/img/ui-v0-similarity.png)
 
 ![Model lens](../docs/img/ui-v0-model-lens.png)
 

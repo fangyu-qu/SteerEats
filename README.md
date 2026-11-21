@@ -29,7 +29,7 @@ Reports remain managed separately in Overleaf. The runner updates a local report
 
 ## Setup and run
 
-Python 3.11+ with pandas, pyarrow, geopandas, shapely, scikit-learn and scipy. From this folder:
+Python 3.13 (tested) with `pip install -r requirements.txt` (pandas, pyarrow, geopandas, scikit-learn, scipy, LightGBM, SHAP, umap-learn). From this folder:
 
 ```bash
 python3 src/01_build_nyc_restaurants.py   # NYC restaurants from the Google metadata
@@ -253,6 +253,34 @@ cases, both models, two console states, four controls). Writing it exposed a par
 Python's `sum()`, which since Python 3.12 compensates rounding, so a mean could land exactly on a target in Python
 (0.3) and just above it in the browser (0.30000000000000004). It now sums left to right like the browser; the 288
 saved solver results in `tests/replay_expected.json` are unchanged.
+
+## Similarity map, case studies and user study (November 21, 2026)
+
+```bash
+python src/26_similarity_map.py   # ~2 min: SVD item factors, UMAP / PCA, trustworthiness, continuity, k-NN, sweep figure
+python src/27_case_studies.py     # the three scripted case studies (seconds)
+python src/28_user_study.py --tasks   # study tasks with computed answers (~6 min); without --tasks: analyse sessions
+```
+
+**Similarity map (S1).** Restaurants placed by who reviewed them: 4,871,411 reviews before 2020-08-01 by 813,681
+people of 19,812 restaurants (at least 20 reviewers), 64-dimensional SVD, then UMAP with PCA beside it
+(`outputs/similarity_map/SIMILARITY_MAP.md`). A restaurant's 15 nearest neighbours share its borough 92.0% of
+the time (chance 41.9%) but its cuisine group only 26.3% (chance 16.6%): co-reviewing follows place more than
+cuisine. UMAP keeps local structure (trustworthiness 0.919, continuity 0.945, the same with a second seed; PCA
+0.820 and 0.917; UMAP on same-size noise 0.530 and 0.561). The most distinct cuisine communities are
+jewish/kosher, African, Korean and Caribbean (neighbour purity 31, 14, 14 and 12 times their share). Brushing
+the projection shows those candidates on the map.
+
+**Case studies** (`outputs/case_studies/CASE_STUDIES.md`, each with a deep link). Manhattan regular (demo_01):
+the four controls reach 4 of the 23 unreached other-borough neighbourhoods on the grid, the boost reaches all 23
+(Park Slope with +0.02 for LightGBM, +0.08 for logistic regression). Popular-places fan (demo_02): both models
+meet "popularity at most 0.40" keeping 74% of predicted visits, but LightGBM's list moves from 3.5 to 12.4 km
+away (logistic regression 0.6 to 2.7 km). Models disagree (demo_03): the own lists share 2 of 10 places;
+"within 2 km" needs α 0.12 for logistic regression (91% kept) and 0.44 for LightGBM (69% kept).
+
+**User study** (`docs/USER_STUDY.md`). Ready to run, not yet run: `#study=P1` opens study mode, which
+counterbalances the full interface against a list-only baseline, times and scores three tasks per condition
+against computed answers, and exports a results file. No results exist until sessions are held.
 
 ## Raw data (`data/raw`, not in git)
 

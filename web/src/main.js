@@ -11,6 +11,8 @@ import { createLens } from "./views/lens.js";
 import { createEvaluation } from "./views/evaluation.js";
 import { createTradeoff } from "./views/tradeoff.js";
 import { renderPreviews } from "./views/preview.js";
+import { createSimilarity } from "./views/similarity.js";
+import { createStudy } from "./study.js";
 import { previewSweep } from "./preview.js";
 import { predictedVisits, visitProbs } from "./tradeoff.js";
 
@@ -26,7 +28,7 @@ const el = (id) => document.getElementById(id);
 const DATA = `${import.meta.env.BASE_URL}data/`;
 
 async function boot() {
-  const [index, nta, boroughs, ntaCodes, lensPop, evaluation, tradeoff] = await Promise.all(["cases/index.json", "nyc_nta.geojson", "nyc_boroughs.geojson", "nta_index.json", "model_lens.json", "evaluation.json", "tradeoff.json"]
+  const [index, nta, boroughs, ntaCodes, lensPop, evaluation, tradeoff, simMap] = await Promise.all(["cases/index.json", "nyc_nta.geojson", "nyc_boroughs.geojson", "nta_index.json", "model_lens.json", "evaluation.json", "tradeoff.json", "similarity_map.json"]
     .map((f) => DATA + f).map((u) => fetch(u).then((r) => { if (!r.ok) throw new Error(`Could not load ${u}`); return r.json(); })));
   state.ntaCodes = ntaCodes;
   el("cutoff").textContent = `Snapshot ${index.cutoff} · test period Aug 2020 – Apr 2021`;
@@ -37,6 +39,7 @@ async function boot() {
   el("case-select").addEventListener("change", (e) => loadCase(e.target.value));
   document.querySelectorAll(".segmented button[data-model]").forEach((b) => b.addEventListener("click", () => {
     setModel(b.dataset.model);
+    acted();
     update({ refit: true });
   }));
   el("flow-key").innerHTML = [["model", "History weight moved it"], ["control", "Distance, popularity or neighborhood moved it"],
@@ -45,17 +48,36 @@ async function boot() {
   views.map = createMap(el("map"), { nta, boroughs, codes: ntaCodes }, { hover: setHover, select, boost: toggleBoost });
   state.platt = tradeoff.platt;
   views.tradeoff = createTradeoff(el("tradeoff"), tradeoff, { load: loadTheta });
+  views.sim = createSimilarity(el("similarity"), simMap, { hover: setHover, brush: (ids) => views.map.setBrushed(ids) });
   views.lens = createLens(el("lens"), lensPop, { hover: setHover, select });
   views.evaluation = createEvaluation(el("evaluation"), evaluation);
   el("contrast-select").addEventListener("change", (e) => { state.contrast = e.target.value === "" ? null : +e.target.value; renderWhy(); });
   const fromHash = readHash(index);
-  views.console = mountConsole(el("console"), state, () => schedule(), { clearBoost: () => toggleBoost(null), clearLoaded: () => { state.thetaOverride = null; update({ refit: false }); } });
+  views.console = mountConsole(el("console"), state, () => { acted(); schedule(); }, { clearBoost: () => toggleBoost(null), clearLoaded: () => { state.thetaOverride = null; update({ refit: false }); } });
   setModel(state.model);
-  window.addEventListener("resize", () => { schedule(false); views.evaluation.render(); views.tradeoff.render(); });
+  window.addEventListener("resize", () => { schedule(false); views.evaluation.render(); views.tradeoff.render(); views.sim.redraw(); });
   // the previews follow the rail's width (it changes at the one-column breakpoint)
   let railW = 0;
   new ResizeObserver(([e]) => { const w = Math.round(e.contentRect.width); if (w !== railW) { railW = w; if (state.c) previews(); } }).observe(el("console"));
   await loadCase(fromHash ?? index.cases[0].file);
+  if (state.study) {
+    const spec = await fetch(`${DATA}study.json`).then((r) => r.json());
+    study = createStudy(state.study, spec, {
+      lockCase: (on) => { el("case-select").disabled = on; },
+      setCondition: (cond) => { document.body.classList.toggle("study-list", cond === "list"); window.dispatchEvent(new Event("resize")); },
+      applyState: async (t) => {
+        const s = t.state;
+        state.thetaOverride = null; state.boostNta = null; state.selected = null;
+        state.w_h = s.wh ?? 1;
+        state.targets = { km: s.km ?? null, popularity: s.pop ?? null, cuisines: s.cui ?? null };
+        if (s.km != null) state.kmDraft = s.km;
+        setModel(s.model);
+        views.console.sync();
+        await loadCase(`${t.case}.json`);
+      },
+      outcome: () => ({ top: state.result.top, defTop: state.result.defTop, model: state.model, c: state.c }),
+    });
+  }
 }
 
 // Hash keys: case=demo_03, model=lr|lgbm, wh=0.5, km=2, pop=0.4, cui=6, th=w_h,alpha,beta,lam (loaded grid setting)
@@ -63,6 +85,7 @@ function readHash(index) {
   const h = new URLSearchParams(location.hash.slice(1));
   const num = (k) => (h.has(k) && h.get(k) !== "" && Number.isFinite(+h.get(k)) ? +h.get(k) : null);
   if (h.get("model") === "lr" || h.get("model") === "lgbm") state.model = h.get("model");
+  if (/^P\d{1,2}$/.test(h.get("study") ?? "")) state.study = h.get("study");
   if (num("wh") != null) state.w_h = Math.min(1, Math.max(0, num("wh")));
   if (num("km") != null) { state.kmDraft = num("km"); state.targets.km = num("km"); }
   if (num("pop") != null) state.targets.popularity = num("pop");
@@ -81,6 +104,7 @@ function readHash(index) {
 
 function writeHash() {
   const h = new URLSearchParams();
+  if (state.study) h.set("study", state.study);
   h.set("case", state.caseId.replace(".json", ""));
   h.set("model", state.model);
   if (state.thetaOverride) { const t = state.thetaOverride; h.set("th", [t.w_h, t.alpha, t.beta, t.lam].join(",")); }
@@ -110,7 +134,8 @@ async function loadCase(file) {
 }
 
 const views = {};
-let pending = null;
+let pending = null, study = null;
+const acted = () => study?.action();   // study mode counts the participant's interactions
 function schedule(refit = true) {
   if (pending) return;
   pending = requestAnimationFrame(() => { pending = null; update({ refit }); });
@@ -161,6 +186,7 @@ function solveOrLoad(c, m) {
 }
 
 function loadTheta(t) {
+  acted();
   state.thetaOverride = { w_h: t.w_h, alpha: t.alpha, beta: t.beta, lam: t.lam };
   state.w_h = t.w_h;
   state.targets = { km: null, popularity: null, cuisines: null };
@@ -215,6 +241,7 @@ function update({ refit }) {
   markSelected([el("list"), el("exited")], state.selected);
   renderWhy();
   views.tradeoff.update({ c, model: state.model, theta: r.theta });
+  views.sim.update({ c, top: r.top, gone: r.gone });
   previews();
   views.lens.update({ c, model: state.model, selected: state.selected, ...r.lens });
   setHover(state.hover);
@@ -243,6 +270,7 @@ function previews() {
 
 // Clicking a preview sets that control (and leaves a setting loaded from the trade-off view).
 function pickPreview(key, v) {
+  acted();
   state.thetaOverride = null;
   if (key === "w_h") state.w_h = v;
   else if (key === "km") { state.kmDraft = v; state.targets.km = v; }
@@ -273,11 +301,13 @@ function renderWhy() {
 
 // Clicking a neighbourhood boosts it; clicking it again (or the console's remove button) turns the boost off.
 function toggleBoost(nta) {
+  acted();
   state.boostNta = nta == null || state.boostNta === nta ? null : nta;
   update({ refit: false });
 }
 
 function select(i) {
+  acted();
   state.selected = i;
   update({ refit: false });
 }
@@ -288,6 +318,7 @@ function setHover(id) {
   highlightList([el("list"), el("exited")], id);
   views.map.highlight(id);
   views.lens?.highlight(id);
+  views.sim?.highlight(id);
 }
 
 boot().catch((err) => {
