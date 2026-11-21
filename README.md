@@ -201,6 +201,23 @@ median of 0.702 (IQR 0.654 to 0.738). Disagreement goes with lower accuracy for 
 both top 10s for 14.4% of users, only LightGBM's for 4.2%, only logistic regression's for 3.8%. The interface
 view (V6) places the selected user in these distributions and shows both models' SHAP side by side.
 
+## Calibration and the evaluation panel (November 21, 2026)
+
+```bash
+python src/23_calibration.py         # ~3 min: Platt scaling, Brier, ECE, AUC, reliability bins
+python src/24_export_evaluation.py   # gathers accuracy, paired tests, periods, seeds, calibration for the web panel
+```
+
+Results are in `outputs/calibration/CALIBRATION.md`. Rows are all 1,605,000 (test user, candidate) pairs; 8,708
+are visits (base rate 0.54%). Trained on one visit per ten sampled candidates, the models' raw probabilities
+average 5.5% (logistic regression) and 4.9% (LightGBM), 9–10 times the real rate, with negative Brier skill.
+The final models were refit on train + validation, so Platt scaling is cross-fitted over 5 user folds on test.
+Afterwards the mean prediction is 0.54% for both, ECE (15 equal-mass bins) is 1.1e-3 and 3.9e-4, and AUC is
+unchanged (0.737 and 0.752); popularity reaches AUC 0.518. A constant base-rate prediction has ECE 2.6e-4,
+lower than either model, which is why ECE is reported with AUC and Brier skill. The plan's protocol
+(train-only models, Platt fitted on validation) under-predicts on test (mean 0.37% and 0.29%), a sign of the
+temporal shift between the windows. Platt scaling is monotone per user, so Recall@10 and NDCG@10 do not change.
+
 ## Raw data (`data/raw`, not in git)
 
 | File | Source | Size |
