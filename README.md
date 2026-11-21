@@ -237,6 +237,23 @@ that step 21 kept settings tied on the steered quantity but lower in NDCG@10 (se
 cap of 10 cuisine groups); with the tie fixed, `frontiers.csv` lost 5 dominated rows and the matched-outcome table
 is unchanged.
 
+## Console previews (November 21, 2026)
+
+```bash
+python src/25_export_tradeoff.py --cases-only   # also writes tests/preview_expected.json
+node tests/check_preview.mjs                    # browser previews equal src/steering.py's solver
+```
+
+Under each console control a small chart sweeps that control over its range, re-solves the outcome targets at
+every value with the other controls held, and plots the share of the model's predicted visits for this user that
+the top 10 keeps (the same Platt-calibrated estimate as the trade-off view; grey where the target cannot be met).
+Hovering reads out the value and the list's distance, popularity and cuisine groups; clicking sets the control.
+The summary line now states the share kept by the current list. The check covers 5,184 preview points (24 demo
+cases, both models, two console states, four controls). Writing it exposed a parity bug: `steering.outcomes` used
+Python's `sum()`, which since Python 3.12 compensates rounding, so a mean could land exactly on a target in Python
+(0.3) and just above it in the browser (0.30000000000000004). It now sums left to right like the browser; the 288
+saved solver results in `tests/replay_expected.json` are unchanged.
+
 ## Raw data (`data/raw`, not in git)
 
 | File | Source | Size |

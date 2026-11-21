@@ -10,6 +10,9 @@ import { renderContrast, renderLedger } from "./views/ledger.js";
 import { createLens } from "./views/lens.js";
 import { createEvaluation } from "./views/evaluation.js";
 import { createTradeoff } from "./views/tradeoff.js";
+import { renderPreviews } from "./views/preview.js";
+import { previewSweep } from "./preview.js";
+import { predictedVisits, visitProbs } from "./tradeoff.js";
 
 const STORY = { local_manhattan: "Manhattan regular", popularity_dominated: "Popular-places fan", models_disagree: "Models disagree" };
 const state = {
@@ -38,6 +41,7 @@ async function boot() {
     ["diversity", "Variety moved it"], [null, "No change at that step"]]
     .map(([h, t]) => `<li><i style="background:${hueVar(h)}"></i>${t}</li>`).join("");
   views.map = createMap(el("map"), { nta, boroughs, codes: ntaCodes }, { hover: setHover, select, boost: toggleBoost });
+  state.platt = tradeoff.platt;
   views.tradeoff = createTradeoff(el("tradeoff"), tradeoff, { load: loadTheta });
   views.lens = createLens(el("lens"), lensPop, { hover: setHover, select });
   views.evaluation = createEvaluation(el("evaluation"), evaluation);
@@ -46,6 +50,9 @@ async function boot() {
   views.console = mountConsole(el("console"), state, () => schedule(), { clearBoost: () => toggleBoost(null), clearLoaded: () => { state.thetaOverride = null; update({ refit: false }); } });
   setModel(state.model);
   window.addEventListener("resize", () => { schedule(false); views.evaluation.render(); views.tradeoff.render(); });
+  // the previews follow the rail's width (it changes at the one-column breakpoint)
+  let railW = 0;
+  new ResizeObserver(([e]) => { const w = Math.round(e.contentRect.width); if (w !== railW) { railW = w; if (state.c) previews(); } }).observe(el("console"));
   await loadCase(fromHash ?? index.cases[0].file);
 }
 
@@ -180,7 +187,12 @@ function summarize(r) {
   const changed = r.gone.length;
   const head = changed === 0 ? "Your top 10 matches the model's list."
     : `<b>${changed} ${changed === 1 ? "place" : "places"} entered</b> and ${changed} left your top 10.`;
-  return `${head} Average distance <span class="num">${km0.toFixed(1)}&nbsp;km → ${km1.toFixed(1)}&nbsp;km</span>, cuisine groups <span class="num">${cu0} → ${cu1}</span>, places this user later liked <span class="num">${lk0} → ${lk1}</span>.`;
+  // the model's own estimate of later visits in the list (Platt-calibrated, as in the trade-off view)
+  const pk = `${state.caseId}|${state.model}|probs`;
+  if (!state.costCache.has(pk)) state.costCache.set(pk, visitProbs(c, state.model, state.platt));
+  const p = state.costCache.get(pk), kept = predictedVisits(p, r.top) / predictedVisits(p, r.defTop);
+  const keptText = changed === 0 ? "" : ` It keeps <span class="num">${kept < 1 && Math.round(kept * 100) >= 100 ? (Math.floor(kept * 1000) / 10).toFixed(1) : Math.round(kept * 100)}%</span> of the visits the model predicts for this user.`;
+  return `${head} Average distance <span class="num">${km0.toFixed(1)}&nbsp;km → ${km1.toFixed(1)}&nbsp;km</span>, cuisine groups <span class="num">${cu0} → ${cu1}</span>, places this user later liked <span class="num">${lk0} → ${lk1}</span>.${keptText}`;
 }
 
 function update({ refit }) {
@@ -201,8 +213,40 @@ function update({ refit }) {
   markSelected([el("list"), el("exited")], state.selected);
   renderWhy();
   views.tradeoff.update({ c, model: state.model, theta: r.theta });
+  previews();
   views.lens.update({ c, model: state.model, selected: state.selected, ...r.lens });
   setHover(state.hover);
+}
+
+// Console previews: each control swept over its range with the others held (web/src/preview.js). The sweeps are
+// recomputed shortly after the controls settle; meanwhile the last ones are drawn (dimmed if they are out of date).
+const previewCache = new Map();
+let previewTimer = null, lastSweeps = null;
+function previews() {
+  const { c, model, w_h, targets } = state;
+  const key = `${state.caseId}|${model}|${w_h}|${targets.km}|${targets.popularity}|${targets.cuisines}`;
+  const current = { w_h, km: targets.km == null ? undefined : targets.km, popularity: targets.popularity, cuisines: targets.cuisines };
+  const draw = (sweeps, stale) => renderPreviews(el("console"), sweeps, current, pickPreview, { stale, boost: state.boostNta != null });
+  if (previewCache.has(key)) { lastSweeps = previewCache.get(key); draw(lastSweeps, false); return; }
+  draw(lastSweeps?.caseKey === `${state.caseId}|${model}` ? lastSweeps : null, true);
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(() => {
+    const sweeps = Object.fromEntries(["w_h", "km", "popularity", "cuisines"].map((k) => [k, previewSweep(c, model, state.platt, w_h, targets, k)]));
+    Object.defineProperty(sweeps, "caseKey", { value: `${state.caseId}|${model}`, enumerable: false });
+    if (previewCache.size > 200) previewCache.clear();
+    previewCache.set(key, sweeps);
+    if (state.c === c && state.model === model) previews();
+  }, 120);
+}
+
+// Clicking a preview sets that control (and leaves a setting loaded from the trade-off view).
+function pickPreview(key, v) {
+  state.thetaOverride = null;
+  if (key === "w_h") state.w_h = v;
+  else if (key === "km") { state.kmDraft = v; state.targets.km = v; }
+  else state.targets[key] = v;
+  views.console.sync();
+  update({ refit: false });
 }
 
 // Default comparison: a place that left the list (best default rank first), else the next place down.

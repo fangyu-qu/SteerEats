@@ -102,6 +102,29 @@ input[type="range"] { width: 100%; margin: 0; accent-color: var(--ink); }
 input[type="range"]:disabled { opacity: 0.4; }
 .range-wrap { position: relative; }
 .ghost { position: absolute; top: -3px; width: 2px; height: 8px; background: var(--ink-3); border-radius: 1px; pointer-events: none; }
+/* Console previews: the line takes the control's effect hue where its target is met, grey where it is not */
+.spark { position: relative; width: 100%; min-width: 0; min-height: 40px; }
+.spark .sp-svg { overflow: hidden; }
+.console > .ctl { min-width: 0; }
+.spark svg { display: block; overflow: visible; font-family: var(--font); }
+.spark.stale svg { opacity: 0.45; transition: opacity 0.15s ease-out; }
+.spark .sp-base { stroke: var(--line-strong); stroke-dasharray: 2 3; }
+.spark .sp-all { fill: none; stroke: var(--track); stroke-width: 1.5; }
+.spark .sp-met { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.spark .sp-dot.miss { fill: var(--rail); stroke: var(--ink-3); stroke-width: 1.2; }
+.spark .sp-tick { font: 10px var(--mono); fill: var(--ink-3); }
+.spark .sp-guide { stroke: var(--ink-3); stroke-width: 1; }
+.spark .sp-guide.hov { stroke-dasharray: 2 2; }
+.spark .sp-cur { fill: var(--ink); stroke: var(--rail); stroke-width: 1.5; }
+.spark .sp-cur.hov { fill: var(--rail); stroke: var(--ink); stroke-width: 1.5; }
+.spark .sp-hit { fill: transparent; cursor: pointer; }
+.spark-read { position: absolute; left: 0; right: 0; top: calc(100% + 2px); z-index: 3; margin: 0; padding: 5px 8px;
+  font-size: 12px; line-height: 1.4; color: var(--ink-2); background: var(--panel); border: 1px solid var(--line-strong);
+  border-radius: 6px; box-shadow: var(--shadow); pointer-events: none; }
+.spark-read b { font-weight: 600; color: var(--ink); }
+.spark-read .miss { color: var(--miss); }
+.spark-read .sp-o { color: var(--ink-3); }
+.spark-intro { margin-top: -10px; }
 .met { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; border-radius: 999px; padding: 1px 8px; }
 .met.yes { color: var(--ok); background: color-mix(in oklab, var(--ok) 12%, transparent); }
 .met.no { color: var(--miss); background: color-mix(in oklab, var(--miss) 12%, transparent); }

@@ -10,7 +10,9 @@ Per-user layer: computed in the browser from the case file. Relevance for one us
 (most users have 0 or 1 later visits among the candidates), so the view uses the model's own estimate:
 predicted visits in the top 10 = sum of Platt-calibrated probabilities, with one Platt fit per model on
 all test rows (step 23, platt_all). --cases-only writes tests/tradeoff_expected.json: for every demo
-case, model and grid setting, the top-10 outcomes and predicted visits from src/steering.py.
+case, model and grid setting, the top-10 outcomes and predicted visits from src/steering.py, and
+tests/preview_expected.json: the console previews (each control swept over its range, targets re-solved,
+predicted visits kept) for two console states.
 
 Writes web/public/data/tradeoff.json (aggregates only) and outputs/rq1/TRADEOFF.md.
 """
@@ -32,6 +34,11 @@ B = 1000
 OUT = OUTPUTS / "rq1"
 WEB = ROOT / "web" / "public" / "data" / "tradeoff.json"
 EXPECTED = ROOT / "tests" / "tradeoff_expected.json"
+PREVIEW_EXPECTED = ROOT / "tests" / "preview_expected.json"
+# console ranges, as web/src/preview.js
+PREVIEW_VALUES = {"w_h": [round(k * 0.05, 2) for k in range(21)], "km": [round(0.5 + k * 0.25, 2) for k in range(23)],
+                  "popularity": [None, 0.5, 0.4, 0.3, 0.2], "cuisines": [None, 5, 6, 7, 8]}
+PREVIEW_STATES = {"default": (1.0, dict(steering.NO_TARGET)), "steered": (0.5, {"km": 1.5, "popularity": 0.3, "cuisines": 7})}
 GRID = {"w_h": [0.0, 0.5, 1.0], "alpha": [0.0, 0.25, 0.5, 1.0], "beta": [0.0, 0.25, 0.5, 1.0],
         "lam": [0.0, 0.125, 0.25, 0.5]}           # step 20's joint grid, in the same order
 KEEP = ["ndcg", "recall", "distance_km", "popularity", "cuisines", "neighbourhoods", "outside_home_borough", "overlap_theta0"]
@@ -64,6 +71,31 @@ def case_expectations():
             out[c["id"]][m] = rows
     EXPECTED.write_text(json.dumps(out))
     print(f"wrote {EXPECTED.relative_to(ROOT)}: {len(out)} cases x 2 models x {len(settings())} settings")
+    preview_expectations(ab)
+
+
+def preview_expectations(ab):
+    out = {}
+    for path in sorted((ROOT / "web" / "public" / "data" / "cases").glob("demo_*.json")):
+        c = json.loads(path.read_text())
+        out[c["id"]] = {}
+        for m in ("lr", "lgbm"):
+            a, b = ab[m]
+            p = 1 / (1 + np.exp(-(a * np.asarray(c[m]["raw"]) + b)))
+            visits = lambda top: float(sum(float(p[i]) for i in top))
+            base = visits(steering.top_k(c, steering.THETA0, m))
+            for state, (w_h, targets) in PREVIEW_STATES.items():
+                for key, values in PREVIEW_VALUES.items():
+                    rows = []
+                    for v in values:
+                        t = targets if key == "w_h" else dict(targets, **{key: v})
+                        s = steering.solve_targets(c, m, t, v if key == "w_h" else w_h)
+                        o = s["outcomes"]
+                        rows.append([visits(s["top"]) / base, True if key == "w_h" else bool(s["met"][key]),
+                                     o["km"], o["popularity"], o["cuisines"]])
+                    out[c["id"]][f"{m}|{state}|{key}"] = rows
+    PREVIEW_EXPECTED.write_text(json.dumps(dict(states={k: dict(w_h=w, targets=t) for k, (w, t) in PREVIEW_STATES.items()}, cases=out)))
+    print(f"wrote {PREVIEW_EXPECTED.relative_to(ROOT)}: {len(out)} cases x 2 models x {len(PREVIEW_STATES)} states x 4 controls")
 
 
 def main():
