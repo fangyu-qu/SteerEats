@@ -6,12 +6,12 @@
 import * as d3 from "d3";
 import { esc, hueVar, truncate } from "./common.js";
 
-const GROUP_LABEL = {
+export const GROUP_LABEL = {
   Collaborative: "Your history (similar places)", Popularity: "Popularity and recency", Rating: "Rating",
   Location: "Location", Taste: "Taste match", Attributes: "Amenities",
 };
 const yesNo = (v) => (v >= 0.5 ? "yes" : "no");
-const FEATURE = {
+export const FEATURE = {
   cf_all: ["Similarity to places you reviewed", (v) => Math.expm1(v).toFixed(2)],
   cf_liked: ["Similarity to places you liked", (v) => Math.expm1(v).toFixed(2)],
   recent_cf_interaction: ["Liked-similarity × recent rating", (v) => v.toFixed(2)],

@@ -187,6 +187,20 @@ borough can be brought into the top 10 on the grid, but only 33% (logistic regre
 of neighborhoods in other boroughs. The LightGBM history-weight results use path-dependent SHAP; on the
 300 step-17 users, interventional values give the same pattern (NDCG@10 at w_h = 0.5: 0.0414 vs 0.0420).
 
+## Model lens: logistic regression vs LightGBM (November 21, 2026)
+
+```bash
+python src/22_model_lens.py      # ~1 min: both models on the same 200 candidates for all 8,025 test users
+node tests/check_lens.mjs        # browser overlap, Kendall tau and SHAP group shares equal Python's
+```
+
+Results are in `outputs/model_lens/MODEL_LENS.md`. The two final models' top-10 lists share a median of 6
+places (mean 6.12); 7.7% of users get lists sharing 3 or fewer. Over all 200 candidates, Kendall tau has a
+median of 0.702 (IQR 0.654 to 0.738). Disagreement goes with lower accuracy for both models: mean NDCG@10 is
+0.022–0.024 when the lists share 0–3 places and 0.057–0.059 when they share 7–10. A later-liked place is in
+both top 10s for 14.4% of users, only LightGBM's for 4.2%, only logistic regression's for 3.8%. The interface
+view (V6) places the selected user in these distributions and shows both models' SHAP side by side.
+
 ## Raw data (`data/raw`, not in git)
 
 | File | Source | Size |
