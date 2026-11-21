@@ -8,6 +8,7 @@ import { createMap } from "./views/map.js";
 import { highlightList, markSelected, renderList } from "./views/list.js";
 import { renderContrast, renderLedger } from "./views/ledger.js";
 import { createLens } from "./views/lens.js";
+import { createEvaluation } from "./views/evaluation.js";
 
 const STORY = { local_manhattan: "Manhattan regular", popularity_dominated: "Popular-places fan", models_disagree: "Models disagree" };
 const state = {
@@ -18,7 +19,7 @@ const state = {
 const el = (id) => document.getElementById(id);
 
 async function boot() {
-  const [index, nta, boroughs, ntaCodes, lensPop] = await Promise.all(["/data/cases/index.json", "/data/nyc_nta.geojson", "/data/nyc_boroughs.geojson", "/data/nta_index.json", "/data/model_lens.json"]
+  const [index, nta, boroughs, ntaCodes, lensPop, evaluation] = await Promise.all(["/data/cases/index.json", "/data/nyc_nta.geojson", "/data/nyc_boroughs.geojson", "/data/nta_index.json", "/data/model_lens.json", "/data/evaluation.json"]
     .map((u) => fetch(u).then((r) => { if (!r.ok) throw new Error(`Could not load ${u}`); return r.json(); })));
   state.ntaCodes = ntaCodes;
   el("cutoff").textContent = `Snapshot ${index.cutoff} · test period Aug 2020 – Apr 2021`;
@@ -36,11 +37,12 @@ async function boot() {
     .map(([h, t]) => `<li><i style="background:${hueVar(h)}"></i>${t}</li>`).join("");
   views.map = createMap(el("map"), { nta, boroughs, codes: ntaCodes }, { hover: setHover, select, boost: toggleBoost });
   views.lens = createLens(el("lens"), lensPop, { hover: setHover, select });
+  views.evaluation = createEvaluation(el("evaluation"), evaluation);
   el("contrast-select").addEventListener("change", (e) => { state.contrast = e.target.value === "" ? null : +e.target.value; renderWhy(); });
   const fromHash = readHash(index);
   views.console = mountConsole(el("console"), state, () => schedule(), { clearBoost: () => toggleBoost(null) });
   setModel(state.model);
-  window.addEventListener("resize", () => schedule(false));
+  window.addEventListener("resize", () => { schedule(false); views.evaluation.render(); });
   await loadCase(fromHash ?? index.cases[0].file);
 }
 

@@ -23,6 +23,7 @@ max popularity percentile, min cuisine groups, selected candidate, boosted neigh
 | `src/views/list.js` | top 10 with Shapley attribution of each rank change |
 | `src/views/ledger.js` | V3 score ledger (SHAP groups + steering on one normalized scale) and "why A over B" contrast |
 | `src/views/lens.js`, `src/lens.js` | V6 model lens: both top 10s as a slope chart, the user against all 8,025 test users, side-by-side SHAP beeswarms, SHAP reliance by group, per-group attribution agreement |
+| `src/views/evaluation.js` | V7 evaluation: Recall@10 / NDCG@10 with 95% bootstrap intervals, paired differences, periods, sampling seeds, reliability diagrams before and after Platt scaling |
 | `public/data/` | demo cases, simplified NTA and borough boundaries, NTA code index |
 
 ![Models disagree case](../docs/img/ui-v0-models-disagree.png)
@@ -30,5 +31,7 @@ max popularity percentile, min cuisine groups, selected candidate, boosted neigh
 ![Score ledger](../docs/img/ui-v0-ledger.png)
 
 ![Model lens](../docs/img/ui-v0-model-lens.png)
+
+![Evaluation](../docs/img/ui-v0-evaluation.png)
 
 Checks: `node tests/replay.mjs` (browser equals Python) `node tests/check_ledger.mjs` (ledger bars are exact SHAP values that sum to the steered score) and `node tests/check_lens.mjs` (model-lens statistics equal `src/22_model_lens.py`).
