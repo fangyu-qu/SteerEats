@@ -282,6 +282,35 @@ away (logistic regression 0.6 to 2.7 km). Models disagree (demo_03): the own lis
 counterbalances the full interface against a list-only baseline, times and scores three tasks per condition
 against computed answers, and exports a results file. No results exist until sessions are held.
 
+## Restaurant detail (November 22, 2026)
+
+```bash
+python src/29_export_restaurant_detail.py   # seconds; needs data/clean (steps 11 and 12); also writes tests/detail_expected.json
+node tests/check_detail.mjs                 # browser rating history equals the export and the rankers' snapshot
+```
+
+The detail view (V8) shows the selected restaurant's star ratings by month: the mean over the past 3, 6 or 12
+months with a 95% band, the reviews per month, the star mix and the price level (shown as "not listed" when
+Google has none: 15.4% of the 3,005 restaurants in the demo cases). A line marks the 2020-08-01 snapshot. Left
+of it is what the models could see; right of it are the reviews that arrived later (to April 2021), which no
+model used. The view also states the two smoothed ratings the rankers used and how far the rating features move
+the selected model's score, because stars are an input to the models, not their score.
+
+The export holds counts per month and star level only (24 case files, 4.03 MB; no user ids, no review text).
+For all 4,800 candidates the counts reproduce the case files: review counts exactly, the rankers' smoothed
+ratings within 1e-6. The check also compares 2,160 rolling-window values between the browser and Python. The
+band is the mean ± 1.96 standard errors, clipped to 1–5 stars. The window's variance is pooled with the
+city-wide variance (SD 1.1646) at the weight of two reviews, so a few identical ratings do not give a band of
+zero width.
+
+What the data says (`outputs/restaurant_detail/DETAIL.md`): a restaurant has a median of 408 reviews before the
+snapshot and 101 in the last 12 months; 14.3% have fewer than 20 in those 12 months, where the band is wide.
+Ratings are stable before the snapshot: 22 of 2,574 restaurants (0.9%) have a 12-month mean at least 0.5 stars
+from their all-time mean. They move more after it: 113 of 1,975 (5.7%; 75 down, 38 up). The largest drops are
+three Chipotle branches (1.29 to 1.63 stars).
+
+Not done yet: the theme summary of review text with cited excerpts.
+
 ## Raw data (`data/raw`, not in git)
 
 | File | Source | Size |

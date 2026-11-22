@@ -12,6 +12,7 @@ import { createEvaluation } from "./views/evaluation.js";
 import { createTradeoff } from "./views/tradeoff.js";
 import { renderPreviews } from "./views/preview.js";
 import { createSimilarity } from "./views/similarity.js";
+import { createDetail } from "./views/detail.js";
 import { createStudy } from "./study.js";
 import { previewSweep } from "./preview.js";
 import { predictedVisits, visitProbs } from "./tradeoff.js";
@@ -28,7 +29,7 @@ const el = (id) => document.getElementById(id);
 const DATA = `${import.meta.env.BASE_URL}data/`;
 
 async function boot() {
-  const [index, nta, boroughs, ntaCodes, lensPop, evaluation, tradeoff, simMap] = await Promise.all(["cases/index.json", "nyc_nta.geojson", "nyc_boroughs.geojson", "nta_index.json", "model_lens.json", "evaluation.json", "tradeoff.json", "similarity_map.json"]
+  const [index, nta, boroughs, ntaCodes, lensPop, evaluation, tradeoff, simMap, detailMeta] = await Promise.all(["cases/index.json", "nyc_nta.geojson", "nyc_boroughs.geojson", "nta_index.json", "model_lens.json", "evaluation.json", "tradeoff.json", "similarity_map.json", "detail/index.json"]
     .map((f) => DATA + f).map((u) => fetch(u).then((r) => { if (!r.ok) throw new Error(`Could not load ${u}`); return r.json(); })));
   state.ntaCodes = ntaCodes;
   el("cutoff").textContent = `Snapshot ${index.cutoff} · test period Aug 2020 – Apr 2021`;
@@ -51,11 +52,12 @@ async function boot() {
   views.sim = createSimilarity(el("similarity"), simMap, { hover: setHover, brush: (ids) => views.map.setBrushed(ids) });
   views.lens = createLens(el("lens"), lensPop, { hover: setHover, select });
   views.evaluation = createEvaluation(el("evaluation"), evaluation);
+  views.detail = createDetail(el("detail"), detailMeta);
   el("contrast-select").addEventListener("change", (e) => { state.contrast = e.target.value === "" ? null : +e.target.value; renderWhy(); });
   const fromHash = readHash(index);
   views.console = mountConsole(el("console"), state, () => { acted(); schedule(); }, { clearBoost: () => toggleBoost(null), clearLoaded: () => { state.thetaOverride = null; update({ refit: false }); } });
   setModel(state.model);
-  window.addEventListener("resize", () => { schedule(false); views.evaluation.render(); views.tradeoff.render(); views.sim.redraw(); });
+  window.addEventListener("resize", () => { schedule(false); views.evaluation.render(); views.tradeoff.render(); views.sim.redraw(); views.detail.render(); });
   // the previews follow the rail's width (it changes at the one-column breakpoint)
   let railW = 0;
   new ResizeObserver(([e]) => { const w = Math.round(e.contentRect.width); if (w !== railW) { railW = w; if (state.c) previews(); } }).observe(el("console"));
@@ -123,8 +125,11 @@ function setModel(m) {
 }
 
 async function loadCase(file) {
-  const c = await fetch(`${DATA}cases/${file}`).then((r) => { if (!r.ok) throw new Error(`Could not load ${file}`); return r.json(); });
-  state.c = c; state.sim = similarity(c); state.caseId = file; state.contrast = null;
+  // the rating histories for the detail view (V8) load with the case; the rest of the app works without them
+  const [c, detail] = await Promise.all([
+    fetch(`${DATA}cases/${file}`).then((r) => { if (!r.ok) throw new Error(`Could not load ${file}`); return r.json(); }),
+    fetch(`${DATA}detail/${file}`).then((r) => (r.ok ? r.json() : null)).catch(() => null)]);
+  state.c = c; state.detail = detail?.restaurants ?? null; state.sim = similarity(c); state.caseId = file; state.contrast = null;
   state.selected = state.pendingSel != null && state.pendingSel < c.cuisine.length ? state.pendingSel : null;
   state.pendingSel = null;
   state.boostNta = state.pendingBoost != null && c.nta.includes(state.pendingBoost) ? state.pendingBoost : null;
@@ -240,6 +245,7 @@ function update({ refit }) {
     home: { lat: c.user.home_lat, lon: c.user.home_lon } }, { refit });
   markSelected([el("list"), el("exited")], state.selected);
   renderWhy();
+  views.detail.update({ c, rest: state.detail?.[state.selected] ?? null, i: state.selected, model: state.model, rank: r.before[state.selected] });
   views.tradeoff.update({ c, model: state.model, theta: r.theta });
   views.sim.update({ c, top: r.top, gone: r.gone });
   previews();

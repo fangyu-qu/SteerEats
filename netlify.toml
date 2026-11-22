@@ -1,7 +1,7 @@
 # Fallback host (docs/PLAN.md, deploy target): importing the repository on Netlify needs no other settings.
 [build]
   base = "web"
-  command = "node ../tests/replay.mjs && node ../tests/check_ledger.mjs && node ../tests/check_lens.mjs && node ../tests/check_tradeoff.mjs && node ../tests/check_preview.mjs && npm run build"
+  command = "node ../tests/replay.mjs && node ../tests/check_ledger.mjs && node ../tests/check_lens.mjs && node ../tests/check_tradeoff.mjs && node ../tests/check_preview.mjs && node ../tests/check_detail.mjs && npm run build"
   publish = "dist"
 
 [build.environment]
