@@ -409,7 +409,7 @@ table.feat td.eff { white-space: nowrap; text-align: right; }
 .detail-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 28px; align-items: start; }
 .detail-side { display: grid; gap: 14px; min-width: 0; align-content: start; }
 .detail-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); }
-.detail.is-empty .detail-grid { display: none; }
+.detail.is-empty .detail-grid, .detail.is-empty .detail-themes { display: none; }
 .detail-key { margin: 0; gap: 6px 16px; }
 .detail-key i { width: 20px; height: 0; border-radius: 0; border-top: 2px solid var(--ink); }
 .detail-key .k-band { height: 9px; border: 0; background: color-mix(in srgb, var(--ink) 13%, transparent); }
@@ -438,6 +438,31 @@ table.feat td.eff { white-space: nowrap; text-align: right; }
 .detail table.feat { margin-top: 0; }
 .detail table.feat th[scope="row"] { color: var(--ink-2); font-size: 12.5px; border-bottom: 1px solid var(--line); width: 42%; vertical-align: top; }
 @media (max-width: 1100px) { .detail-grid { grid-template-columns: minmax(0, 1fr); } }
+/* Theme summaries: text from a language model, so marks stay grey; bars and strips are data about the sample. */
+.detail-themes { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 14px; container-type: inline-size; }
+.detail-h { margin: 0; font-size: 13px; font-weight: 600; }
+.th-list { list-style: none; margin: 0; padding: 0; }
+.th-row { display: grid; grid-template-columns: minmax(0, 1fr) 190px 170px; column-gap: 24px; align-items: start;
+  padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.th-head { padding: 4px 0; font-size: 11.5px; color: var(--ink-3); border-bottom-color: var(--line-strong); }
+.th-main b { font-weight: 600; }
+.th-main p { margin: 2px 0 0; color: var(--ink-2); max-width: 80ch; }
+.th-tone { margin-left: 6px; font-size: 11.5px; color: var(--ink-3); white-space: nowrap; }
+.th-main blockquote { margin: 6px 0 0; padding-left: 10px; border-left: 2px solid var(--line-strong); font-size: 12.5px; max-width: 80ch; }
+.th-src { color: var(--ink-3); font-size: 11.5px; white-space: nowrap; }
+.th-share, .th-stars { display: flex; align-items: center; gap: 8px; font-size: 12px; white-space: nowrap; padding-top: 3px; }
+.th-bar { flex: 1; height: 8px; background: var(--line); border-radius: 1px; overflow: hidden; }
+.th-bar i { display: block; height: 100%; background: var(--ink-2); }
+.th-strip { position: relative; flex: 1; height: 12px; margin: 0 5px; background: linear-gradient(var(--line-strong), var(--line-strong)) center / 100% 1px no-repeat; }
+.th-strip i { position: absolute; top: 50%; transform: translate(-50%, -50%); }
+.th-strip .ref, .ref-key { width: 1.5px; height: 12px; background: var(--ink-3); }
+.th-strip .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ink); border: 1.5px solid var(--panel); box-sizing: content-box; }
+.ref-key { display: inline-block; vertical-align: -2px; margin: 0 3px 0 6px; }
+/* by the width of the list itself, not the window: the control rail takes 300px beside it */
+@container (max-width: 760px) {
+  .th-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 16px; row-gap: 6px; }
+  .th-main, .th-head span:first-child { grid-column: 1 / -1; }
+}
 
 /* Study mode (#study=P1): a task bar along the bottom; the list-only condition hides every explanation view */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

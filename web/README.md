@@ -15,7 +15,7 @@ npm run build      # static site in web/dist
 The built site is static and uses relative paths (`vite.config.js`), so it runs from any folder.
 
 - **GitHub Pages** (`.github/workflows/deploy-pages.yml`): every push to `main` that touches `web/`, `tests/` or
-  `outputs/rq1/frontiers.csv` installs, runs the six browser checks, builds and publishes to
+  `outputs/rq1/frontiers.csv` installs, runs the seven browser checks, builds and publishes to
   https://fangyu-qu.github.io/SteerEats/. Nothing is published if a check fails. It can also be run by hand
   (Actions > Deploy to GitHub Pages > Run workflow). One-time setup by a repository admin: Settings > Pages >
   Build and deployment > Source: **GitHub Actions**.
@@ -43,8 +43,8 @@ max popularity percentile, min cuisine groups, selected candidate, boosted neigh
 | `src/study.js` | user-study mode (`#study=P1`): counterbalanced full vs list-only conditions, timed and scored tasks, ratings, results download |
 | `src/views/lens.js`, `src/lens.js` | V6 model lens: both top 10s as a slope chart, the user against all 8,025 test users, side-by-side SHAP beeswarms, SHAP reliance by group, per-group attribution agreement |
 | `src/views/evaluation.js` | V7 evaluation: Recall@10 / NDCG@10 with 95% bootstrap intervals, paired differences, periods, sampling seeds, reliability diagrams before and after Platt scaling |
-| `src/views/detail.js`, `src/detail.js` | V8 restaurant detail: the selected place's mean rating over the past 3, 6 or 12 months with a 95% band, reviews per month, star mix and price level (missing shown as "not listed"), split at the snapshot into what the models could see and the later reviews |
-| `public/data/` | demo cases, monthly star counts per candidate (`detail/`), simplified NTA and borough boundaries, NTA code index |
+| `src/views/detail.js`, `src/detail.js` | V8 restaurant detail: the selected place's mean rating over the past 3, 6 or 12 months with a 95% band, reviews per month, star mix and price level (missing shown as "not listed"), split at the snapshot into what the models could see and the later reviews; below it, themes of the review text written by a language model, with the share and mean rating of the sampled reviews that mention each theme and quotes checked against the reviews |
+| `public/data/` | demo cases, monthly star counts per candidate (`detail/`), theme summaries per candidate (`themes/`), simplified NTA and borough boundaries, NTA code index |
 
 ![Models disagree case](../docs/img/ui-v0-models-disagree.png)
 
@@ -60,4 +60,4 @@ max popularity percentile, min cuisine groups, selected candidate, boosted neigh
 
 ![Evaluation](../docs/img/ui-v0-evaluation.png)
 
-Checks: `node tests/replay.mjs` (browser equals Python) `node tests/check_ledger.mjs` (ledger bars are exact SHAP values that sum to the steered score) `node tests/check_lens.mjs` (model-lens statistics equal `src/22_model_lens.py`) `node tests/check_tradeoff.mjs` (trade-off points and frontiers equal `src/25_export_tradeoff.py` and `src/21_rq1_frontier.py`) `node tests/check_preview.mjs` (console previews equal `src/steering.py`) and `node tests/check_detail.mjs` (rating histories equal `src/29_export_restaurant_detail.py` and the rankers' snapshot).
+Checks: `node tests/replay.mjs` (browser equals Python) `node tests/check_ledger.mjs` (ledger bars are exact SHAP values that sum to the steered score) `node tests/check_lens.mjs` (model-lens statistics equal `src/22_model_lens.py`) `node tests/check_tradeoff.mjs` (trade-off points and frontiers equal `src/25_export_tradeoff.py` and `src/21_rq1_frontier.py`) `node tests/check_preview.mjs` (console previews equal `src/steering.py`) `node tests/check_detail.mjs` (rating histories equal `src/29_export_restaurant_detail.py` and the rankers' snapshot) and `node tests/check_themes.mjs` (published theme summaries have the shape the view reads, cite only reviews before the snapshot and hold no contact details).

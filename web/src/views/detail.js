@@ -13,9 +13,12 @@ const PRICE = [null, "$", "$$", "$$$", "$$$$"];
 const ORDINAL = ["largest", "2nd largest", "3rd largest", "4th largest", "5th largest", "smallest"];
 const stars = (v) => `${v.toFixed(2)}&nbsp;★`;
 const int = (v) => v.toLocaleString("en-US");
+const TONE = { positive: "▲ positive", negative: "▼ negative", mixed: "◆ mixed" };
+const MODEL_LABEL = { "claude-opus-5-5": "Claude Opus 5.5", "claude-sonnet-5-5": "Claude Sonnet 5.5", "claude-haiku-5-5": "Claude Haiku 5.5" };
 const signed = (v) => (Math.abs(v) < 0.005 ? "" : v > 0 ? "+" : "−") + Math.abs(v).toFixed(2);   // no sign on a rounded zero
 
-export function createDetail(root, meta) {
+// `themesMeta` is themes/index.json (null when no theme summaries are published).
+export function createDetail(root, meta, themesMeta = null) {
   let ctx = null, win = meta.recent_months, hover = null;
   const when = (m, long = false) => { const [y, mo] = monthLabel(meta, m).split("-"); return `${long ? d3.timeFormat("%B")(new Date(+y, +mo - 1, 1)) : MONTH[+mo - 1]} ${y}`; };
   const last = when(meta.months - 1, true);
@@ -44,25 +47,26 @@ export function createDetail(root, meta) {
         </figure>
         <table class="feat" id="detail-facts"></table>
       </div>
-    </div>`;
+    </div>
+    <div class="detail-themes" id="detail-themes"></div>`;
   root.querySelectorAll("button[data-window]").forEach((b) => b.addEventListener("click", () => {
     win = +b.dataset.window;
     root.querySelectorAll("button[data-window]").forEach((x) => x.setAttribute("aria-checked", String(+x.dataset.window === win)));
     if (ctx) { ctx.roll = rolling(ctx.h, win, meta); render(); }
   }));
 
-  function update({ c, rest, i, model, rank }) {
+  function update({ c, rest, i, model, rank, themes = null }) {
     if (!rest) { ctx = null; root.classList.add("is-empty"); root.querySelector("#detail-lead").textContent = "Rating history is not available for this test user."; return; }
     root.classList.remove("is-empty");
     const h = expand(rest, meta.months);
-    ctx = { c, rest, i, model, rank, h, roll: rolling(h, win, meta), snap: snapshot(rest, h, meta), perMonth: h.map((x) => d3.sum(x)) };
+    ctx = { c, rest, i, model, rank, themes, h, roll: rolling(h, win, meta), snap: snapshot(rest, h, meta), perMonth: h.map((x) => d3.sum(x)) };
     hover = null;
     render();
   }
 
   function render() {
     if (!ctx) return;
-    lead(); chart(); mix(); facts();
+    lead(); chart(); mix(); facts(); themeList();
   }
 
   function lead() {
@@ -203,6 +207,37 @@ export function createDetail(root, meta) {
       [`${MODEL_NAMES[model]}'s own rank`, `<span class="mono">#${rank}</span> of ${n} candidates <span class="grp">before any steering; ratings are 3 of its ${c.features.length} features</span>`],
     ];
     root.querySelector("#detail-facts").innerHTML = `<caption>At the snapshot (${c.cutoff})</caption><tbody>${rows.map(([k, v]) => `<tr><th scope="row">${k}</th><td>${v}</td></tr>`).join("")}</tbody>`;
+  }
+
+  // What reviewers wrote before the snapshot: themes from a language model (src/30_theme_summaries.py), each
+  // with the share of sampled reviews it tagged, the mean rating of those reviews against the whole sample,
+  // and quotes the export script found in the reviews. Stars and months are data; labels and tagging are the model's.
+  function themeList() {
+    const node = root.querySelector("#detail-themes"), t = ctx.themes;
+    const head = `<h3 class="detail-h">What reviewers wrote before the snapshot</h3>`;
+    if (!themesMeta || t == null) { node.innerHTML = `${head}<p class="sim-note">No theme summary for this place${themesMeta ? "" : " yet"}.</p>`; return; }
+    if (t.few) {
+      node.innerHTML = `${head}<p class="sim-note">Too few text reviews to summarise: <span class="num">${int(t.n)}</span> of ${themesMeta.min_chars} or more characters before the snapshot; a summary needs ${themesMeta.min_reviews}.</p>`;
+      return;
+    }
+    const at = (v) => `${(((v - 1) / 4) * 100).toFixed(1)}%`;   // a star value on the 1–5 strip
+    const quote = ([text, star, month, translated]) => {
+      const [y, mo] = month.split("-");
+      return `<blockquote>“${esc(text)}” <span class="th-src">${star} ★ · ${MONTH[+mo - 1]} ${y}${translated ? " · translated by Google" : ""}</span></blockquote>`;
+    };
+    const rows = t.themes.map((th) => `
+      <li class="th-row">
+        <div class="th-main"><b>${esc(th.label)}</b> <span class="th-tone">${TONE[th.tone]}</span>
+          <p>${esc(th.text)}</p>${(th.quotes ?? []).map(quote).join("")}</div>
+        <div class="th-share"><span class="th-bar"><i style="width:${((100 * th.n) / t.k).toFixed(1)}%"></i></span><span class="num">${th.n} of ${t.k}</span></div>
+        <div class="th-stars"><span class="th-strip"><i class="ref" style="left:${at(t.mean)}"></i><i class="dot" style="left:${at(th.stars)}"></i></span><span class="num">${th.stars.toFixed(2)}&nbsp;★</span></div>
+      </li>`).join("");
+    node.innerHTML = `${head}
+      <p class="sim-note">Written by a language model (${esc(MODEL_LABEL[themesMeta.model] ?? themesMeta.model)}) from <span class="num">${t.k}</span> of this place's <span class="num">${int(t.n)}</span> text reviews before the snapshot${t.k < t.n ? ", sampled to keep their mix of star ratings" : ""}. ${themesMeta.quotes ? "Quotes are copied from the reviews and checked by a script. " : ""}Which reviews mention a theme is the model's reading, not a count by a script.</p>
+      <ol class="th-list">
+        <li class="th-row th-head" aria-hidden="true"><span>Theme</span><span>Sampled reviews that mention it</span><span>Their mean rating, 1–5 ★ <i class="ref-key"></i> all sampled: ${t.mean.toFixed(2)}</span></li>
+        ${rows}
+      </ol>`;
   }
 
   return { update, render };

@@ -309,7 +309,44 @@ Ratings are stable before the snapshot: 22 of 2,574 restaurants (0.9%) have a 12
 from their all-time mean. They move more after it: 113 of 1,975 (5.7%; 75 down, 38 up). The largest drops are
 three Chipotle branches (1.29 to 1.63 stars).
 
-Not done yet: the theme summary of review text with cited excerpts.
+The lower half of the view, the theme summaries of review text, is the next section.
+
+## Theme summaries of review text (November 22, 2026)
+
+```bash
+python src/30_theme_summaries.py --check      # free: do the API key and the connection work?
+python src/30_theme_summaries.py --pilot 20   # 20 restaurants, one call each; prints tokens and cost
+python src/30_theme_summaries.py --submit     # the rest as one message batch (half price); then --collect --wait
+python src/30_theme_summaries.py --export     # check the answers, write web/public/data/themes/ (no model call)
+python src/30_theme_summaries.py --compare    # the model pilot (outputs/theme_summaries/MODELS.md)
+node tests/check_themes.mjs                   # published summaries have the shape the view reads
+```
+
+What do reviewers write about a place? For each candidate restaurant of the demo cases a Claude model
+(`claude-sonnet-5-5`) read up to 60 text reviews from before the 2020-08-01 snapshot, drawn with a fixed seed to
+keep the restaurant's mix of star ratings, and returned two to five themes, each with the reviews that mention
+it and one or two quotes. Under the rating history, the detail view (V8) shows for every theme the share of
+sampled reviews the model tagged, the mean rating of those reviews against the whole sample, and the quotes
+with their star rating and month. The calls need an Anthropic API key (`ANTHROPIC_API_KEY`). Model answers are
+kept in `data/llm_themes` (not in git), so `--export` and the site never call the model. No user ids or
+reviewer names are sent to the model.
+
+Results (`outputs/theme_summaries/THEMES.md`): 2,804 of the 3,005 restaurants are summarised; 201 have fewer
+than 10 text reviews of 30 or more characters and get no summary. The model read 154,837 of these restaurants'
+843,909 text reviews and returned 13,834 themes with 27,197 quotes. The script looks every quote up in the
+review it cites: 31 were not in any sampled review, 204 were too short or too long, 1 held a contact detail and
+157 matched the script's patterns for a person's name (which also catch some dish names). These were dropped;
+26,772 quotes are published. 16 themes were dropped because the label or summary named a person and 13 because
+no quote passed; 13,805 are published (4.9 per restaurant). Themes the model called negative come from reviews
+that average 2.59 stars, mixed 3.81 and positive 4.55.
+
+Not checked by a script, and stated in the view: whether a summary sentence is a fair reading of the reviews,
+and whether every tagged review really mentions the theme.
+
+Model choice (`outputs/theme_summaries/MODELS.md`): the same 20 restaurants went to three models. All 167
+quotes of `claude-haiku-5-5`, 196 of 197 of `claude-sonnet-5-5` and all 197 of `claude-opus-5-5` were in the
+review they cite; at list price 1,000 restaurants cost $2, $19 and $56. The published run used 13,122,361
+input and 2,468,279 output tokens.
 
 ## Raw data (`data/raw`, not in git)
 

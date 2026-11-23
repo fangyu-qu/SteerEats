@@ -10,3 +10,5 @@ shapely>=2.0
 lightgbm>=4.7
 shap>=0.54
 umap-learn>=0.6
+# theme summaries of review text (step 30 only; needs an Anthropic API key)
+anthropic>=2.0

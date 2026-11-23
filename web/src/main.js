@@ -52,7 +52,9 @@ async function boot() {
   views.sim = createSimilarity(el("similarity"), simMap, { hover: setHover, brush: (ids) => views.map.setBrushed(ids) });
   views.lens = createLens(el("lens"), lensPop, { hover: setHover, select });
   views.evaluation = createEvaluation(el("evaluation"), evaluation);
-  views.detail = createDetail(el("detail"), detailMeta);
+  // theme summaries (src/30_theme_summaries.py) are optional: the detail view says so when they are missing
+  const themesMeta = await fetch(`${DATA}themes/index.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  views.detail = createDetail(el("detail"), detailMeta, themesMeta);
   el("contrast-select").addEventListener("change", (e) => { state.contrast = e.target.value === "" ? null : +e.target.value; renderWhy(); });
   const fromHash = readHash(index);
   views.console = mountConsole(el("console"), state, () => { acted(); schedule(); }, { clearBoost: () => toggleBoost(null), clearLoaded: () => { state.thetaOverride = null; update({ refit: false }); } });
@@ -126,10 +128,11 @@ function setModel(m) {
 
 async function loadCase(file) {
   // the rating histories for the detail view (V8) load with the case; the rest of the app works without them
-  const [c, detail] = await Promise.all([
+  const [c, detail, themes] = await Promise.all([
     fetch(`${DATA}cases/${file}`).then((r) => { if (!r.ok) throw new Error(`Could not load ${file}`); return r.json(); }),
-    fetch(`${DATA}detail/${file}`).then((r) => (r.ok ? r.json() : null)).catch(() => null)]);
-  state.c = c; state.detail = detail?.restaurants ?? null; state.sim = similarity(c); state.caseId = file; state.contrast = null;
+    fetch(`${DATA}detail/${file}`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    fetch(`${DATA}themes/${file}`).then((r) => (r.ok ? r.json() : null)).catch(() => null)]);
+  state.c = c; state.detail = detail?.restaurants ?? null; state.themes = themes?.restaurants ?? null; state.sim = similarity(c); state.caseId = file; state.contrast = null;
   state.selected = state.pendingSel != null && state.pendingSel < c.cuisine.length ? state.pendingSel : null;
   state.pendingSel = null;
   state.boostNta = state.pendingBoost != null && c.nta.includes(state.pendingBoost) ? state.pendingBoost : null;
@@ -245,7 +248,7 @@ function update({ refit }) {
     home: { lat: c.user.home_lat, lon: c.user.home_lon } }, { refit });
   markSelected([el("list"), el("exited")], state.selected);
   renderWhy();
-  views.detail.update({ c, rest: state.detail?.[state.selected] ?? null, i: state.selected, model: state.model, rank: r.before[state.selected] });
+  views.detail.update({ c, rest: state.detail?.[state.selected] ?? null, themes: state.themes?.[state.selected] ?? null, i: state.selected, model: state.model, rank: r.before[state.selected] });
   views.tradeoff.update({ c, model: state.model, theta: r.theta });
   views.sim.update({ c, top: r.top, gone: r.gone });
   previews();

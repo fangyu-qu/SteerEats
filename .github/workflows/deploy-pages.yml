@@ -40,6 +40,7 @@ jobs:
           node tests/check_tradeoff.mjs
           node tests/check_preview.mjs
           node tests/check_detail.mjs
+          node tests/check_themes.mjs
       - name: Build
         run: npm run build
         working-directory: web
