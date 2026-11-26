@@ -1,0 +1,20 @@
+{
+  "rows": 60000,
+  "base_value": -1.316774461845316,
+  "max_additivity_error": 0.028813845102631408,
+  "additivity_quantiles": {
+    "0.5": 1.7617079090037624e-05,
+    "0.99": 1.763589349315087e-05
+  },
+  "rows_over_1e_3": 5,
+  "score_sd": 0.9547555098803387,
+  "raw_correlation_with_lightgbm": 0.9409051729851009,
+  "raw_correlation_with_lr": 0.7716951779141736,
+  "per_candidate_spearman_vs_lightgbm_median": 0.8496106785317019,
+  "top3_overlap_vs_lightgbm": {
+    "0": 0.00018333333333333334,
+    "1": 0.03305,
+    "2": 0.4637833333333333,
+    "3": 0.5029833333333333
+  }
+}

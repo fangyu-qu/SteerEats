@@ -1,0 +1,109 @@
+kind,model,strategy,metric,diff,lo,hi,groups
+similar,Logistic regression,least_misery,min_sat,0.018595473860601418,0.017656108196704958,0.019525843468989404,1000
+similar,Logistic regression,least_misery,sat_gap,-0.06077630290188706,-0.06330619601411276,-0.058227982873678086,1000
+similar,Logistic regression,least_misery,max_km,-0.14051877491400397,-0.24987140674876213,-0.03735422769555038,1000
+similar,Logistic regression,least_misery,km_gap,-0.9226812724378533,-1.0472451445051028,-0.8056145572974255,1000
+similar,Logistic regression,least_misery,ndcg_mean,-0.006095333726367516,-0.008349282393097854,-0.0039704300458339,1000
+similar,Logistic regression,least_misery,ndcg_worst,-6.362078819895171e-05,-0.00019086236459685512,0.0,1000
+similar,Logistic regression,average_without_misery,min_sat,0.0,0.0,0.0,1000
+similar,Logistic regression,average_without_misery,sat_gap,0.0,0.0,0.0,1000
+similar,Logistic regression,average_without_misery,max_km,0.0,0.0,0.0,1000
+similar,Logistic regression,average_without_misery,km_gap,0.0,0.0,0.0,1000
+similar,Logistic regression,average_without_misery,ndcg_mean,0.0,0.0,0.0,1000
+similar,Logistic regression,average_without_misery,ndcg_worst,0.0,0.0,0.0,1000
+similar,LightGBM,least_misery,min_sat,0.0358710061908243,0.03455851189822682,0.03718118056013644,1000
+similar,LightGBM,least_misery,sat_gap,-0.1320541307821283,-0.13657377233911303,-0.12775442332288645,1000
+similar,LightGBM,least_misery,max_km,-0.9257201224815608,-1.049401230361798,-0.7996689846599687,1000
+similar,LightGBM,least_misery,km_gap,-1.5114053348132128,-1.6658871765589578,-1.3583989308098305,1000
+similar,LightGBM,least_misery,ndcg_mean,-0.006488257363872325,-0.008756202040069348,-0.004382541955496361,1000
+similar,LightGBM,least_misery,ndcg_worst,0.0,0.0,0.0,1000
+similar,LightGBM,average_without_misery,min_sat,6.311691430218425e-06,0.0,1.8935074290655273e-05,1000
+similar,LightGBM,average_without_misery,sat_gap,-1.6106271414755902e-05,-4.831881424426771e-05,0.0,1000
+similar,LightGBM,average_without_misery,max_km,0.0002036636029388106,0.0,0.0006109908088164317,1000
+similar,LightGBM,average_without_misery,km_gap,-5.362661970963245e-06,-1.6087985912889737e-05,0.0,1000
+similar,LightGBM,average_without_misery,ndcg_mean,0.0,0.0,0.0,1000
+similar,LightGBM,average_without_misery,ndcg_worst,0.0,0.0,0.0,1000
+similar,LambdaRank,least_misery,min_sat,0.039713196159181695,0.03819826588346037,0.04128455234612077,1000
+similar,LambdaRank,least_misery,sat_gap,-0.15427267047910959,-0.15929576414782223,-0.14943431244125033,1000
+similar,LambdaRank,least_misery,max_km,-0.962431267232958,-1.0818139917569314,-0.8500887223491532,1000
+similar,LambdaRank,least_misery,km_gap,-1.4712530828044772,-1.6055570776224968,-1.332161544595048,1000
+similar,LambdaRank,least_misery,ndcg_mean,-0.0077617117860183694,-0.010357003420665839,-0.0054002280864870866,1000
+similar,LambdaRank,least_misery,ndcg_worst,0.0,0.0,0.0,1000
+similar,LambdaRank,average_without_misery,min_sat,0.00045332418951802927,0.00028651538361101317,0.0006288633381304144,1000
+similar,LambdaRank,average_without_misery,sat_gap,-0.0005951062049424032,-0.0008704122261207932,-0.00035446215808442413,1000
+similar,LambdaRank,average_without_misery,max_km,-0.003927877065095934,-0.009750382566575878,0.0015444839556316087,1000
+similar,LambdaRank,average_without_misery,km_gap,-0.002406152343302886,-0.008949943736970232,0.003016459408742947,1000
+similar,LambdaRank,average_without_misery,ndcg_mean,-8.957292445698875e-05,-0.0002876648592557477,1.4246872853721752e-05,1000
+similar,LambdaRank,average_without_misery,ndcg_worst,0.0,0.0,0.0,1000
+random,Logistic regression,least_misery,min_sat,0.022662987274201858,0.021742035982550246,0.02357494638069786,1000
+random,Logistic regression,least_misery,sat_gap,-0.0731538837927009,-0.07544922583272537,-0.07067342332658529,1000
+random,Logistic regression,least_misery,max_km,-0.048273971697715475,-0.1490784249461581,0.052336911767916446,1000
+random,Logistic regression,least_misery,km_gap,-1.0220277898127699,-1.1456027400987288,-0.8994701879022212,1000
+random,Logistic regression,least_misery,ndcg_mean,-0.008810670210498828,-0.011588608780878168,-0.006275991882346079,1000
+random,Logistic regression,least_misery,ndcg_worst,-6.943122193677727e-05,-0.00020829366581033183,0.0,1000
+random,Logistic regression,average_without_misery,min_sat,0.0,0.0,0.0,1000
+random,Logistic regression,average_without_misery,sat_gap,0.0,0.0,0.0,1000
+random,Logistic regression,average_without_misery,max_km,0.0,0.0,0.0,1000
+random,Logistic regression,average_without_misery,km_gap,0.0,0.0,0.0,1000
+random,Logistic regression,average_without_misery,ndcg_mean,0.0,0.0,0.0,1000
+random,Logistic regression,average_without_misery,ndcg_worst,0.0,0.0,0.0,1000
+random,LightGBM,least_misery,min_sat,0.04410639629108706,0.042787535960662246,0.045485951760307876,1000
+random,LightGBM,least_misery,sat_gap,-0.17231868653925653,-0.17664584374405856,-0.16791757068032495,1000
+random,LightGBM,least_misery,max_km,-1.074285997027415,-1.2153829132686917,-0.939316599364763,1000
+random,LightGBM,least_misery,km_gap,-1.8716192293361327,-2.035602920420435,-1.7115711002070508,1000
+random,LightGBM,least_misery,ndcg_mean,-0.008208135566927883,-0.010612910907316706,-0.005914310330387883,1000
+random,LightGBM,least_misery,ndcg_worst,0.0,0.0,0.0,1000
+random,LightGBM,average_without_misery,min_sat,0.00012274744411166545,3.6218709145611697e-05,0.00022967726330493752,1000
+random,LightGBM,average_without_misery,sat_gap,-0.00020969525396873683,-0.00044130937068887334,-5.338152378405808e-05,1000
+random,LightGBM,average_without_misery,max_km,-0.004086737906283617,-0.008053089442942108,-0.000952337948456848,1000
+random,LightGBM,average_without_misery,km_gap,-0.003983520646132099,-0.00869651888113546,-0.0006545788917896863,1000
+random,LightGBM,average_without_misery,ndcg_mean,-0.00018342279483639734,-0.0006309297535714575,7.138793044881285e-05,1000
+random,LightGBM,average_without_misery,ndcg_worst,0.0,0.0,0.0,1000
+random,LambdaRank,least_misery,min_sat,0.04837768511312838,0.046997366042411795,0.04990929908817893,1000
+random,LambdaRank,least_misery,sat_gap,-0.2043703215484462,-0.20945381354719397,-0.1996825120546573,1000
+random,LambdaRank,least_misery,max_km,-1.3056153708046134,-1.441118015536979,-1.1760012156608444,1000
+random,LambdaRank,least_misery,km_gap,-1.9009568663303122,-2.0527105438777813,-1.7550654562579462,1000
+random,LambdaRank,least_misery,ndcg_mean,-0.009480628439872098,-0.012004583299371515,-0.0070909305532716104,1000
+random,LambdaRank,least_misery,ndcg_worst,0.0,0.0,0.0,1000
+random,LambdaRank,average_without_misery,min_sat,0.001546573422907861,0.0012129170830496552,0.0019100303518029844,1000
+random,LambdaRank,average_without_misery,sat_gap,-0.0025204548497445556,-0.0031688944459036974,-0.0019096259843119248,1000
+random,LambdaRank,average_without_misery,max_km,-0.025836102650431802,-0.04319125622604906,-0.010600942034034933,1000
+random,LambdaRank,average_without_misery,km_gap,-0.03628740795192117,-0.053837919227607466,-0.020586373545861555,1000
+random,LambdaRank,average_without_misery,ndcg_mean,-0.00033940058678118246,-0.0010214234271023759,0.00016498150507743335,1000
+random,LambdaRank,average_without_misery,ndcg_worst,0.0,0.0,0.0,1000
+diverse,Logistic regression,least_misery,min_sat,0.01607432814963316,0.01542054113749088,0.01678010313470212,1000
+diverse,Logistic regression,least_misery,sat_gap,-0.05311214248418595,-0.05486286076089931,-0.05141310950164888,1000
+diverse,Logistic regression,least_misery,max_km,-0.14989559617228457,-0.267083290998245,-0.031143082850623685,1000
+diverse,Logistic regression,least_misery,km_gap,-1.2813438284291634,-1.430853441090347,-1.1268896890302504,1000
+diverse,Logistic regression,least_misery,ndcg_mean,-0.002565933684717896,-0.004211569445843182,-0.0010605030540540843,1000
+diverse,Logistic regression,least_misery,ndcg_worst,0.0,0.0,0.0,1000
+diverse,Logistic regression,average_without_misery,min_sat,0.0,0.0,0.0,1000
+diverse,Logistic regression,average_without_misery,sat_gap,0.0,0.0,0.0,1000
+diverse,Logistic regression,average_without_misery,max_km,0.0,0.0,0.0,1000
+diverse,Logistic regression,average_without_misery,km_gap,0.0,0.0,0.0,1000
+diverse,Logistic regression,average_without_misery,ndcg_mean,0.0,0.0,0.0,1000
+diverse,Logistic regression,average_without_misery,ndcg_worst,0.0,0.0,0.0,1000
+diverse,LightGBM,least_misery,min_sat,0.04869061455864576,0.04731898093175573,0.05001264962174107,1000
+diverse,LightGBM,least_misery,sat_gap,-0.2017027871158829,-0.20635957803041946,-0.19710905747467936,1000
+diverse,LightGBM,least_misery,max_km,-2.2874349994060146,-2.4524285458073507,-2.12651086421151,1000
+diverse,LightGBM,least_misery,km_gap,-3.9324654519579054,-4.1689639471223945,-3.7084798858289303,1000
+diverse,LightGBM,least_misery,ndcg_mean,-0.009301803127838912,-0.011508755804328908,-0.007051617417988961,1000
+diverse,LightGBM,least_misery,ndcg_worst,0.0,0.0,0.0,1000
+diverse,LightGBM,average_without_misery,min_sat,6.11499710345263e-05,1.3600458334739162e-05,0.00013053250838046174,1000
+diverse,LightGBM,average_without_misery,sat_gap,-0.00014686558901415037,-0.00030277936783931536,-3.102343646458215e-05,1000
+diverse,LightGBM,average_without_misery,max_km,-0.0033692353685795522,-0.0076069922271927715,7.428188204590111e-05,1000
+diverse,LightGBM,average_without_misery,km_gap,-0.0023296099253329494,-0.005062704702771877,-0.00023159218699525302,1000
+diverse,LightGBM,average_without_misery,ndcg_mean,8.778117518124378e-07,0.0,2.6334352554373135e-06,1000
+diverse,LightGBM,average_without_misery,ndcg_worst,0.0,0.0,0.0,1000
+diverse,LambdaRank,least_misery,min_sat,0.04691492791022277,0.0454822423242,0.04830595086390605,1000
+diverse,LambdaRank,least_misery,sat_gap,-0.21562283743640756,-0.22075258345250642,-0.21084225198867731,1000
+diverse,LambdaRank,least_misery,max_km,-1.4907902430839446,-1.6539684138778605,-1.3354963637624806,1000
+diverse,LambdaRank,least_misery,km_gap,-2.863586097583682,-3.063635454440028,-2.6697726243501725,1000
+diverse,LambdaRank,least_misery,ndcg_mean,-0.005187096795443262,-0.007235294454196912,-0.0032198209055810463,1000
+diverse,LambdaRank,least_misery,ndcg_worst,0.0,0.0,0.0,1000
+diverse,LambdaRank,average_without_misery,min_sat,0.0008031180557175406,0.000552834482238594,0.0010933262924173732,1000
+diverse,LambdaRank,average_without_misery,sat_gap,-0.001541740527692348,-0.0020460511212028474,-0.0010791068487731358,1000
+diverse,LambdaRank,average_without_misery,max_km,-0.01143694152047937,-0.024872673599434555,0.0009511225125885306,1000
+diverse,LambdaRank,average_without_misery,km_gap,-0.021206419512680943,-0.035393815343471746,-0.00902717281640671,1000
+diverse,LambdaRank,average_without_misery,ndcg_mean,-0.00022421949426480286,-0.0004239345854183621,-3.800059178683328e-05,1000
+diverse,LambdaRank,average_without_misery,ndcg_worst,0.0,0.0,0.0,1000

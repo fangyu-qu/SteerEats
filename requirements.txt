@@ -12,3 +12,6 @@ shap>=0.54
 umap-learn>=0.6
 # theme summaries of review text (step 30 only; needs an Anthropic API key)
 anthropic>=2.0
+# the optional API in server/ (one-sentence steering, live profiles); tested with fastapi 0.165 and uvicorn 0.54
+fastapi>=0.115
+uvicorn>=0.30

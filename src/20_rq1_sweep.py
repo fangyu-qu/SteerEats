@@ -3,7 +3,9 @@
 diversity, geographic reach and popularity of the top 10, and do the two models trade off differently?
 
 Setting: two-stage candidates (200 per user) of every eligible test user at the 2020-08-01 snapshot,
-the controls of src/steering.py, the two-stage logistic regression and LightGBM models.
+the controls of src/steering.py, the two-stage logistic regression, LightGBM and LambdaRank models
+(LambdaRank, key `lmr`, joined on 2026-11-26; it draws its bootstrap samples from its own generator, so the
+intervals of the other two models and the 2,000-user grid subset are the ones reported before).
 
   One at a time  each control over 5 levels with the others at theta0; all eligible test users.
   Joint grid     w_h {0, .5, 1} x alpha {0, .25, .5, 1} x beta {0, .25, .5, 1} x lam {0, .125, .25, .5}
@@ -20,8 +22,8 @@ outside the home borough, overlap with the theta0 top 10, and catalog coverage a
 Changes in NDCG@10 versus theta0 get 95% paired user-bootstrap intervals.
 
 The history weight needs each score's collaborative SHAP part. Logistic regression uses the exact
-closed form (step-17 background). For LightGBM, interventional SHAP on 1.6M rows is too slow, so the
-sweep uses LightGBM's path-dependent contributions; the w_h results are re-run with interventional
+closed form (step-17 background). For LightGBM and LambdaRank, interventional SHAP on 1.6M rows is too slow, so
+the sweep uses the trees' path-dependent contributions; for LightGBM the w_h results are re-run with interventional
 values on the 300 step-17 users to show the difference.
 Self-check: the fast top-10 routine must equal src/steering.py on all exported demo cases.
 Outputs: outputs/rq1/ (CSVs, RQ1.md); per-user rows stay in data/clean/rq1/.
@@ -36,7 +38,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent))
-from common import CLEAN, OUTPUTS, ROOT, TEST_START
+from common import CLEAN, OUTPUTS, RANKERS, ROOT, TEST_START
 from ranker_core import FEATURE_GROUPS, FEATURES, Data, Snapshot, candidates, eligible, haversine_km
 import steering
 
@@ -93,12 +95,12 @@ def self_check():
         sim = steering.similarity(c)
         arr = {"distance_n": np.asarray(c["distance_n"]), "popularity_n": np.asarray(c["popularity_n"]),
                "cuisine": np.asarray(c["cuisine"]), "nta": np.asarray(c["nta"])}
-        for m in ("lr", "lgbm"):
+        for m in RANKERS:
             arr[m + "_noncollab"] = np.asarray(c[m]["noncollab"]); arr[m + "_collab"] = np.asarray(c[m]["collab"])
         for _ in range(6):
             th = {"w_h": rng.choice(LEVELS["w_h"]), "alpha": rng.choice(LEVELS["alpha"]),
                   "beta": rng.choice(LEVELS["beta"]), "lam": rng.choice(LEVELS["lam"])}
-            for m in ("lr", "lgbm"):
+            for m in RANKERS:
                 ref = np.argsort(steering.final_ranks(c, th, m, sim))[:10]
                 assert np.array_equal(ref, top10(arr, m, th)), f"fast top-10 differs on {f.name} {m} {th}"
                 checked += 1
@@ -116,6 +118,7 @@ def build_cases(data, users):
     b = lr[-1].intercept_[0] - lr[0].mean_ @ w
     mu = np.load(CLEAN / "shap" / "background.npz")["x"].mean(axis=0)
     gb = lgb.Booster(model_file=str(MODELS_DIR / "lightgbm_model.txt"))
+    rk = lgb.Booster(model_file=str(MODELS_DIR / "lambdarank_model.txt"))
     cases = {}
     for u, rel in truth.items():
         f, seen, cf = snap.user(u)
@@ -127,11 +130,15 @@ def build_cases(data, users):
         contrib = gb.predict(x, pred_contrib=True)
         gb_raw = contrib.sum(axis=1)
         gb_collab = contrib[:, COLLAB].sum(axis=1)
+        contrib = rk.predict(x, pred_contrib=True)
+        rk_raw = contrib.sum(axis=1)
+        rk_collab = contrib[:, COLLAB].sum(axis=1)
         pop_rank = steering.ranks_from_order(np.lexsort((np.arange(len(ids)), snap.recent_pop[ids]))) - 1
         km = haversine_km(p["lat"], p["lon"], data.lat[ids], data.lon[ids])
         cases[u] = dict(ids=ids, x=x, rel_idx=np.flatnonzero(np.isin(ids, list(rel))), n_rel=len(rel),
                         lr_noncollab=lr_raw - lr_collab, lr_collab=lr_collab,
                         lgbm_noncollab=gb_raw - gb_collab, lgbm_collab=gb_collab,
+                        lmr_noncollab=rk_raw - rk_collab, lmr_collab=rk_collab,
                         distance_n=np.minimum(km, steering.DIST_CAP_KM) / steering.DIST_CAP_KM, km=km,
                         popularity_n=pop_rank / (len(ids) - 1), cuisine=data.cuisine[ids], nta=data.nta[ids],
                         boro=data.boro[ids], home_boro=p["boro"])
@@ -156,7 +163,7 @@ def stats(case, top, base_top):
 def run(cases, thetas, label):
     rows, tops = [], {}
     for n, (u, c) in enumerate(cases.items()):
-        for m in ("lr", "lgbm"):
+        for m in RANKERS:
             base = top10(c, m, steering.THETA0)
             for key, th in thetas.items():
                 t = top10(c, m, th)
@@ -169,10 +176,11 @@ def run(cases, thetas, label):
 
 def paired_ci(df, rng, key0):
     out = []
+    own = np.random.default_rng(SEED + 1)      # LambdaRank's draws (see the header)
     for (m, key), g in df.groupby(["model", "setting"]):
         base = df[(df.model == m) & (df.setting == key0)].set_index("user_id").ndcg
         d = (g.set_index("user_id").ndcg - base.loc[g.user_id].to_numpy()).to_numpy()
-        idx = rng.integers(0, len(d), size=(B, len(d)))
+        idx = (own if m == "lmr" else rng).integers(0, len(d), size=(B, len(d)))
         boot = d[idx].mean(axis=1)
         out.append(dict(model=m, setting=key, ndcg_change=d.mean(), lo=np.quantile(boot, .025), hi=np.quantile(boot, .975)))
     return pd.DataFrame(out)
@@ -216,7 +224,7 @@ def main():
     df2, tops = run(sub, grid, "joint grid")
     df2.to_parquet(LOCAL / "joint_grid_per_user.parquet", index=False)
     s2 = df2.groupby(["model", "setting", "w_h", "alpha", "beta", "lam"])[METRICS].mean().reset_index()
-    coverage = pd.Series({(m, k): len(set(np.concatenate([tops[(u, m, k)] for u in sub_users]))) for m in ("lr", "lgbm") for k in grid})
+    coverage = pd.Series({(m, k): len(set(np.concatenate([tops[(u, m, k)] for u in sub_users]))) for m in RANKERS for k in grid})
     s2["catalog_coverage"] = [coverage[(m, k)] for m, k in zip(s2.model, s2.setting)]
     s2["l1_change"] = (1 - s2.w_h) + s2.alpha + s2.beta + s2.lam / LAM_MAX
     s2.to_csv(OUT / "joint_grid.csv", index=False)
@@ -228,7 +236,7 @@ def main():
     for u in sub_users:
         c = cases[u]
         ntas = np.unique(c["nta"])
-        for m in ("lr", "lgbm"):
+        for m in RANKERS:
             best = {}
             for k in grid:
                 for n in set(data.nta[tops[(u, m, k)]].tolist()):
@@ -270,11 +278,11 @@ def main():
     sens.to_csv(OUT / "sensitivity_collab_split.csv", index=False)
 
     # Summary page
-    name = {"lr": "Logistic regression", "lgbm": "LightGBM"}
+    name = RANKERS
     md = ["# RQ1: steering trade-offs", "", f"Generated by `src/20_rq1_sweep.py`. {len(cases):,} eligible test users, "
           "200 two-stage candidates each, 2020-08-01 snapshot. Values are means over users of top-10 metrics.", "",
           "## One control at a time", ""]
-    for m in ("lr", "lgbm"):
+    for m in RANKERS:
         md += [f"### {name[m]}", "", "| Setting | NDCG@10 | ΔNDCG [95% CI] | km | cuisines | neighbourhoods | popularity | outside home borough | overlap with default |",
                "|---|---|---|---|---|---|---|---|---|"]
         g = s1[s1.model == m].sort_values(["control", "value"])

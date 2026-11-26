@@ -5,7 +5,7 @@ For a set of test users at the 2020-08-01 snapshot, each case holds the 200 stag
 everything the browser needs to recompute rankings and explanations without a server:
   - restaurant facts (name, cuisine group, neighbourhood, price, rating and review counts at the cutoff,
     coordinates, distance from the user's usual area);
-  - for logistic regression and LightGBM: raw score, interventional SHAP per feature and per feature
+  - for logistic regression, LightGBM and LambdaRank (key `lmr`, added 2026-11-26): raw score, interventional SHAP per feature and per feature
     group (same 200-row background as step 17), and the score split into collaborative and
     non-collaborative parts used by the history-weight control;
   - normalized distance, popularity percentile, cuisine and neighbourhood codes for steering and MMR.
@@ -31,7 +31,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent))
-from common import CLEAN, OUTPUTS, ROOT, TEST_START
+from common import CLEAN, OUTPUTS, RANKERS, ROOT, TEST_START
 from ranker_core import FEATURE_GROUPS, FEATURES, Data, Snapshot, candidates, eligible, haversine_km
 import steering
 
@@ -87,6 +87,11 @@ def main():
     mu = bg.mean(axis=0)
     tree = shap.TreeExplainer(gb, data=shap.maskers.Independent(bg, max_samples=len(bg)),
                               feature_perturbation="interventional", model_output="raw")
+    # LambdaRank: scored and explained like LightGBM. It plays no part in choosing the cases, so the cases
+    # are the ones exported before it was added. Its raw score is a ranking score, not log-odds.
+    rk = lgb.Booster(model_file=str(MODELS / "lambdarank_model.txt"))
+    tree_rk = shap.TreeExplainer(rk, data=shap.maskers.Independent(bg, max_samples=len(bg)),
+                                 feature_perturbation="interventional", model_output="raw")
 
     # Score the pool to pick cases
     info = {}
@@ -130,8 +135,11 @@ def main():
         phi_lr = (x - mu) * w
         phi_gb = tree.shap_values(x, check_additivity=False)
         base_gb = float(np.atleast_1d(tree.expected_value)[0])
+        phi_rk = tree_rk.shap_values(x, check_additivity=False)
+        base_rk = float(np.atleast_1d(tree_rk.expected_value)[0])
         model_part = {}
-        for m, phi, raw, base in (("lr", phi_lr, c["s_lr"], float(mu @ w + b_lr)), ("lgbm", phi_gb, c["s_gb"], base_gb)):
+        for m, phi, raw, base in (("lr", phi_lr, c["s_lr"], float(mu @ w + b_lr)), ("lgbm", phi_gb, c["s_gb"], base_gb),
+                                  ("lmr", phi_rk, rk.predict(x, raw_score=True), base_rk)):
             collab = phi[:, [FEATURES.index(f) for f in COLLAB]].sum(axis=1)
             model_part[m] = {
                 "base": round(base, DECIMALS), "raw": r(raw), "collab": r(collab), "noncollab": r(raw - collab),
@@ -150,14 +158,14 @@ def main():
             "reviews": snap.pop[ids].astype(int).tolist(), "recent_reviews": snap.recent_pop[ids].astype(int).tolist(),
             "distance_km": r(km)}
         case = {
-            "cutoff": TEST_START, "models": {"lr": "Logistic regression", "lgbm": "LightGBM"},
+            "cutoff": TEST_START, "models": dict(RANKERS),
             "feature_groups": FEATURE_GROUPS, "features": FEATURES, "cuisine_names": cuisine_names,
             "candidates": cands,
             "cuisine": [int(v) for v in data.cuisine[ids]], "nta": [int(v) for v in nta_codes[ids]],
             "distance_n": r(np.minimum(km, steering.DIST_CAP_KM) / steering.DIST_CAP_KM),
             "popularity_n": r(pop_rank / (len(ids) - 1)),
             "feature_values": {f: r(x[:, j]) for j, f in enumerate(FEATURES)},
-            "lr": model_part["lr"], "lgbm": model_part["lgbm"],
+            "lr": model_part["lr"], "lgbm": model_part["lgbm"], "lmr": model_part["lmr"],
             "user": {"home_lat": round(p["lat"], 5), "home_lon": round(p["lon"], 5),
                      "home_borough": boro_labels[p["boro"]],
                      "history_size": int(p["n"]),
@@ -191,7 +199,7 @@ def main():
         boosted = [dict(steering.THETA0, boost=0.3, boost_nta=far),
                    {"w_h": 0.5, "alpha": 0.3, "beta": 0.2, "lam": 0.4, "boost": 0.5, "boost_nta": far}]
         for th in REPLAY_THETAS + boosted:
-            for m in ("lr", "lgbm"):
+            for m in RANKERS:
                 fin = steering.final_ranks(reread, th, m, sim)
                 log = steering.stage_log(reread, th, m, sim)
                 sh = steering.shapley_controls(reread, th, m, sim)
@@ -200,19 +208,19 @@ def main():
                                 shapley_residual_max=float(np.abs(sh["residual"]).max())))
         solver = []
         for tg in SOLVER_TARGETS:
-            for m in ("lr", "lgbm"):
+            for m in RANKERS:
                 res = steering.solve_targets(reread, m, tg)
                 top10 = [int(i) for i in np.argsort(steering.final_ranks(reread, res["theta"], m, sim))[:10]]
                 assert top10 == res["top"], "top_k disagrees with final_ranks"
                 solver.append(dict(targets=tg, model=m, theta=res["theta"], top=res["top"], met=res["met"]))
         boost = []
         for base_t in (dict(steering.THETA0), {"w_h": 1.0, "alpha": 0.5, "beta": 0.0, "lam": 0.2, "boost": 0.0, "boost_nta": -1}):
-            for m in ("lr", "lgbm"):
+            for m in RANKERS:
                 t, ok = steering.solve_boost(reread, m, base_t, far)
                 boost.append(dict(base=base_t, nta=far, model=m, boost=t["boost"], reached=ok))
         expected[demo["id"]] = {"thetas": exp, "solver": solver, "boost": boost}
         print(f"case {case_id} ({demo['story']}): {len(ids)} candidates, {int(np.sum(full['relevant']))} later liked; "
-              f"SHAP residual lr {model_part['lr']['shap_residual_max']:.1e}, lgbm {model_part['lgbm']['shap_residual_max']:.1e}",
+              f"SHAP residual " + ", ".join(f"{m} {model_part[m]['shap_residual_max']:.1e}" for m in RANKERS),
               flush=True)
 
     (DEMO / "index.json").write_text(json.dumps(dict(cutoff=TEST_START, cases=manifest), indent=1))

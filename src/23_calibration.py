@@ -15,6 +15,8 @@ held out for them. Platt is cross-fitted on test instead: users split into 5 fol
 by a fit on the other four.
 Check, as the plan specified: train-only models, Platt fitted on validation candidates (2019-12-01
 snapshot), evaluated on test.
+LambdaRank (added 2026-11-26): its raw score is a ranking score, not log-odds, so it has no "raw probability"
+row; only its Platt-scaled probabilities are scored. There is no train-only LambdaRank, so it is not in the check.
 Reference: popularity (log all-time review count) through the same Platt fit, a "calibrated but weak"
 score. Constant base rate: perfectly calibrated (ECE 0) and useless (AUC 0.5).
 
@@ -123,14 +125,19 @@ def main():
     data = Data()
     s = data.interactions
 
-    def load(lr_path, gb_path):
+    def load(lr_path, gb_path, rk_path=None):
         gb = lgb.Booster(model_file=str(gb_path))
-        return {"Logistic regression": logistic_scorer(joblib.load(lr_path)),
-                "LightGBM": lambda f, gb=gb: gb.predict(f, raw_score=True)}
+        out = {"Logistic regression": logistic_scorer(joblib.load(lr_path)),
+               "LightGBM": lambda f, gb=gb: gb.predict(f, raw_score=True)}
+        if rk_path:
+            rk = lgb.Booster(model_file=str(rk_path))
+            out["LambdaRank"] = lambda f, rk=rk: rk.predict(f, raw_score=True)
+        return out
 
     test = s[s.split == "test"]
     tsnap = Snapshot(data, TEST_START, set(test.user_id))
-    final, y, user, n_users = rows(tsnap, test, load(MODELS / "logistic_pipeline.joblib", MODELS / "lightgbm_model.txt"))
+    final, y, user, n_users = rows(tsnap, test, load(MODELS / "logistic_pipeline.joblib", MODELS / "lightgbm_model.txt",
+                                                     MODELS / "lambdarank_model.txt"))
     trainonly, y2, _, _ = rows(tsnap, test, load(CLEAN / "logistic_trainonly_two_stage.joblib", CLEAN / "lightgbm_trainonly_two_stage.txt"))
     assert np.array_equal(y, y2)
     del tsnap
@@ -148,7 +155,7 @@ def main():
             coefs[name].append([a, b])
         # one fit on all test rows, for display only (the trade-off view's predicted visits)
         res = dict(after=scores(p, y), reliability=reliability(p, y), platt_folds=coefs[name], platt_all=list(platt(sc, y)))
-        if name != "Popularity":
+        if name in ("Logistic regression", "LightGBM"):   # their raw score is log-odds; LambdaRank's is not
             raw = sigmoid(sc)
             res.update(before=scores(raw, y), reliability_before=reliability(raw, y))
         main_res[name] = res
