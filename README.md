@@ -105,7 +105,8 @@ Both issues were found in smoke runs and fixed before the reported results.
 
 Two-stage test NDCG@10 (`outputs/rankers_two_stage/EVALUATION.md`): LightGBM 0.0482 [0.0456, 0.0510] and
 logistic regression 0.0481 [0.0453, 0.0509] are tied (paired p = 0.97), both about 6% above Item-CF. A
-supplementary LightGBM LambdaRank model reaches 0.0508 [0.0480, 0.0537], 5.6% above logistic regression
+LightGBM LambdaRank model (listwise; added after the proposal's pointwise comparison, and since November 26
+the diner app's ranker and a third model in the Lab) reaches 0.0508 [0.0480, 0.0537], 5.6% above logistic regression
 (p = 0.0034). Across three sampling seeds, logistic regression stays at 0.0479–0.0482, pointwise LightGBM
 moves within 0.0482–0.0498, and LambdaRank within 0.0497–0.0508. LightGBM's 14% deficit under the
 full-catalog protocol therefore came from its training negatives (random and popular restaurants), not
@@ -347,6 +348,176 @@ Model choice (`outputs/theme_summaries/MODELS.md`): the same 20 restaurants went
 quotes of `claude-haiku-5-5`, 196 of 197 of `claude-sonnet-5-5` and all 197 of `claude-opus-5-5` were in the
 review they cite; at list price 1,000 restaurants cost $2, $19 and $56. The published run used 13,122,361
 input and 2,468,279 output tokens.
+
+## Groups, cold start, retrievers, text features and the dashboard (November 25, 2026)
+
+```bash
+python src/33_rq2_groups.py            # RQ2: 1,000 three-member groups per kind, three strategies, three models (~10 min)
+python src/32_cold_start.py            # NDCG@10 from only the k most recent liked places (~10 min)
+python src/37_retriever_ablation.py    # what each stage-1 retriever adds to candidate recall (~2 min)
+python src/34_text_sample.py           # review text before 2018-07-01: fixed sample + bag-of-words features
+python src/36_llm_ablation.py --seed 42   # base vs text features, same rows and users (run seeds 42, 1, 2; ~10 min each)
+python src/36_llm_ablation.py --report    # outputs/llm_features/ABLATION.md + web/public/data/text_ablation.json
+python src/35_llm_aspects.py --plan       # LLM aspect features: requests and estimated cost, no API call
+python src/39_lambdarank_shap.py       # SHAP for LambdaRank on the rows and background of step 17
+python src/38_export_overview.py       # dataset facts for the dashboard's overview
+python tests/check_group.py && node tests/check_group.mjs   # web/src/group.js = src/group.py
+```
+
+Reports: `outputs/rq2/RQ2.md`, `outputs/cold_start/COLD_START.md`, `outputs/retrievers/RETRIEVERS.md`,
+`outputs/llm_features/TEXT_SAMPLE.md`, `ABLATION.md` and `LLM_PLAN.md`, `outputs/shap/LAMBDARANK.md`.
+
+- **Group engine** (`src/group.py`, mirrored by `web/src/group.js`): member satisfaction is the member's score,
+  min-max over the pool; strategies are average, least misery, and average without misery (threshold 0.40).
+- **Text features (RQ3)** use only review text from before 2018-07-01, the earliest training cutoff, so the
+  same text is safe for every window (`tests/check_time_safety.py` checks it). Seed 42 with the base features
+  reproduces step 15 exactly. The LLM aspect features (`src/35`, `claude-haiku-5-5`, one message batch; needs
+  `pip install anthropic` and an API key in the environment) are scored for 18,085 restaurants; answers stay in
+  `data/llm_aspects` (not in git). `ABLATION.md` compares base, bag-of-words and LLM features over three seeds.
+- **Dashboard** (`web/`): three sections. *Overview* shows one chart and one sentence per question, with the
+  numbers one click away; *Explorer* is the steering interface for one test user; *Analysis* holds the
+  trade-off space, similarity map, model lens and evaluation. Colours come from the team palette
+  (`web/src/styles.css`); chart marks carry an ink outline and a second encoding because the palette alone
+  does not pass the colour checks. The interface is named Eat Buddy; the repository and method stay SteerEats.
+- The food stickers in `web/public/illustrations/` are AI-generated images (Magic Patterns), not drawings.
+
+## One-sentence steering (November 25, 2026)
+
+Type a sentence in the Explorer's **Say what you want** box ("cheap sushi within walking distance"). A language
+model reads it into the app's own settings; the ranking model still chooses the places.
+
+- **What a sentence can set.** Targets the solver already had: distance (`max_km`), less mainstream, cuisine
+  variety, weight of past visits. Filters, which are new: cuisine groups, price from/up to, needs (vegetarian
+  options, halal, open late, alcohol, reservations, groups, kids), borough, neighbourhood. Wishes with no setting
+  ("quiet", "outdoor seating") are listed as such and change nothing.
+- **Confirm first.** What was understood is shown as removable chips; nothing changes until **Apply**. A setting
+  the sentence did not mention stays as it was.
+- **Filters narrow the pool.** A filter keeps the candidates that pass it; steering, the ledger and every view
+  then run on that pool unchanged (`filterCase` in `web/src/nl.js`). The pool can be small: a user's 200
+  candidates hold a median of 4.5 Japanese places, and for half of the demo users no Korean one. The app says how
+  many are left and never adds a place. Places with no known price fail a price filter.
+- **The model only reads.** `server/nl.py` sends the sentence alone (no user id, location or candidates) to
+  `claude-haiku-5-5` with a JSON schema; the answer can only hold known keys and values (`normalize`, the same
+  in Python and in the browser). A sentence that is an instruction to the model is marked as not about eating.
+- **Without the API** (the GitHub Pages site) keyword rules in `web/src/nl.js` read the sentence, English only,
+  and the box says so.
+
+Run the API (the key comes from the environment, never from a file here):
+
+```
+export ANTHROPIC_API_KEY=...            # once, in your shell profile
+.venv/bin/python -m uvicorn server.app:app --host 127.0.0.1 --port 8787
+cd web && npm run dev                   # the dev site proxies /api to port 8787
+```
+
+Checks and evaluation:
+
+```
+.venv/bin/python tests/check_nl.py        # browser = Python: vocabularies, normalize, filters, filtered rankings; no model call
+.venv/bin/python src/40_nl_eval.py --plan # cost of scoring the 64 sentences of tests/nl_cases.json (about $0.02)
+.venv/bin/python src/40_nl_eval.py --run  # run on 2026-11-25 with Yila's go-ahead; --report writes outputs/nl_steering/NL_EVAL.md
+```
+
+Measured while building it (five calls): about 2,340 input and 90 output tokens per sentence, $0.0003, 2 to 3
+seconds; the first sentence after the API starts can take much longer. `src/steering.py` and `web/src/steer.js`
+changed together in one line (`top_k` now stops at the pool size); the replay checks stay at 0 failures.
+
+## The diner app (November 26, 2026)
+
+`web/index.html` is now the app; the dashboard and explorer moved to `web/lab.html` (links made earlier with
+`#case=` or `#study=` are forwarded there).
+
+- **What it does.** One or two people each borrow a sample taste (one of the 24 demo users, without ids), choose
+  where they start from, and get six places. Each card says in plain words why the place suits each person,
+  shows both "suits you" numbers on one line, and each person's distance. "See why" opens the reasons, the
+  numbers behind them, the place's stars over time, what reviewers wrote and a comparison with another place.
+- **The model.** Scores come from LightGBM LambdaRank, the ranker with the highest NDCG@10 on the test period
+  (`web/public/data/evaluation.json`). `src/41_export_app.py` scores, for every sample taste, the union of all
+  24 candidate sets and explains each score with interventional SHAP on the step-17 background.
+- **The ranking** (`web/src/app/engine.js`, mirrored by `src/app_engine.py`): pool = union of the members'
+  candidates minus filtered places; per member the model score with the history weight, min-max over the pool,
+  minus the distance and popularity penalties; "suits you" = that score min-max over the pool; combined by
+  "Fair to everyone" (average without misery, bar 0.40) or "Nobody unhappy" (least misery) with
+  `web/src/group.js`; variety by MMR on the group score. "Closer", "Less mainstream" and "More variety" are
+  outcomes of the list, and the solver finds the smallest weights that reach them.
+- **Say it.** The sentence box uses the same `/api/parse` and `web/src/nl.js` as the Explorer: chips to confirm,
+  then targets and filters. Without the API, keyword rules read it.
+- **What is not there yet.** Rooms across phones, a third to fifth person (their avatars are not made),
+  street-level map tiles. A taste from your own liked places was added later the same day (next section).
+
+```
+.venv/bin/python src/41_export_app.py     # app data (about 15 minutes; needs the local data)
+.venv/bin/python tests/check_app.py       # browser engine = Python reference, exported files hold no ids
+cd web && npm run dev                     # http://localhost:5173/ is the app, /lab.html the Lab
+```
+
+One-sentence evaluation (`outputs/nl_steering/NL_EVAL.md`): on 64 sentences the language model reads 56
+completely right (88%, Wilson interval 77% to 94%), keyword rules 45 (70%, 58% to 80%). The lead is in Chinese
+sentences (6 against 0 of 8) and sentences that are not about eating (6 against 0 of 6). The sentences and the
+expected answers were written by the same authors as the prompt, with AI assistance; cost $0.018.
+
+## Live profiles and LambdaRank in the Lab (November 26, 2026)
+
+**A taste of your own.** In the app a person can now choose "Places I like" instead of a sample taste: search a
+restaurant by name, pick at least 3, and the server builds the taste.
+
+- `src/31_export_serving_bundle.py` saves what one snapshot (2020-08-01) holds: restaurant arrays, item
+  statistics, the item-item similarity, the LambdaRank model and the SHAP background (`server/bundle/`, 10 MB,
+  git-ignored). `server/live.py` hands that bundle to the unchanged functions of `src/ranker_core.py`
+  (`profile_of`, `features`, `candidates`), so a new profile gets the features a reviewer with exactly those
+  liked places would get. This is the profile the cold-start study measured (`outputs/cold_start/`): with
+  LambdaRank, 3 liked places keep 62% of the full-history NDCG@10, 5 keep 72%, 10 keep 87%. The app shows these
+  numbers next to the picker.
+- `POST /api/search {"q"}` finds restaurants by name. `POST /api/party {"members": [...]}` takes one or two
+  members, each a sample taste or a list of picked places, and returns the union of their candidates with each
+  member's score, collaborative part and six SHAP groups, in the shape of the exported app files. The browser's
+  engine then runs as it does on the exported files.
+- `tests/check_serving.py`: for each of the 24 sample tastes, and for 8 pairs, the server's candidates, scores
+  and SHAP parts equal the exported files (largest difference 0), and the app engine lists the same six places
+  from either source. Over three runs on a laptop a new taste answered in 0.6 to 1.1 seconds and a party of two in 2.5 to 3.8. SHAP
+  parts add up to the score except on rare rows (1 of 600 in the check, 5 of 60,000 in step 39), where
+  interventional TreeSHAP leaves a remainder of up to 0.03; the app then shows the remainder as its own line.
+- Privacy: the picked places travel in the request body, are scored and forgotten (no log, no cache); the list
+  stays in the person's browser. `server/bundle/profiles.json` holds the sample reviewers' visit lists without
+  ids; the server uses it to score a sample taste in a live party and never returns it.
+- A place one member picked can still be listed when it is among the other member's candidates, as in the
+  offline group study; the card says so.
+
+**One server.** `server/app.py` also serves the built site, so one process is the whole app:
+
+```
+cd web && npm run build && cd ..
+.venv/bin/python src/31_export_serving_bundle.py     # once, after step 41 (10 seconds with the data on disk)
+.venv/bin/python -m uvicorn server.app:app --host 127.0.0.1 --port 8787    # then open http://127.0.0.1:8787/
+.venv/bin/python tests/check_serving.py
+```
+
+With `--host 0.0.0.0` phones on the same Wi-Fi can open `http://<this computer's address>:8787/`. That also
+opens the API, including the language-model proxy, to everyone on that network, and "My location" needs
+HTTPS, so on a phone choose a neighbourhood or move the pin. A site without the server (GitHub Pages) asks
+`api/health`, gets no answer, and offers sample tastes and keyword rules only.
+
+**LambdaRank in the Lab.** The Explorer's model switch has three models (`lr`, `lgbm`, `lmr`), and the console
+note, the trade-off frontier and the model lens compare the model in view with another one you choose.
+
+- Case files (`src/19`): LambdaRank's raw score, interventional SHAP per feature and group, and the
+  collaborative split, for the same 24 users (LambdaRank plays no part in choosing them). Its values equal the
+  app's export for the same users and places (largest difference 0).
+- Calibration (`src/23`): LambdaRank's score is a ranking score, not log-odds, so it has no "raw probability"
+  row. After Platt scaling its Brier skill is 0.0074 (LightGBM 0.0074, logistic regression 0.0033), ECE 0.00023
+  and AUC 0.749, so "predicted visits" is used for it as for the other two.
+- Sweep (`src/20`, 8,025 users): with no steering LambdaRank's NDCG@10 is 0.0508, as in the evaluation. Matched
+  outcomes on the 2,000-user grid (`src/21`): a list within 2 km on average keeps 87% of its NDCG@10 (LightGBM
+  87%), popularity percentile at most 0.40 keeps 70% (72%), at least 6 cuisine groups keeps 86% (91%).
+  Its bootstrap draws come from their own generator, so every earlier interval and the 2,000-user subset are
+  unchanged: the result files only gained rows.
+- Model lens (`src/22`, 8,025 users): LightGBM and LambdaRank share 7.56 of their 10 top places on average
+  (median 8; Kendall tau over all candidates 0.84). Logistic regression and LambdaRank share 6.38 (tau 0.69);
+  logistic regression and LightGBM 6.12 (tau 0.70), as reported before.
+- Checks with three models: replay 648 lists and 576 solver runs, 43,200 ledgers, the lens for three pairs per
+  case, trade-off and preview expectations; all at 0 failures.
+- The Overview's steering panel still shows LightGBM, and the user-study tasks and case studies stay on the
+  models they were written for.
 
 ## Raw data (`data/raw`, not in git)
 
