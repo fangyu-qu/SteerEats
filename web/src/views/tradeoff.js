@@ -74,7 +74,7 @@ export function createTradeoff(root, pop, handlers) {
 
   // Population rows with relevance kept and the interval on it, per model.
   const popRows = {};
-  for (const m of ["lr", "lgbm"]) {
+  for (const m of Object.keys(pop.settings)) {
     const rows = pop.settings[m];
     const base = rows.find((r) => r.w_h === 1 && !r.alpha && !r.beta && !r.lam);
     popRows[m] = rows.map((r, k) => ({ ...r, k, kept: (r.ndcg / base.ndcg) * 100, keptLo: ((base.ndcg + r.lo) / base.ndcg) * 100,
@@ -123,7 +123,7 @@ export function createTradeoff(root, pop, handlers) {
     const larger = steered && l1(SETTINGS[d3.minIndex(SETTINGS, dist)]) === 0;
     const nearK = d3.minIndex(SETTINGS, (s) => (larger && l1(s) === 0 ? Infinity : dist(s)));
     const exact = sliderDistance(SETTINGS[nearK], gridTheta) < 1e-9 && !theta.boost;
-    const P = popRows[model], other = popRows[model === "lr" ? "lgbm" : "lr"];
+    const P = popRows[model], other = popRows[ctx.versus];
     const fU = frontier(u.groups, q, Q.low, "visits");
     const fP = frontier(P, Q.pop, Q.low, "ndcg"), fO = frontier(other, Q.pop, Q.low, "ndcg");
     const onU = new Set(fU.map((g) => g.k)), onP = new Set(fP.map((r) => r.k));
@@ -135,7 +135,7 @@ export function createTradeoff(root, pop, handlers) {
     const maxCount = d3.max(u.groups, (g) => g.members.length);
     $("to-key").innerHTML = `<span class="ramp">Cuisine groups in the top 10 <b class="mono">${cd[0]}</b><i style="background:linear-gradient(90deg, ${d3.range(0, 1.01, 0.25).map(shade).join(", ")})"></i><b class="mono">${cd[1]}</b></span>
       <span class="ramp"><svg width="44" height="18" aria-hidden="true"><path d="M2 15 H14 V9 H28 V3 H42" class="to-front"/></svg>Frontier: most relevance at each level</span>
-      <span class="ramp"><svg width="30" height="18" aria-hidden="true"><path d="M2 12 H28" class="to-front other"/></svg>${MODEL_NAMES[model === "lr" ? "lgbm" : "lr"]} frontier</span>
+      <span class="ramp"><svg width="30" height="18" aria-hidden="true"><path d="M2 12 H28" class="to-front other"/></svg>${MODEL_NAMES[ctx.versus]} frontier</span>
       <span class="ramp"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="6" class="to-ring me"/></svg>Your setting</span>
       <span class="ramp"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="4" style="fill:var(--panel);stroke:var(--ink);stroke-width:1.8"/></svg>Change from the model's list within noise</span>`;
     $("to-user-cap").textContent = `${MODEL_NAMES[model]}. Each dot is a top 10 reached by one or more of the 192 settings (${u.groups.length} distinct lists; larger dots are reached by more settings, up to ${maxCount}). `
@@ -155,7 +155,7 @@ export function createTradeoff(root, pop, handlers) {
     // ---- population panel
     drawPanel("to-pop", {
       pts: P, x: (r) => r[Q.pop], y: (r) => r.kept, r: () => 4, count: () => 1, front: fP, on: onP, color: (r) => color(r.cuisines),
-      ci: true, other: fO.map((r) => ({ x: r[Q.pop], y: r.kept })), otherName: MODEL_NAMES[model === "lr" ? "lgbm" : "lr"],
+      ci: true, other: fO.map((r) => ({ x: r[Q.pop], y: r.kept })), otherName: MODEL_NAMES[ctx.versus],
       xExtra: [], yExtra: other.map((r) => r.kept), base: P.find((r) => r.base),
       me: steered ? P[nearK] : null, meLabel: exact ? "Your setting" : larger ? "Nearest steered grid setting" : "Nearest grid setting", keyOf: (r) => r.k, members: (r) => [r.k],
       aria: "Trade-off over 2,000 test users", tipHtml: (r) => popTip(r, onP.has(r.k), Q),

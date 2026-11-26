@@ -153,6 +153,7 @@ export const SOLVER_GRIDS = { alpha: grid(51, 0.02), beta: grid(51, 0.02), lam: 
 // First k picks of the final ranking, without the full MMR pass.
 export function topK(c, theta, model, k = 10) {
   const m = c[model], n = m.raw.length;
+  k = Math.min(k, n);   // a filtered pool can hold fewer than k places
   const z = new Float64Array(n);
   for (let i = 0; i < n; i++) z[i] = m.noncollab[i] + theta.w_h * m.collab[i];
   const s0 = minmax(z), s1 = new Float64Array(n), s2 = new Float64Array(n);

@@ -13,6 +13,7 @@ export function mountConsole(root, state, onChangeRaw, actions = {}) {
   const onChange = () => { state.thetaOverride = null; onChangeRaw(); };
   root.innerHTML = `
     <h2>Steer your recommendations</h2>
+    <div class="ctl sayit" id="sayit"></div>
     <p class="ctl-help spark-intro">The small chart under each control shows how much of the model's predicted visits for this user the top 10 keeps across that control's range (top line = the model's own list). Grey: the target cannot be met. Hover to read a value, click to set it. <span id="spark-note"></span></p>
     <div class="ctl">
       <div class="ctl-top"><label for="ctl-wh">How much your past visits count</label><span class="ctl-value" id="val-wh"></span></div>
@@ -61,7 +62,7 @@ export function mountConsole(root, state, onChangeRaw, actions = {}) {
   $("ctl-pop").addEventListener("change", (e) => { state.targets.popularity = e.target.value === "" ? null : +e.target.value; onChange(); });
   $("ctl-cui").addEventListener("change", (e) => { state.targets.cuisines = e.target.value === "" ? null : +e.target.value; onChange(); });
   $("ctl-reset").addEventListener("click", () => {
-    state.w_h = 1; state.targets = { km: null, popularity: null, cuisines: null }; state.boostNta = null; sync(); onChange();
+    state.w_h = 1; state.targets = { km: null, popularity: null, cuisines: null }; state.boostNta = null; actions.clearFilters?.(); sync(); onChange();
   });
   root.addEventListener("click", (e) => {
     if (e.target.closest("#boost-clear")) actions.clearBoost?.();
@@ -90,7 +91,7 @@ export function renderSolution(root, state, result) {
   const fmt = (v) => v.toFixed(2);
   const anyTarget = t.km != null || t.popularity != null || t.cuisines != null;
   const loaded = solved.loaded;
-  const otherName = MODEL_NAMES[state.model === "lr" ? "lgbm" : "lr"];
+  const otherName = MODEL_NAMES[state.versus];
   root.querySelector("#solution").innerHTML = `
     ${loaded ? `<div class="boost-chip"><span>Setting loaded from the trade-off view. Targets are paused; changing any control goes back to them.</span><button type="button" id="loaded-clear">Clear</button></div>`
       : badges.length ? `<div class="chips">${badges.join("")}</div>` : `<p>No targets set. The list is the model's own ranking${state.w_h < 1 ? ", with your history weight applied" : ""}.</p>`}

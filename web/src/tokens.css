@@ -1,0 +1,51 @@
+/* Eat Buddy tokens: the only place colours, type, radii and spacing are defined. Imported by styles.css
+   (the Lab dashboard) and app/app.css (the diner app). Every colour is one of Yila's swatches, cream paper or
+   warm-brown ink, or a mix of two of them; cobalt blue is for water on the map only. Light only. */
+:root {
+  --cream: #FBF9EC; --inkc: #4A3526; --tomato: #E52113; --stew: #D94841; --herb: #556B2F; --salad: #93AC4E;
+  --chips: #FFCC64; --pumpkin: #F4B860; --prawn: #EFD9CD; --tofu: #F1F0BA;
+  --bg: var(--cream);
+  --panel: var(--cream);
+  --rail: color-mix(in oklab, var(--tofu) 55%, var(--cream));
+  --ink: var(--inkc);
+  --ink-2: #655346;
+  --ink-3: #6E5F50;
+  --line: color-mix(in oklab, var(--inkc) 16%, var(--cream));
+  --line-strong: color-mix(in oklab, var(--inkc) 38%, var(--cream));
+  --track: color-mix(in oklab, var(--inkc) 26%, var(--cream));
+  --land: color-mix(in oklab, var(--tofu) 70%, var(--cream));
+  --park: color-mix(in oklab, var(--salad) 32%, var(--cream));
+  --water: var(--cream);
+  --model: var(--salad);
+  --control: var(--tomato);
+  --diversity: var(--chips);
+  --model-line: var(--herb);
+  --control-line: var(--tomato);
+  --diversity-line: var(--inkc);
+  --model-tint: color-mix(in oklab, var(--salad) 26%, var(--cream));
+  --control-tint: color-mix(in oklab, var(--tomato) 12%, var(--cream));
+  --diversity-tint: color-mix(in oklab, var(--chips) 38%, var(--cream));
+  --focus: var(--herb);
+  --reach: var(--herb);
+  --ok: var(--herb);
+  --miss: var(--tomato);
+  --font: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --r: 6px;
+  --shadow: 0 1px 2px rgb(74 53 38 / 0.10), 0 4px 14px rgb(74 53 38 / 0.06);
+  color-scheme: light;
+
+  /* diner app (option C, "printed map") */
+  --ink-soft: #6B5443;            /* secondary text on cream, tofu and prawn surfaces */
+  --herb-deep: #3E4F22;           /* hover and pressed state of herb */
+  --white: #FFFFFF;               /* text on tomato and herb, sticker rims */
+  --water-blue: #1F5FBF;          /* map water, nowhere else */
+  --display: Fredoka, "Arial Rounded MT Bold", Arial, sans-serif;
+  --hand: "Patrick Hand", "Comic Sans MS", cursive;
+  --text: Nunito, "Trebuchet MS", Arial, sans-serif;
+  --r-ctl: 6px; --r-card: 10px;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 22px; --s6: 28px; --s7: 48px;
+  --tap: 44px;                    /* smallest touch target */
+  --sticker-shadow: 0 2px 5px rgb(74 53 38 / 0.28);
+  --cutout-shadow: drop-shadow(0 1px 1px rgb(74 53 38 / 0.45));
+}

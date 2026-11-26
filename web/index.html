@@ -3,128 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SteerEats</title>
-  <meta name="description" content="Steer NYC restaurant recommendations and see why the list changed.">
+  <title>Eat Buddy</title>
+  <meta name="description" content="Pick a place to eat in New York together, and see why it is fair to each of you.">
+  <script>
+    // Links made before the app existed (#case=..., #study=P01, #tab=...) belong to the Lab.
+    if (/(^|[#&])(case|study|tab)=/.test(location.hash)) location.replace("lab.html" + location.hash);
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
-  <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Patrick+Hand&display=swap">
+  <link rel="stylesheet" href="/src/app/app.css">
 </head>
-<body>
-  <header class="topbar">
-    <div class="brand">
-      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18 C8 18 9 6 13 6 S18 12 20 12" /><circle cx="4" cy="18" r="2.2" /><circle cx="20" cy="12" r="2.2" /></svg>
-      <span>SteerEats</span>
-    </div>
-    <label class="field inline" for="case-select"><span>Test user</span>
-      <select id="case-select"></select>
-    </label>
-    <div class="segmented" role="radiogroup" aria-label="Ranking model">
-      <button type="button" role="radio" data-model="lr" aria-checked="false">Logistic regression</button>
-      <button type="button" role="radio" data-model="lgbm" aria-checked="true">LightGBM</button>
-    </div>
-    <p class="cutoff" id="cutoff"></p>
-  </header>
-
-  <div class="layout">
-    <aside class="console" id="console" aria-label="Steering controls"></aside>
-
-    <main class="workspace">
-      <p class="summary" id="summary" aria-live="polite"></p>
-      <section class="panel flow-panel" aria-labelledby="flow-title">
-        <header class="panel-head">
-          <h2 id="flow-title">How the list changed</h2>
-          <p class="panel-sub">Each line is a restaurant. Read left to right: the model's default ranking, then each step of your steering. A colored segment shows the step that moved it.</p>
-          <ul class="key" id="flow-key"></ul>
-        </header>
-        <div id="flow" class="flow"></div>
-      </section>
-
-      <div class="split">
-        <section class="panel map-panel" aria-labelledby="map-title">
-          <header class="panel-head">
-            <h2 id="map-title">Where the list went</h2>
-            <p class="panel-sub">Your usual area with 1, 2 and 5 km rings. Numbers are your new top 10; hollow dots are places that left it. Shading is the steering cost: the smallest total change of your four controls that brings a place from that neighborhood into the top 10.</p>
-          </header>
-          <div id="map" class="map"></div>
-          <div class="cost-legend" aria-label="Steering cost legend">
-            <span class="cl-title">Steering cost to reach a neighborhood</span>
-            <span><i class="sw cost-0"></i>in your list now</span><span><i class="sw cost-1"></i>≤ 0.25</span>
-            <span><i class="sw cost-2"></i>≤ 0.5</span><span><i class="sw cost-3"></i>≤ 1</span><span><i class="sw cost-4"></i>&gt; 1</span>
-            <span><i class="sw unreach"></i>not reachable</span><span><i class="sw none"></i>no candidates</span>
-          </div>
-        </section>
-        <section class="panel list-panel" aria-labelledby="list-title">
-          <header class="panel-head">
-            <h2 id="list-title">Your top 10</h2>
-            <p class="panel-sub">Why each place moved, in places gained (+) or lost (−), split across your controls. The split uses exact Shapley values, so it does not depend on the order of the steps.</p>
-          </header>
-          <ol id="list" class="toplist"></ol>
-          <h3 class="subhead">Left your top 10</h3>
-          <ul id="exited" class="exited"></ul>
-        </section>
-      </div>
-
-      <section class="panel ledger-panel" aria-labelledby="ledger-title">
-        <header class="panel-head">
-          <h2 id="ledger-title">Why this place</h2>
-          <p class="panel-sub">Click any restaurant in the chart, map or list. The ledger builds its score from the typical candidate: blue bars are the model's reasons (SHAP), orange bars are your steering, and the variety step moves ranks at the end.</p>
-        </header>
-        <div class="ledger-grid">
-          <div class="ledger-main">
-            <div id="ledger-notes" class="ledger-notes"></div>
-            <div id="ledger" class="ledger"></div>
-            <div id="ledger-detail"></div>
-          </div>
-          <div class="ledger-side">
-            <label class="field" for="contrast-select"><span>Compare with</span><select id="contrast-select"></select></label>
-            <p id="contrast-caption" class="contrast-caption"></p>
-            <div id="contrast" class="ledger"></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel detail-panel" aria-labelledby="detail-title">
-        <header class="panel-head">
-          <h2 id="detail-title">This place over time: what do its stars say?</h2>
-          <p class="panel-sub">The selected restaurant's star ratings by month. Left of the snapshot line is what the models could see; reviews to its right arrived later, and no model used them.</p>
-        </header>
-        <div id="detail" class="lens detail"></div>
-      </section>
-
-      <p class="section-label">For analysts</p>
-      <section class="panel lens-panel" aria-labelledby="tradeoff-title">
-        <header class="panel-head">
-          <h2 id="tradeoff-title">Trade-off space: what do you give up when steering?</h2>
-          <p class="panel-sub">Every combination of the four controls on the RQ1 grid (192 settings), for this user and for 2,000 test users. Settings on the frontier get the most relevance for how far they steer; the rest give up relevance for nothing. Click any dot to load that setting.</p>
-        </header>
-        <div id="tradeoff" class="lens"></div>
-      </section>
-      <section class="panel lens-panel" aria-labelledby="sim-title">
-        <header class="panel-head">
-          <h2 id="sim-title">Similarity map: is the restaurant space shaped by cuisine or by place?</h2>
-          <p class="panel-sub">Every restaurant with enough reviews before the snapshot, placed by who reviewed it, so places with overlapping reviewers sit together. This user's candidates are on top. Use it to ask where a list comes from, not to measure distances.</p>
-        </header>
-        <div id="similarity" class="lens"></div>
-      </section>
-
-      <section class="panel lens-panel" aria-labelledby="lens-title">
-        <header class="panel-head">
-          <h2 id="lens-title">Model lens: logistic regression vs LightGBM</h2>
-          <p class="panel-sub">Both models re-rank the same 200 candidates for this user. Do they pick the same places, and for the same reasons? SHAP values explain each model's raw score, not the steered rank.</p>
-        </header>
-        <div id="lens" class="lens"></div>
-      </section>
-
-      <section class="panel lens-panel" aria-labelledby="eval-title">
-        <header class="panel-head">
-          <h2 id="eval-title">Evaluation: is the learned ranker actually better?</h2>
-          <p class="panel-sub">All test users, not just this one. Ranking quality (does a later-visited place reach the top 10?) and probability quality (is a predicted 1% chance really 1%?) are separate questions, so both are shown.</p>
-        </header>
-        <div id="evaluation" class="lens"></div>
-      </section>
-    </main>
-  </div>
-  <script type="module" src="/src/main.js"></script>
+<body data-view="list" data-drawer="0">
+  <div id="app"></div>
+  <div class="grain" aria-hidden="true" style="background-image:url(illustrations/grain.png)"></div>
+  <script type="module" src="/src/app/main.js"></script>
 </body>
 </html>

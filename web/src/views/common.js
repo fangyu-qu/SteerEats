@@ -14,8 +14,15 @@ export const CONTROL_INFO = {
   lam: { name: "variety", hue: "diversity" },
   boost: { name: "neighborhood", hue: "control" },
 };
-export const MODEL_NAMES = { lr: "Logistic regression", lgbm: "LightGBM" };
+export const MODEL_NAMES = { lr: "Logistic regression", lgbm: "LightGBM", lmr: "LambdaRank" };
+// The model each one is compared with unless the reader chooses another.
+export const VERSUS = { lr: "lgbm", lgbm: "lr", lmr: "lgbm" };
+// What a model's raw score measures. LambdaRank is trained to order a list; its score is not a probability.
+export const SCORE_UNIT = { lr: "log-odds", lgbm: "log-odds", lmr: "score units" };
 export const hueVar = (hue) => (hue ? `var(--${hue})` : "var(--track)");
+// Lines use the darker line tokens plus a dash pattern, so an effect never rests on colour alone.
+export const hueLine = (hue) => (hue ? `var(--${hue}-line)` : "var(--track)");
+export const HUE_DASH = { model: null, control: "7 3", diversity: "2 3" };
 
 export const STAR = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .8l1.6 3.3 3.6.5-2.6 2.5.6 3.6L6 9l-3.2 1.7.6-3.6L.8 4.6l3.6-.5z"/></svg>';
 export const CHECK = '<svg viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.5 6.5l2.3 2.3 4.7-5"/></svg>';

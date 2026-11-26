@@ -6,7 +6,7 @@
 // hollow or dashed = later.
 import * as d3 from "d3";
 import { expand, monthLabel, rolling, snapshot, toDate } from "../detail.js";
-import { MODEL_NAMES, esc } from "./common.js";
+import { MODEL_NAMES, SCORE_UNIT, esc } from "./common.js";
 
 const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const PRICE = [null, "$", "$$", "$$$", "$$$$"];
@@ -87,7 +87,7 @@ export function createDetail(root, meta, themesMeta = null) {
     // Stars are an input: how far the rating features moved this model's score for this place.
     const groups = Object.keys(c.feature_groups).map((g) => ({ g, v: c[model].shap_groups[g][i] })).sort((x, y) => Math.abs(y.v) - Math.abs(x.v));
     const pos = groups.findIndex((x) => x.g === "Rating");
-    text += `Stars are an input to the models, not their score: the rating features move ${MODEL_NAMES[model]}'s score for this place by <span class="num">${signed(groups[pos].v)}</span> log-odds, the ${ORDINAL[pos]} of its six feature groups.`;
+    text += `Stars are an input to the models, not their score: the rating features move ${MODEL_NAMES[model]}'s score for this place by <span class="num">${signed(groups[pos].v)}</span> ${SCORE_UNIT[model]}, the ${ORDINAL[pos]} of its six feature groups.`;
     root.querySelector("#detail-lead").innerHTML = `${head}<br>${text}`;
   }
 

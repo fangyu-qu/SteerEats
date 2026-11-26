@@ -3,7 +3,7 @@
 // When a control changes, each line glides to its new ranks (320 ms, ease-out); places that join or leave the
 // chart fade. No motion on a new case or width, or when the reader asks for reduced motion.
 import * as d3 from "d3";
-import { STEPS, hueVar, truncate } from "./common.js";
+import { STEPS, hueVar, truncate, hueLine, HUE_DASH } from "./common.js";
 
 const ROW = 26, TOP = 46, TOPN = 10, DURATION = 320;
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -73,7 +73,10 @@ export function renderFlow(root, data, handlers) {
     g.selectAll("path.seg").attr("stroke", (s) => {
       const a = ranks[s.from.key][i], b = ranks[s.to.key][i];
       if (a > TOPN && b > TOPN) return "var(--line)";
-      return a !== b ? hueVar(s.to.hue) : "var(--track)";
+      return a !== b ? hueLine(s.to.hue) : "var(--track)";
+    }).attr("stroke-dasharray", (s) => {
+      const a = ranks[s.from.key][i], b = ranks[s.to.key][i];
+      return (a <= TOPN || b <= TOPN) && a !== b ? HUE_DASH[s.to.hue] : null;
     });
     const dots = g.select(".dots").selectAll("circle").data(STEPS).join("circle").attr("cx", (s) => x(s.key));
     tw(dots).attr("cy", (s) => y(ranks[s.key][i]));

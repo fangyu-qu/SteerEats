@@ -1,51 +1,11 @@
-/* SteerEats — operational tool. Layout: control rail left; workspace = summary, rank flow, then map + list.
-   Effect hues are fixed across every view: model (history weight) = blue, control (distance, popularity) =
-   orange, diversity = aqua. Validated with the dataviz palette checker (light and dark, all pairs). */
-:root {
-  --bg: #f5f6f7;
-  --panel: #ffffff;
-  --rail: #eef0f2;
-  --ink: #15191e;
-  --ink-2: #4a535d;
-  --ink-3: #6b7580;
-  --line: #d9dde2;
-  --line-strong: #b8bfc7;
-  --track: #c9cfd6;
-  --land: #e8ebee;
-  --park: #dfe8df;
-  --water: #f5f6f7;
-  --model: #2a78d6;
-  --control: #eb6834;
-  --diversity: #1baf7a;
-  --model-tint: #e7f0fb;
-  --control-tint: #fdece5;
-  --diversity-tint: #e3f6ef;
-  --focus: #2a78d6;
-  --reach: #6250d6;
-  --ok: #1f7a4a;
-  --miss: #b3412e;
-  --font: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
-  --r: 8px;
-  --shadow: 0 1px 2px rgb(20 25 30 / 0.06), 0 4px 14px rgb(20 25 30 / 0.04);
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #111418; --panel: #181c21; --rail: #14181c; --ink: #e9ecef; --ink-2: #b4bcc5; --ink-3: #8e98a3;
-    --line: #2a3038; --line-strong: #3b434d; --track: #3b434d; --land: #20262d; --park: #1e2a23; --water: #111418;
-    --model: #3987e5; --control: #d95926; --diversity: #199e70;
-    --model-tint: #16253a; --control-tint: #33211a; --diversity-tint: #14291f; --focus: #3987e5; --reach: #9085e9;
-    --ok: #6cc08f; --miss: #ec8a78; --shadow: 0 1px 2px rgb(0 0 0 / 0.3); color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #111418; --panel: #181c21; --rail: #14181c; --ink: #e9ecef; --ink-2: #b4bcc5; --ink-3: #8e98a3;
-  --line: #2a3038; --line-strong: #3b434d; --track: #3b434d; --land: #20262d; --park: #1e2a23; --water: #111418;
-  --model: #3987e5; --control: #d95926; --diversity: #199e70;
-  --model-tint: #16253a; --control-tint: #33211a; --diversity-tint: #14291f; --focus: #3987e5; --reach: #9085e9;
-  --ok: #6cc08f; --miss: #ec8a78; --shadow: 0 1px 2px rgb(0 0 0 / 0.3); color-scheme: dark;
-}
+/* Eat Buddy dashboard. Three sections: Overview (results), Explorer (steer one user's list), Analysis.
+   Every colour is one of Yila's swatches, cream paper or warm-brown ink, or a mix of two of them.
+   Effect roles are fixed across views and never rest on colour alone:
+     model = salad fill, solid line; control = tomato fill, dashed line; variety = chips fill, dotted line;
+   every filled mark carries an ink outline. dataviz validator on salad/tomato/chips over cream: colour-blind
+   separation passes (worst pair 10.4), contrast of salad (2.41) and chips (1.41) needs relief, hence the
+   outlines, the second encoding, direct labels and the table under every chart. Light only. */
+@import "./tokens.css";
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -84,6 +44,8 @@ select:hover { border-color: var(--ink-3); }
 .panel-head { display: grid; gap: 4px; margin-bottom: 10px; }
 .panel-head h2 { font-size: 15px; }
 .panel-sub { margin: 0; color: var(--ink-2); font-size: 12.5px; max-width: 75ch; }
+.versus { margin-top: 8px; }
+.versus b { font-weight: 600; color: var(--ink); }
 .summary { margin: 0; font-size: 15px; color: var(--ink); max-width: 95ch; }
 .summary b { font-weight: 600; }
 /* numbers inside sentences stay in the text face, with aligned figures; tables and chips keep the mono face */
@@ -506,3 +468,131 @@ body.study-list .split { grid-template-columns: minmax(0, 1fr); }
   .cutoff { margin-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+
+/* ---------- Sections: header, tabs, sub-bar ---------- */
+html { scrollbar-color: var(--line-strong) var(--bg); }
+body { accent-color: var(--herb); caret-color: var(--tomato); }
+::selection { background: var(--diversity-tint); color: var(--ink); }
+a { color: var(--herb); text-underline-offset: 3px; }
+.topbar { background: var(--herb); color: var(--cream); border-bottom: 0; gap: 28px; padding: 0 24px; min-height: 56px; }
+.topbar :focus-visible { outline-color: var(--chips); }
+.brand { font-size: 17px; letter-spacing: 0; }
+.brand-mark { stroke: var(--cream); }
+.brand-mark circle { fill: var(--chips); }
+.cutoff { color: color-mix(in oklab, var(--cream) 82%, var(--herb)); }
+.tabs { display: flex; gap: 4px; align-self: stretch; }
+.tabs button { font: 500 14px var(--font); color: color-mix(in oklab, var(--cream) 82%, var(--herb)); background: transparent; border: 0;
+  border-bottom: 3px solid transparent; border-top: 3px solid transparent; padding: 0 14px; min-height: 56px; cursor: pointer; }
+.tabs button:hover { color: var(--cream); }
+.tabs button[aria-selected="true"] { color: var(--cream); font-weight: 600; border-bottom-color: var(--chips); }
+.subbar { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; padding: 10px 24px; border-bottom: 1px solid var(--line);
+  background: var(--bg); position: sticky; top: 56px; z-index: 4; }
+.subbar-note { margin: 0 0 0 auto; color: var(--ink-3); font-size: 12.5px; }
+body[data-tab="overview"] .layout, body[data-tab="overview"] .subbar { display: none; }
+body:not([data-tab="overview"]) .overview { display: none; }
+body[data-tab="explorer"] [data-page="analysis"], body[data-tab="analysis"] [data-page="explorer"] { display: none; }
+body[data-tab="analysis"] .layout { grid-template-columns: minmax(0, 1fr); }
+.layout { min-height: calc(100vh - 110px); }
+.workspace { padding: 20px 24px 48px; gap: 20px; }
+.panel { box-shadow: none; padding: 18px 20px; }
+.panel-head h2 { font-size: 16px; }
+.segmented button[aria-checked="true"] { box-shadow: none; outline: 1px solid var(--line-strong); }
+.key i.dash { height: 0; width: 22px; border-radius: 0; background: none !important; border-top: 3px solid; }
+.toplist .mini span, .mini i { box-shadow: inset 0 0 0 1px var(--ink); }
+.ledger .bar { stroke: var(--ink); stroke-width: 1; }
+.chip.model, .chip.control, .chip.diversity { box-shadow: inset 0 0 0 1px var(--line-strong); }
+
+/* ---------- Overview ---------- */
+.overview { position: relative; max-width: 1240px; margin: 0 auto; padding: 32px 24px 64px; }
+.ov-head { display: grid; gap: 18px; margin-bottom: 8px; }
+.ov-head h1 { font-size: 26px; line-height: 1.2; letter-spacing: -0.01em; max-width: 30ch; }
+.ov-facts { display: flex; flex-wrap: wrap; gap: 10px 40px; margin: 0; padding: 14px 0; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--line); }
+.ov-facts div { display: grid; gap: 2px; }
+.ov-facts dt { order: 2; font-size: 12.5px; color: var(--ink-2); }
+.ov-facts dd { margin: 0; font-size: 20px; font-weight: 500; }
+.ov-grid-wrap { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 48px; }
+.ov-panel { padding: 28px 0 24px; border-bottom: 1px solid var(--line); min-width: 0; display: grid; gap: 10px; align-content: start; }
+.ov-panel.wide { grid-column: 1 / -1; }
+.ov-panel h2 { font-size: 18px; line-height: 1.3; }
+.ov-take { margin: 0; font-size: 14.5px; line-height: 1.55; max-width: 72ch; color: var(--ink); }
+.ov-take .num { font-family: inherit; font-weight: 600; white-space: nowrap; }
+.ov-pending { color: var(--ink-2); font-style: italic; }
+.ov-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; min-height: 0; }
+.ov-controls:empty { display: none; }
+.ov-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 0; font-size: 12.5px; color: var(--ink-2); }
+.ov-legend li { display: flex; align-items: center; gap: 6px; }
+.ov-legend svg { width: 16px; height: 16px; overflow: visible; }
+.ov-chart { min-width: 0; }
+.ov-chart svg { display: block; overflow: visible; }
+.ov-multi { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 24px; }
+.ov-multi figure { margin: 0; min-width: 0; }
+.ov-multi figcaption { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.ov-grid line { stroke: var(--line); stroke-width: 1; }
+.ov-axis path, .ov-axis line { stroke: var(--line-strong); }
+.ov-axis text { fill: var(--ink-2); font: 11.5px var(--mono); }
+.ov-axis-title { fill: var(--ink-2); font-size: 12px; }
+.ov-zero { stroke: var(--ink); stroke-width: 1; }
+.ov-ci { stroke: var(--ink); stroke-width: 1.5; }
+.ov-mark { stroke: var(--ink); stroke-width: 1.5; }
+.ov-row .ov-hit { fill: transparent; }
+.ov-row:hover .ov-hit { fill: var(--rail); }
+.ov-label { fill: var(--ink); font-size: 13px; }
+.ov-row.sub .ov-label { fill: var(--ink-3); font-size: 11.5px; }
+.ov-row.sub .ov-ci { stroke: var(--ink-3); stroke-width: 1; }
+.ov-val { fill: var(--ink-2); font-size: 11.5px; white-space: pre; }
+.ov-row.sub .ov-val { fill: var(--ink-3); }
+.ov-dot { fill: var(--line-strong); stroke: none; }
+.ov-dot.on { fill: var(--model); stroke: var(--ink); stroke-width: 1.2; }
+.ov-line { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+.ov-series { fill: none; stroke: var(--ink); stroke-width: 2; }
+.ov-note { fill: var(--ink); font-size: 12.5px; font-weight: 500; }
+.ov-details { font-size: 13px; }
+.ov-details summary { cursor: pointer; color: var(--herb); font-weight: 500; width: fit-content; padding: 4px 0; }
+.ov-details summary:hover { color: var(--ink); }
+.ov-table { overflow-x: auto; display: grid; gap: 14px; padding-top: 8px; }
+.ov-table table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+.ov-table th, .ov-table td { text-align: left; padding: 5px 14px 5px 0; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+.ov-table thead th { color: var(--ink-2); font-weight: 500; border-bottom-color: var(--line-strong); }
+.ov-table tbody th { font-weight: 500; }
+.ov-table td.num { text-align: right; white-space: nowrap; }
+.ov-table thead th:not(:first-child) { text-align: right; }
+.ov-source { margin: 0; font: 11.5px var(--mono); color: var(--ink-3); }
+.ov-tip { position: absolute; z-index: 6; pointer-events: none; background: var(--ink); color: var(--cream); font-size: 12.5px; line-height: 1.45;
+  padding: 7px 10px; border-radius: 4px; max-width: 320px; }
+@media (max-width: 900px) {
+  .ov-grid-wrap { grid-template-columns: minmax(0, 1fr); }
+  .ov-multi { grid-template-columns: minmax(0, 1fr); }
+  .topbar { padding: 0 14px; gap: 12px; }
+  .cutoff { display: none; }
+}
+body[data-tab="analysis"] .layout { background: none; }
+@media (min-width: 821px) { .console { top: 104px; max-height: calc(100vh - 104px); } }
+
+/* Say-it box (one-sentence steering): a sentence becomes chips to confirm, then ordinary settings. */
+.sayit { border-bottom: 1px solid var(--line); padding-bottom: 16px; }
+.say-row { display: flex; gap: 6px; }
+.say-row input { flex: 1; min-width: 0; font: 14px var(--font); color: var(--ink); background: var(--panel); caret-color: var(--tomato);
+  border: 1px solid var(--line-strong); border-radius: 6px; padding: 6px 10px; }
+.say-row input:hover { border-color: var(--ink-3); }
+.say-row input::placeholder { color: var(--ink-3); opacity: 1; }
+.btn-primary:disabled { background: transparent; color: var(--ink-3); border-color: var(--line-strong); cursor: not-allowed; }
+.say-result, .say-pool { display: grid; gap: 6px; }
+.say-result:empty, .say-pool:empty { display: none; }
+.say-pool { margin-top: 4px; }
+.say-note { margin: 0; font-size: 12.5px; color: var(--ink-2); }
+.say-note.warn { color: var(--miss); }
+.say-chips { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.say-chip { display: flex; justify-content: space-between; align-items: center; gap: 8px; border: 1px solid var(--line-strong);
+  border-radius: 6px; padding: 4px 6px 4px 10px; background: var(--panel); font-size: 13px; }
+.say-chip > span { min-width: 0; overflow-wrap: anywhere; }
+.say-chip button { flex: none; font: 500 12px var(--font); border: 1px solid var(--line-strong); background: var(--panel); color: var(--ink);
+  border-radius: 5px; padding: 2px 8px; cursor: pointer; }
+.say-chip button:hover { border-color: var(--ink-3); }
+.say-kind { display: inline-block; min-width: 3.4em; margin-right: 6px; font-size: 12px; font-weight: 500; color: var(--ink-3); }
+.say-actions { display: flex; gap: 6px; margin-top: 2px; }
+body.study .sayit { display: none; }   /* study tasks use the fixed controls only */
+
+/* link from the Lab back to the diner app */
+.to-app { margin-left: 18px; color: var(--cream); font-weight: 500; font-size: 13px; text-underline-offset: 3px; white-space: nowrap; }
+.to-app:hover { color: var(--chips); }

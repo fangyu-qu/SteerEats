@@ -6,7 +6,7 @@ import * as d3 from "d3";
 import { esc } from "./common.js";
 
 const ORDER = ["LightGBM LambdaRank (supplementary)", "LightGBM", "Logistic regression", "Item-CF", "Recent popularity", "Popularity"];
-const NAME = { "LightGBM LambdaRank (supplementary)": "LambdaRank (supplementary)", "Logistic regression": "Logistic regression",
+const NAME = { "LightGBM LambdaRank (supplementary)": "LambdaRank", "Logistic regression": "Logistic regression",
   LightGBM: "LightGBM", "Item-CF": "Item-CF", "Recent popularity": "Recent popularity", Popularity: "Popularity" };
 const SHORT = { "LightGBM LambdaRank (supplementary)": "LambdaRank", "Logistic regression": "LR", LightGBM: "LightGBM", "Item-CF": "Item-CF" };
 const KIND = (m) => (m.startsWith("LightGBM LambdaRank") ? "supp" : m === "LightGBM" || m === "Logistic regression" ? "learned" : "base");
@@ -73,10 +73,13 @@ export function createEvaluation(root, ev) {
   function headline() {
     const p = (a, b) => ev.paired.find((r) => r.model_a === a && r.model_b === b && r.metric === "ndcg");
     const lrcf = p("Logistic regression", "Item-CF"), gbcf = p("LightGBM", "Item-CF"), gblr = p("LightGBM", "Logistic regression");
+    const rklr = p("LightGBM LambdaRank (supplementary)", "Logistic regression");
     const d = cal.deployed;
     $("ev-headline").innerHTML = `Both learned rankers beat item-to-item collaborative filtering on NDCG@10 `
       + `(+${pctf(lrcf.relative)} and +${pctf(gbcf.relative)}, intervals above zero), but <b>logistic regression and LightGBM cannot be told apart</b>: `
-      + `difference ${f4(gblr.mean_diff)}, 95% interval ${f4(gblr.lo)} to ${f4(gblr.hi)}. Raw probabilities overstate the chance of a visit `
+      + `difference ${f4(gblr.mean_diff)}, 95% interval ${f4(gblr.lo)} to ${f4(gblr.hi)}. `
+      + (rklr ? `LambdaRank, trained to order the list, is ahead of logistic regression by ${f4(rklr.mean_diff)} (${f4(rklr.lo)} to ${f4(rklr.hi)}). ` : "")
+      + `Raw probabilities overstate the chance of a visit `
       + `${Math.round(d.LightGBM.before.mean_p / d.LightGBM.before.base_rate)}–${Math.round(d["Logistic regression"].before.mean_p / d["Logistic regression"].before.base_rate)}-fold; `
       + `after Platt scaling the mean prediction matches the observed rate and the ranking is unchanged.`;
   }
@@ -110,7 +113,7 @@ export function createEvaluation(root, ev) {
         .text(`${f4(r.mean)} [${f4(r.lo)}, ${f4(r.hi)}]`);
       g.append("rect").attr("class", "hit").attr("x", 0).attr("y", cy - ROW / 2).attr("width", width).attr("height", ROW)
         .on("pointermove", (e) => showTip(e, `<b>${esc(NAME[m])}</b><br>${METRIC[metric]} <span class="mono">${f4(r.mean)}</span><br>95% interval <span class="mono">${f4(r.lo)} to ${f4(r.hi)}</span>`
-          + (kind === "supp" ? "<br>Listwise objective; reported apart from the pointwise comparison the proposal fixed." : "")))
+          + (kind === "supp" ? "<br>Listwise objective, added after the proposal's pointwise comparison. The diner app ranks with it." : "")))
         .on("pointerleave", hideTip);
     });
   }
@@ -227,17 +230,17 @@ export function createEvaluation(root, ev) {
   // --- Calibration -------------------------------------------------------------------------------
   function renderCal() {
     const node = $("ev-cal"), D = cal.deployed;
-    const names = ["Logistic regression", "LightGBM", "Popularity"].filter((m) => D[m]);
+    const names = ["Logistic regression", "LightGBM", "LambdaRank", "Popularity"].filter((m) => D[m]);
     $("ev-cal-cap").textContent = `Every (user, candidate) pair in the test period: ${cal.rows.toLocaleString()} rows, ${cal.positives.toLocaleString()} visits `
       + `(base rate ${(cal.base_rate_predictor.base_rate * 100).toFixed(2)}%). Bins of predicted probability (log scale, four per decade) against the share that `
       + `were visited, with 95% Wilson intervals; on the dashed diagonal a prediction means what it says. The models were trained on one visit per ten sampled `
-      + `candidates, so their raw probabilities are far too high. Platt scaling, cross-fitted over ${cal.folds} user folds, refits sigmoid(a·score + b); it never changes the order of a user's list.`;
+      + `candidates, so their raw probabilities are far too high. LambdaRank's score is not a probability, so it has no raw series. Platt scaling, cross-fitted over ${cal.folds} user folds, refits sigmoid(a·score + b); it never changes the order of a user's list.`;
     $("ev-cal-key").innerHTML = `<li><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="var(--panel)" stroke="var(--ink-3)" stroke-width="1.5"/></svg>Raw model probability</li>
       <li><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="var(--ink)"/></svg>After Platt scaling</li>
       <li><svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3" stroke="var(--ink-3)" stroke-dasharray="3 3"/></svg>Perfect calibration</li>
       <li><i style="background:var(--track)"></i>Rows per bin (after Platt)</li>`;
     // three panels side by side; one per row on a phone
-    const width = Math.max(node.clientWidth, 280), GAP = 22, COLS = width < 600 ? 1 : names.length, ROWS = Math.ceil(names.length / COLS);
+    const width = Math.max(node.clientWidth, 280), GAP = 22, COLS = width < 600 ? 1 : width < 1000 && names.length > 3 ? 2 : names.length, ROWS = Math.ceil(names.length / COLS);
     const cell = Math.min(330, (width - GAP * (COLS - 1)) / COLS), M = { l: 52, r: 12, t: 22, b: 26 }, HIST = 46;
     const ph = cell - 20, PH = ph + HIST + 30;
     const lo = 1e-5;

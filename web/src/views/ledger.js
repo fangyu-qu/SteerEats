@@ -4,7 +4,7 @@
 // penalties, then the variety step as a rank move. SHAP explains raw model scores; dividing by the per-user
 // score range puts them on the same axis as the penalties, so the bars add up exactly to the steered score.
 import * as d3 from "d3";
-import { esc, hueVar, truncate } from "./common.js";
+import { SCORE_UNIT, esc, hueVar, truncate } from "./common.js";
 
 export const GROUP_LABEL = {
   Collaborative: "Your history (similar places)", Popularity: "Popularity and recency", Rating: "Rating",
@@ -138,14 +138,14 @@ export function renderLedger(root, ctx) {
   const verdict = final <= 10 ? `${name} is #${final} in your list (the model alone put it at #${def}).`
     : `${name} is #${final}, outside your top 10 (the model alone put it at #${def}).`;
   ctx.notes.innerHTML = `<p><b>${verdict}</b> ${variety}</p>
-    <p class="muted">Scale: 0 = this user's lowest-scoring candidate, 1 = highest, under the current history weight. Group bars are SHAP values from ${esc(c.models[model])} (raw score ${c[model].raw[i].toFixed(2)} log-odds) divided by the score range.${L.groups.some((x) => x.scaled) ? " The pale bar shows the history group at full weight." : ""}</p>`;
+    <p class="muted">Scale: 0 = this user's lowest-scoring candidate, 1 = highest, under the current history weight. Group bars are SHAP values from ${esc(c.models[model])} (raw score ${c[model].raw[i].toFixed(2)} ${SCORE_UNIT[model]}) divided by the score range.${L.groups.some((x) => x.scaled) ? " The pale bar shows the history group at full weight." : ""}</p>`;
 
   // Feature detail: the largest individual SHAP values for this place
   const feats = c.features.map((f) => ({ f, v: c[model].shap[f][i], x: c.feature_values[f][i] }))
     .sort((a, b) => Math.abs(b.v) - Math.abs(a.v)).slice(0, 8);
   const maxAbs = Math.max(...feats.map((d) => Math.abs(d.v)), 1e-9);
   const groupOf = Object.fromEntries(Object.entries(c.feature_groups).flatMap(([g, fs]) => fs.map((f) => [f, g])));
-  ctx.detail.innerHTML = `<table class="feat"><caption>Strongest single features (log-odds)</caption>
+  ctx.detail.innerHTML = `<table class="feat"><caption>Strongest single features (${SCORE_UNIT[model]})</caption>
     <thead><tr><th scope="col">Feature</th><th scope="col">Value</th><th scope="col">Effect</th></tr></thead><tbody>
     ${feats.map((d) => {
       const [label, fmt] = FEATURE[d.f] ?? [d.f, (v) => v.toFixed(2)];

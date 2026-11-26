@@ -1,0 +1,1 @@
+{"restaurants":24724,"cuisine_groups":25,"reviews":6767323,"sample_users":20000,"interactions":418914,"interactions_by_split":{"train":325849,"val":49442,"test":40884,"tail":2739},"val_start":"2019-12-01","test_start":"2020-08-01","text_cutoff":"2018-07-01","text_reviews":429562,"text_restaurants":20040}
