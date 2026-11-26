@@ -41,7 +41,7 @@ def main():
     for f in files:
         case = json.loads(f.read_text())
         sim = steering.similarity(case)
-        for model in ("lr", "lgbm"):
+        for model in case["models"] if "models" in case else ("lr", "lgbm"):
             for control in steering.CONTROLS:
                 for v in GRID:
                     th = dict(steering.THETA0, **{control: v})

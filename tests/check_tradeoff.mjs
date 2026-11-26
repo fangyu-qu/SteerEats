@@ -10,10 +10,11 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (...p) => readFileSync(join(root, ...p), "utf8");
 const pop = JSON.parse(read("web", "public", "data", "tradeoff.json"));
 const expected = JSON.parse(read("tests", "tradeoff_expected.json"));
+const NAME = { lr: "Logistic regression", lgbm: "LightGBM", lmr: "LambdaRank" };
 let failures = 0, worst = 0, n = 0;
 for (const [id, e] of Object.entries(expected)) {
   const c = JSON.parse(read("web", "public", "data", "cases", `${id}.json`));
-  for (const m of ["lr", "lgbm"]) {
+  for (const m of Object.keys(NAME)) {
     userSpace(c, m, pop.platt).forEach((p, k) => {
       const [km, popu, cui, visits] = e[m][k];
       const err = Math.max(Math.abs(p.km - km), Math.abs(p.popularity - popu), Math.abs(p.visits - visits) / visits);
@@ -28,10 +29,9 @@ for (const [id, e] of Object.entries(expected)) {
 const [head, ...lines] = read("outputs", "rq1", "frontiers.csv").trim().split("\n");
 const cols = head.split(",");
 const rows = lines.map((l) => Object.fromEntries(l.split(",").map((v, j) => [cols[j], j === 0 || j === 1 ? v : +v])));
-const NAME = { lr: "Logistic regression", lgbm: "LightGBM" };
 let fronts = 0;
 for (const [qty, low] of [["distance_km", true], ["popularity", true], ["cuisines", false], ["neighbourhoods", false], ["outside_home_borough", false]]) {
-  for (const m of ["lr", "lgbm"]) {
+  for (const m of Object.keys(NAME)) {
     const want = rows.filter((r) => r.quantity === qty && r.model_name === NAME[m]).map((r) => `${r.w_h},${r.alpha},${r.beta},${r.lam}`);
     const got = frontier(pop.settings[m], qty, low, "ndcg").map((r) => `${r.w_h},${r.alpha},${r.beta},${r.lam}`);
     fronts++;
