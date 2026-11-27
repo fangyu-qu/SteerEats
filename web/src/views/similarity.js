@@ -1,184 +1,119 @@
-// Similarity map (S1): restaurants placed by who reviewed them (SVD item factors before the snapshot, then UMAP,
-// with PCA beside it as the reference; src/26_similarity_map.py). Grey: all 19,812 placed restaurants; this
-// user's candidates on top, the current top 10 numbered. Brushing the UMAP panel shows the brushed candidates
-// on the map (V4); hover links to every view through the candidate index. Positions are for asking questions,
-// not evidence: the scores table says how faithful each projection is.
+// Similarity map: restaurants placed by who reviewed them (SVD item factors before the snapshot, then UMAP;
+// src/26_similarity_map.py). The same layout twice, drawn the same way: every restaurant a small warm-grey dot, one
+// group picked out in brick red on top of it: a borough on the left, a cuisine group on the right. Only the
+// highlight changes with a choice; the positions never do.
+// The two numbers above the pictures are not read off the picture. For each restaurant the script takes its 15
+// nearest restaurants in the 64-number reviewer space (itself left out) and asks whether the restaurant's own borough
+// (or cuisine group) is the most common one among them: "observed" is the share of restaurants for which it is.
+// "Chance" is what always answering with the largest borough (or group) would score. Per-group neighbour shares
+// exist for cuisine groups only, so they are in "Method & data", not beside one panel and missing from the other.
 import * as d3 from "d3";
 import { esc } from "./common.js";
 
 const LABEL = (s) => s.replace(/_/g, " ").replace(/^\w/, (ch) => ch.toUpperCase());
 const f3 = (v) => (v == null ? "—" : v.toFixed(3));
+const pct = (v) => `${Math.round(v * 100)}%`, pct1 = (v) => `${(v * 100).toFixed(1)}%`;
 
-export function createSimilarity(root, sm, handlers) {
+// els: { title, stats } are the card's heading, written from the numbers, and the box in its top right corner for the statistics
+export function createSimilarity(root, sm, els = {}) {
   const m = Object.fromEntries(sm.metrics.map((r) => [r.space, r]));
-  const fac = m["Item factors (64-d)"], um = m.UMAP, pc = m.PCA;
+  const fac = m["Item factors (64-d)"], um = m.UMAP, pc = m.PCA, noise = m["UMAP of same-size noise"];
+  const N = sm.x.length, nn = sm.params.n_neighbors;
+  const count = (arr, k) => { let n = 0; for (let i = 0; i < N; i++) if (arr[i] === k) n++; return n; };
+  const boN = sm.boroughs.map((_, k) => count(sm.bo, k)), cuN = sm.cuisines.map((_, k) => count(sm.cu, k));
+  // start with Brooklyn, and with the cuisine group closest to it in size, so the two pictures hold a similar
+  // number of red dots ("general" has no cuisine and is left out of the choice)
+  const pick = { bo: Math.max(0, sm.boroughs.indexOf("Brooklyn")), cu: 0 };
+  pick.cu = sm.cuisines.map((c, k) => k).filter((k) => sm.cuisines[k] !== "general").reduce((a, k) => (Math.abs(cuN[k] - boN[pick.bo]) < Math.abs(cuN[a] - boN[pick.bo]) ? k : a));
+  // the heading says what the numbers say: how far above chance each label is
+  const gain = { bo: fac.knn_borough - sm.chance.knn_borough, cu: fac.knn_cuisine - sm.chance.knn_cuisine };
+  if (els.title) els.title.textContent = gain.bo > gain.cu ? "Restaurants cluster more by borough than by cuisine"
+    : gain.cu > gain.bo ? "Restaurants cluster more by cuisine than by borough" : "How restaurants cluster by borough and by cuisine";
+
+  const panel = (key, title, options) => `
+    <section class="sim-panel" aria-labelledby="sim-${key}-h">
+      <div class="sim-head"><h3 id="sim-${key}-h">${title}</h3><select id="sim-${key}" aria-labelledby="sim-${key}-h">${options}</select></div>
+      <p class="sim-count" id="sim-${key}-count"></p>
+      <div class="sim-plot" id="sim-${key}-plot"><canvas role="img"></canvas></div>
+    </section>`;
+  // the two numbers against chance: in the card's top right corner (els.stats) when the page gives that place
+  const STATS = `
+    <table class="sim-stats">
+      <caption>For each restaurant: is its own borough, or cuisine group, the most common one among its ${nn} nearest restaurants?</caption>
+      <thead><tr><td></td><th scope="col">Observed</th><th scope="col">Chance baseline</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Same borough</th><td>${pct1(fac.knn_borough)}</td><td>${pct1(sm.chance.knn_borough)}</td></tr>
+        <tr><th scope="row">Same cuisine</th><td>${pct1(fac.knn_cuisine)}</td><td>${pct1(sm.chance.knn_cuisine)}</td></tr>
+      </tbody>
+    </table>`;
+  if (els.stats) els.stats.innerHTML = STATS;
   root.innerHTML = `
-    <div class="eval-top">
-      <p class="lens-headline">Restaurants sit close together when the same people reviewed them. Their 15 nearest neighbours share
-        the borough <b>${Math.round(fac.knn_borough * 100)}%</b> of the time (chance ${Math.round(sm.chance.knn_borough * 100)}%) but the
-        cuisine group only <b>${Math.round(fac.knn_cuisine * 100)}%</b> (chance ${Math.round(sm.chance.knn_cuisine * 100)}%): who eats where
-        follows place more than cuisine.</p>
-      <label class="field" for="sim-hl"><span>Highlight</span><select id="sim-hl"><option value="">Nothing</option>
-        <optgroup label="Borough">${sm.boroughs.map((b, k) => `<option value="bo:${k}">${esc(b)}</option>`).join("")}</optgroup>
-        <optgroup label="Cuisine group">${sm.cuisines.map((c, k) => [c, k]).sort((a, b) => a[0].localeCompare(b[0]))
-          .map(([c, k]) => `<option value="cu:${k}">${esc(LABEL(c))}</option>`).join("")}</optgroup></select></label>
+${els.stats ? "" : STATS}
+    <div class="sim-pair">
+      ${panel("bo", "By borough", sm.boroughs.map((b, k) => `<option value="${k}"${k === pick.bo ? " selected" : ""}>${esc(b)}</option>`).join(""))}
+      ${panel("cu", "By cuisine", sm.cuisines.map((c, k) => [c, k]).sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([c, k]) => `<option value="${k}"${k === pick.cu ? " selected" : ""}>${esc(LABEL(c))}</option>`).join(""))}
     </div>
-    <p class="sim-note" id="sim-note"></p>
-    <div class="sim-row">
-      <figure class="lens-fig">
-        <figcaption><b>UMAP</b><span>Drag a box to show those candidates on the map; click to clear. Cluster sizes and the distances between clusters carry no meaning.</span></figcaption>
-        <div class="sim-plot" id="sim-umap"><canvas></canvas><svg></svg></div>
-      </figure>
-      <figure class="lens-fig">
-        <figcaption><b>PCA</b><span>Same restaurants, linear projection: the reference UMAP has to beat.</span></figcaption>
-        <div class="sim-plot" id="sim-pca"><canvas></canvas><svg></svg></div>
-      </figure>
-    </div>
-    <ul class="key" id="sim-key"></ul>
-    <p class="sim-cap" id="sim-cap"></p>
-    <div class="scroll-x"><table class="feat lens-acc" id="sim-table"></table></div>
-    <div class="lens-tip" id="sim-tip" role="tooltip" hidden></div>`;
+    <ul class="sim-key" aria-label="Legend"><li><i class="sel" aria-hidden="true"></i>Selected group</li><li><i class="other" aria-hidden="true"></i>Other restaurants</li></ul>
+    <p class="sim-foot">Nearby dots indicate similar reviewer patterns; distances between clusters should not be interpreted literally.</p>
+    <details class="why-more sim-method"><summary>Method &amp; data</summary><div id="sim-method"></div></details>`;
   const $ = (id) => root.querySelector("#" + id);
-  const tip = $("sim-tip");
-  const N = sm.x.length;
-  let ctx = null, hl = "", hovered = null, brushed = null;
-  const panels = {};
 
-  $("sim-key").innerHTML = `<li><svg width="12" height="12"><circle cx="6" cy="6" r="2" fill="var(--line-strong)"/></svg>Placed restaurant</li>
-    <li><svg width="12" height="12"><circle cx="6" cy="6" r="3.5" fill="var(--panel)" stroke="var(--ink-3)" stroke-width="1.3"/></svg>This user's candidate</li>
-    <li><svg width="16" height="16"><circle cx="8" cy="8" r="7" fill="var(--ink)"/></svg>In your top 10 (number = rank)</li>
-    <li><svg width="12" height="12"><circle cx="6" cy="6" r="4" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/></svg>Left your top 10</li>`;
-  $("sim-cap").innerHTML = `<b>How faithful is each picture?</b> Trustworthiness: are 2-D neighbours real neighbours; continuity: are real
-      neighbours kept together (k = ${sm.params.n_neighbors}, ${sm.params.subsample.toLocaleString()} restaurants). k-NN: share of restaurants whose 15 nearest
-      neighbours mostly share their label. Noise row: the same UMAP on random data of the same size.`;
-  $("sim-table").innerHTML = `<thead><tr><th>Space</th><th>Trustworthiness</th><th>Continuity</th><th>k-NN cuisine</th><th>k-NN borough</th></tr></thead>
-    <tbody>${sm.metrics.map((r) => `<tr><td>${esc(r.space)}</td><td class="mono">${f3(r.trustworthiness)}</td><td class="mono">${f3(r.continuity)}</td>
-      <td class="mono">${f3(r.knn_cuisine)}</td><td class="mono">${f3(r.knn_borough)}</td></tr>`).join("")}
-      <tr><td>Chance (most common label)</td><td></td><td></td><td class="mono">${f3(sm.chance.knn_cuisine)}</td><td class="mono">${f3(sm.chance.knn_borough)}</td></tr></tbody>
-    <tfoot><tr><td colspan="5" class="note">${sm.info.reviews.toLocaleString()} reviews before ${sm.cutoff} by ${sm.info.users.toLocaleString()} people of
-      ${sm.info.restaurants.toLocaleString()} restaurants with at least ${sm.params.min_reviewers} reviewers; ${sm.params.k}-dimensional SVD; UMAP n_neighbors
-      ${sm.params.n_neighbors}, min_dist ${sm.params.min_dist}, cosine, seed ${sm.params.seed}. A second seed and a parameter sweep are in
-      outputs/similarity_map/SIMILARITY_MAP.md.</td></tr></tfoot>`;
-  $("sim-hl").addEventListener("change", (e) => { hl = e.target.value; drawBackground(); note(); });
+  $("sim-method").innerHTML = `
+    <p><b>Data.</b> Reviews written before ${esc(sm.cutoff)}: ${sm.info.reviews.toLocaleString()} reviews by ${sm.info.users.toLocaleString()} people of ${sm.info.restaurants.toLocaleString()} restaurants. A restaurant is included when at least ${sm.params.min_reviewers} people reviewed it; a reviewer when they reviewed at least two of those restaurants.</p>
+    <p><b>Layout.</b> Each restaurant is first described by ${sm.params.k} numbers that summarise who reviewed it (a truncated SVD of the reviewer-by-restaurant table, ${(sm.info.explained * 100).toFixed(1)}% of its variance). UMAP (n_neighbors ${nn}, min_dist ${sm.params.min_dist}, cosine distance, seed ${sm.params.seed}) then places them in two dimensions. Both panels draw that one layout; choosing a group only changes which dots are red.</p>
+    <p><b>Nearest neighbours.</b> The two rows above the pictures use each restaurant’s ${nn} nearest restaurants in the ${sm.params.k}-number space, not in the picture, with the restaurant itself left out. “Observed” is the share of all ${N.toLocaleString()} restaurants whose own borough (or cuisine group) is the most common one among those ${nn}. “Chance baseline” is the score of always answering with the largest borough (or cuisine group), that is, its share of all restaurants. The baseline matters because five boroughs and ${sm.cuisines.length} cuisine groups of very different sizes are not equally easy to match.</p>
+    <p><b>How faithful the picture is.</b> Trustworthiness asks whether neighbours in the picture are real neighbours, continuity whether real neighbours stay together (both at k = ${nn}, on a random sample of ${sm.params.subsample.toLocaleString()} restaurants). The UMAP layout scores ${f3(um.trustworthiness)} and ${f3(um.continuity)}; a linear PCA projection ${f3(pc.trustworthiness)} and ${f3(pc.continuity)}; the same UMAP on random data of the same size ${f3(noise.trustworthiness)} and ${f3(noise.continuity)}. UMAP keeps near neighbours together, so the size of a clump and the gap between two clumps are not distances.</p>
+    <div class="scroll-x"><table class="feat lens-acc sim-table">
+      <thead><tr><th>Space</th><th>Trustworthiness</th><th>Continuity</th><th>Same cuisine</th><th>Same borough</th></tr></thead>
+      <tbody>${sm.metrics.map((r) => `<tr><td>${esc(r.space)}</td><td class="mono">${f3(r.trustworthiness)}</td><td class="mono">${f3(r.continuity)}</td>
+        <td class="mono">${f3(r.knn_cuisine)}</td><td class="mono">${f3(r.knn_borough)}</td></tr>`).join("")}
+        <tr><td>Chance baseline (largest group)</td><td></td><td></td><td class="mono">${f3(sm.chance.knn_cuisine)}</td><td class="mono">${f3(sm.chance.knn_borough)}</td></tr></tbody></table></div>
+    <p><b>By cuisine group.</b> For the restaurants of one cuisine group, the average share of their ${nn} nearest restaurants (same ${sm.params.k}-number space) that are in the same group, beside the group’s share of all restaurants. This was computed for cuisine groups only, so there is no matching column for boroughs.</p>
+    <div class="scroll-x"><table class="feat lens-acc sim-table">
+      <thead><tr><th>Cuisine group</th><th>Restaurants</th><th>Share of all</th><th>Same group among the ${nn} nearest</th></tr></thead>
+      <tbody>${sm.purity.map((r) => `<tr><td>${esc(LABEL(r.cuisine))}</td><td class="mono">${r.restaurants.toLocaleString()}</td><td class="mono">${pct1(r.share)}</td>
+        <td class="mono">${r.purity_factors == null ? "—" : pct1(r.purity_factors)}</td></tr>`).join("")}</tbody></table></div>
+    <p>A second seed and a parameter sweep are in outputs/similarity_map/SIMILARITY_MAP.md.</p>`;
 
-  function note() {
-    const c = ctx?.c;
-    let s = "";
-    if (c) {
-      const placed = c.candidates.gmap_id.filter((g) => g in sm.ids).length;
-      s = `${placed} of this user's ${c.candidates.gmap_id.length} candidates are placed; the rest had fewer than ${sm.params.min_reviewers} reviewers before ${sm.cutoff}.`;
-    }
-    if (hl.startsWith("cu:")) {
-      const p = sm.purity.find((r) => r.cuisine === sm.cuisines[+hl.slice(3)]);
-      if (p) s += ` ${LABEL(p.cuisine)}: ${p.restaurants.toLocaleString()} restaurants; ${Math.round(p.purity_factors * 100)}% of their nearest neighbours are also ${LABEL(p.cuisine).toLowerCase()}, against ${(p.share * 100).toFixed(1)}% of all restaurants.`;
-    }
-    if (brushed) s += ` ${brushed.length} candidate${brushed.length === 1 ? "" : "s"} brushed, shown on the map.`;
-    $("sim-note").textContent = s;
+  // (a small group is not rounded down to "0% of all": below 1% the share keeps one decimal)
+  const describe = (n) => `${n.toLocaleString()} restaurants · ${n / N < 0.01 ? pct1(n / N) : pct(n / N)} of all`;
+  function counts() {
+    $("sim-bo-count").textContent = describe(boN[pick.bo]);
+    $("sim-cu-count").textContent = describe(cuN[pick.cu]);
   }
 
-  function size(id) {
-    const node = $(id), w = Math.max(node.clientWidth, 240);
-    return { node, w, h: Math.round(Math.min(w * 0.8, 440)) };
-  }
-
-  function scales(key, w, h) {
-    const xs = key === "umap" ? sm.x : sm.px, ys = key === "umap" ? sm.y : sm.py;
-    const [x0, x1] = d3.extent(xs), [y0, y1] = d3.extent(ys), pad = 10;
+  // one picture: every restaurant in warm grey first, then the picked group in brick red on top; round dots of
+  // nearly the same size, no edge. Drawn at the screen's own pixel density, so it is sharp on any display.
+  function draw(id, labels, value, what) {
+    const node = $(id), w = Math.max(node.clientWidth, 240), h = Math.round(Math.min(w * 0.82, 520));
+    const [x0, x1] = d3.extent(sm.x), [y0, y1] = d3.extent(sm.y), pad = 10;
     const k = Math.min((w - 2 * pad) / (x1 - x0), (h - 2 * pad) / (y1 - y0));
     const ox = (w - k * (x1 - x0)) / 2, oy = (h - k * (y1 - y0)) / 2;
-    return { xs, ys, x: (v) => ox + (v - x0) * k, y: (v) => h - oy - (v - y0) * k };
+    const X = (v) => ox + (v - x0) * k, Y = (v) => h - oy - (v - y0) * k;
+    const css = getComputedStyle(root);
+    const other = css.getPropertyValue("--sim-other").trim(), sel = css.getPropertyValue("--sim-sel").trim();
+    const cv = node.querySelector("canvas"), dpr = window.devicePixelRatio || 1;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); cv.style.width = `${w}px`; cv.style.height = `${h}px`;
+    cv.setAttribute("aria-label", `Layout of ${N.toLocaleString()} restaurants by who reviewed them, with ${what} picked out: ${describe(labels === sm.bo ? boN[value] : cuN[value])}`);
+    const g = cv.getContext("2d");
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+    const dots = (r, on) => { g.beginPath(); for (let i = 0; i < N; i++) if ((labels[i] === value) === on) { const px = X(sm.x[i]), py = Y(sm.y[i]); g.moveTo(px + r, py); g.arc(px, py, r, 0, 6.2832); } g.fill(); };
+    const R = w < 420 ? 1.05 : 1.3;                       // a little smaller on a narrow picture, where dots crowd
+    g.globalAlpha = 0.6; g.fillStyle = other; dots(R, false);
+    g.globalAlpha = 0.92; g.fillStyle = sel; dots(R + 0.2, true);
+    g.globalAlpha = 1;
   }
-
-  function drawBackground() {
-    const css = getComputedStyle(document.documentElement);
-    const grey = css.getPropertyValue("--line-strong").trim(), ink = css.getPropertyValue("--ink").trim();
-    const [kind, val] = hl ? [hl.slice(0, 2), +hl.slice(3)] : [null, null];
-    const lab = kind === "cu" ? sm.cu : kind === "bo" ? sm.bo : null;
-    for (const [key, id] of [["umap", "sim-umap"], ["pca", "sim-pca"]]) {
-      const { node, w, h } = size(id);
-      const S = scales(key, w, h);
-      const cv = node.querySelector("canvas"), dpr = window.devicePixelRatio || 1;
-      cv.width = w * dpr; cv.height = h * dpr; cv.style.width = `${w}px`; cv.style.height = `${h}px`;
-      const g = cv.getContext("2d");
-      g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      g.clearRect(0, 0, w, h);
-      g.globalAlpha = lab ? 0.35 : 0.55;
-      g.fillStyle = grey;
-      for (let i = 0; i < N; i++) if (!lab || lab[i] !== val) g.fillRect(S.x(S.xs[i]) - 1, S.y(S.ys[i]) - 1, 2, 2);
-      if (lab) {
-        g.globalAlpha = 0.85; g.fillStyle = ink;
-        for (let i = 0; i < N; i++) if (lab[i] === val) g.fillRect(S.x(S.xs[i]) - 1.2, S.y(S.ys[i]) - 1.2, 2.4, 2.4);
-      }
-      panels[key] = Object.assign(panels[key] ?? {}, S, { w, h, node });   // keep the overlay's positions and ring layer
-    }
+  function drawAll() {
+    draw("sim-bo-plot", sm.bo, pick.bo, sm.boroughs[pick.bo]);
+    draw("sim-cu-plot", sm.cu, pick.cu, LABEL(sm.cuisines[pick.cu]));
+    counts();
   }
+  $("sim-bo").addEventListener("change", (e) => { pick.bo = +e.target.value; drawAll(); });
+  $("sim-cu").addEventListener("change", (e) => { pick.cu = +e.target.value; drawAll(); });
 
-  function drawOverlay() {
-    if (!ctx) return;
-    const { c, top, gone } = ctx;
-    const cand = c.candidates.gmap_id.map((g, i) => [i, sm.ids[g]]).filter(([, k]) => k != null);
-    for (const [key, P] of Object.entries(panels)) {
-      const svg = d3.select(P.node.querySelector("svg")).attr("width", P.w).attr("height", P.h)
-        .attr("role", "img").attr("aria-label", `${key === "umap" ? "UMAP" : "PCA"} of restaurants with this user's candidates`);
-      svg.selectAll("*").remove();
-      const pos = new Map(cand.map(([i, k]) => [i, [P.x(P.xs[k]), P.y(P.ys[k])]]));
-      svg.append("g").selectAll("circle").data(cand.filter(([i]) => !top.includes(i) && !gone.includes(i))).join("circle")
-        .attr("class", "sim-cand").attr("r", 3).attr("cx", ([i]) => pos.get(i)[0]).attr("cy", ([i]) => pos.get(i)[1]);
-      svg.append("g").selectAll("circle").data(gone.filter((i) => pos.has(i))).join("circle").attr("class", "sim-gone").attr("r", 4.5)
-        .attr("cx", (i) => pos.get(i)[0]).attr("cy", (i) => pos.get(i)[1]);
-      const pins = svg.append("g").selectAll("g").data(top.filter((i) => pos.has(i))).join("g").attr("class", "sim-pin")
-        .attr("transform", (i) => `translate(${pos.get(i)})`);
-      pins.append("circle").attr("r", 8);
-      pins.append("text").attr("dy", "0.35em").text((i) => top.indexOf(i) + 1);
-      P.rings = svg.append("g");
-      P.pos = pos;
-      if (key === "umap") {
-        const brush = d3.brush().extent([[0, 0], [P.w, P.h]]).on("end", ({ selection }) => {
-          brushed = selection ? [...pos].filter(([, [x, y]]) => x >= selection[0][0] && x <= selection[1][0] && y >= selection[0][1] && y <= selection[1][1]).map(([i]) => i) : null;
-          handlers.brush?.(brushed);
-          note(); rings();
-        });
-        const bg = svg.append("g").attr("class", "sim-brush").call(brush);
-        const ids = [...pos.keys()], del = d3.Delaunay.from(ids, (i) => pos.get(i)[0], (i) => pos.get(i)[1]);
-        bg.on("pointermove.tip", (e) => {
-          const [px, py] = d3.pointer(e, svg.node());
-          const i = ids[del.find(px, py)], [x, y] = pos.get(i);
-          if (Math.hypot(x - px, y - py) > 12) { handlers.hover(null); tip.hidden = true; return; }
-          handlers.hover(i);
-          const box = root.getBoundingClientRect();
-          tip.innerHTML = `<b>${esc(c.candidates.name[i])}</b><br>${esc(c.candidates.cuisine_label[i])} · ${esc(c.candidates.nta_name[i])}, ${esc(c.candidates.borough[i])}`
-            + `<br>${top.includes(i) ? `#${top.indexOf(i) + 1} in your list` : gone.includes(i) ? "left your top 10" : "candidate"}`;
-          tip.hidden = false;
-          tip.style.left = `${Math.min(e.clientX - box.left + 14, box.width - tip.offsetWidth - 4)}px`;
-          tip.style.top = `${e.clientY - box.top + 16}px`;
-        }).on("pointerleave.tip", () => { handlers.hover(null); tip.hidden = true; });
-        if (brushed) brushed = brushed.filter((i) => pos.has(i));
-      }
-    }
-    rings();
-  }
-
-  function rings() {
-    for (const P of Object.values(panels)) {
-      if (!P.rings) continue;
-      const marks = [...(brushed ?? []).map((i) => [i, "brushed"]), ...(hovered != null ? [[hovered, "hov"]] : [])].filter(([i]) => P.pos.has(i));
-      P.rings.selectAll("circle").data(marks).join("circle").attr("class", ([, cls]) => `ring ${cls}`)
-        .attr("r", ([, cls]) => (cls === "hov" ? 11 : 6)).attr("cx", ([i]) => P.pos.get(i)[0]).attr("cy", ([i]) => P.pos.get(i)[1]);
-    }
-  }
-
-  let drawnW = null, caseId = null;
-  // the canvas takes its colours from the theme tokens when drawn, so redraw when the theme changes
-  window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change", () => { drawBackground(); });
-  return {
-    update(next) {
-      if (next.c.id !== caseId) { brushed = null; handlers.brush?.(null); caseId = next.c.id; }
-      ctx = next;
-      const w = $("sim-umap").clientWidth + "|" + $("sim-pca").clientWidth;
-      if (w !== drawnW) { drawnW = w; drawBackground(); }
-      drawOverlay(); note();
-    },
-    redraw() { drawnW = null; if (ctx) this.update(ctx); },
-    highlight(i) { hovered = i; rings(); },
-  };
+  let drawnW = null;
+  const sync = () => { const w = $("sim-bo-plot").clientWidth; if (w && w !== drawnW) { drawnW = w; drawAll(); } };
+  return { update: sync, redraw() { drawnW = null; sync(); }, highlight() {} };
 }

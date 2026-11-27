@@ -4,7 +4,7 @@ export const STEPS = [
   { key: "model", label: "History weight", short: "History", hue: "model", control: "w_h" },
   { key: "distance", label: "Distance", hue: "control", control: "alpha" },
   { key: "popularity", label: "Popularity", hue: "control", control: "beta" },
-  { key: "boost", label: "Neighborhood", short: "Boost", hue: "control", control: "boost" },
+  { key: "boost", label: "Neighborhood", short: "Area", hue: "control", control: "boost" },
   { key: "diversity", label: "Variety", hue: "diversity", control: "lam" },
 ];
 export const CONTROL_INFO = {
@@ -15,6 +15,14 @@ export const CONTROL_INFO = {
   boost: { name: "neighborhood", hue: "control" },
 };
 export const MODEL_NAMES = { lr: "Logistic regression", lgbm: "LightGBM", lmr: "LambdaRank" };
+// One colour and one shape per ranker, the same in every chart (tokens --m-lr, --m-lgbm, --m-lmr).
+export const MODEL_FILL = { lr: "var(--m-lr)", lgbm: "var(--m-lgbm)", lmr: "var(--m-lmr)" };
+export const MODEL_SHAPE = { lr: "square", lgbm: "circle", lmr: "triangle" };
+// The three baselines of the accuracy chart: their own colours, one shape (a diamond) for "baseline".
+export const BASELINE_FILL = { Popularity: "var(--m-pop)", "Recent popularity": "var(--m-recent)", "Item-CF": "var(--m-cf)" };
+// Text in a series colour: the colour mixed into ink, so it keeps a reading contrast on the cards.
+export const inkOf = (fill) => `color-mix(in oklab, ${fill} 45%, var(--ink))`;
+export const MODEL_KEY = { "Logistic regression": "lr", LightGBM: "lgbm", LambdaRank: "lmr", "LightGBM LambdaRank (supplementary)": "lmr" };
 // The model each one is compared with unless the reader chooses another.
 export const VERSUS = { lr: "lgbm", lgbm: "lr", lmr: "lgbm" };
 // What a model's raw score measures. LambdaRank is trained to order a list; its score is not a probability.

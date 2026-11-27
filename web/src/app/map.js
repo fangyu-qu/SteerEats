@@ -1,97 +1,150 @@
-// The app's map: pumpkin land with tofu borders, salad parks, blue water. Restaurants are numbered tomato-red
-// pins (real buttons); each person's start point is their avatar. The food stickers never appear here.
-import * as d3 from "d3";
+// The app's map: a street map that zooms from the whole city down to street and building names (Leaflet on
+// OpenStreetMap tiles, fetched from tile.openstreetmap.org while the map is looked at). Restaurants are numbered
+// deep-coral pins; each person's start point is their avatar; a dashed line runs from each start to the picked place.
+// The food stickers never appear here.
+// Moving a start is done on the avatar itself, three ways that all end in the same handler:
+//   drag it: the dashed line follows while it moves, and the list is worked out again when it is let go;
+//   tap it: it is "held", and every tap on the map moves it there, as often as wanted, until it is tapped again,
+//           Done is pressed or Esc is hit;
+//   keyboard: Tab to the avatar, Enter to hold it, arrow keys to nudge it, Enter or Esc to let go.
+// After a move the view stays where it is unless a pin has gone out of sight.
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { esc } from "../views/common.js";
 
 const PIN = '<svg aria-hidden="true" viewBox="0 0 32 42"><path d="M16 40.5C16 40.5 2.5 24.5 2.5 15.2A13.5 13.5 0 0 1 29.5 15.2C29.5 24.5 16 40.5 16 40.5Z"/></svg>';
-const MAX_SCALE = 420000;   // closest zoom: the frame is never narrower than about 2 km
+const NYC = [[40.49, -74.27], [40.92, -73.68]];
+const CLOSEST = 16;   // the view first fits the list no closer than this; the person can zoom in to 19
+const NUDGE = 28;     // one arrow key moves a held avatar this many screen pixels
 
-// handlers: select(i), hover(i | null), drop(lat, lon)
+// handlers: select(i), hover(i | null), move(key, lat, lon) -> false when the point is refused, hold(key | null)
 export function createMap(el, nta, avatar, handlers) {
-  el.innerHTML = `<svg role="img" aria-label="Map of the listed places and where each person starts"><g class="g-land"></g><g class="g-route"></g></svg><div class="g-over"></div>`;
-  const svg = d3.select(el).select("svg"), over = el.querySelector(".g-over");
-  const land = nta.features.filter((f) => f.properties.ntatype !== "9"), parks = nta.features.filter((f) => f.properties.ntatype === "9");
-  const named = nta.features.filter((f) => f.properties.ntatype === "0").map((f) => ({ name: f.properties.ntaname.split("-")[0].replace(/\s*\(.*?\)/, ""), full: f.properties.ntaname, at: d3.geoCentroid(f), area: d3.geoArea(f) }));
-  let ctx = null, projection = null, wide = false;
+  el.setAttribute("role", "application");
+  el.setAttribute("aria-label", "Street map of the listed places and where each person starts");
+  const map = L.map(el, { zoomControl: true, zoomSnap: 0.25, minZoom: 9, maxZoom: 19 });
+  map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19,
+    attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors' }).addTo(map);
+  map.fitBounds(NYC);
+  const routes = L.layerGroup().addTo(map), people = L.layerGroup().addTo(map), places = L.layerGroup().addTo(map);
+  const pins = new Map(), routeOf = new Map(), startOf = new Map();   // place index -> marker; person -> line, marker
+  let ctx = null, wide = false, fitKey = null, pendingFit = false, moved = false, refocus = null, refused = null;
 
-  function draw() {
+  // the tools sit on the map and never pass their clicks to it
+  const tools = L.DomUtil.create("div", "maptools", el), noteBox = L.DomUtil.create("div", "mapnote-wrap", el);
+  for (const box of [tools, noteBox]) { L.DomEvent.disableClickPropagation(box); L.DomEvent.disableScrollPropagation(box); }
+  // (a tool redraws itself when pressed, so its click is stopped here: once the pressed button has left the page,
+  // Leaflet can no longer tell that the click came from a control and would read it as a tap on the map)
+  tools.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (e.target.closest('[data-maptool="zoom"]')) { wide = !wide; fit(true); drawTools(); }
+  });
+  noteBox.addEventListener("click", (e) => { e.stopPropagation(); if (e.target.closest('[data-maptool="done"]')) handlers.hold(null); });
+  // a held avatar goes wherever the map is tapped, again and again
+  map.on("click", (e) => { if (ctx?.pinning) place(ctx.pinning.key, e.latlng.lat, e.latlng.lng); });
+
+  // every way of moving a start ends here; a refused point (outside the city) says so for a moment
+  function place(key, lat, lng) {
+    moved = true;
+    if (handlers.move(key, lat, lng) === false) {
+      moved = false;
+      clearTimeout(refused); el.classList.add("refused"); drawTools("That is too far from New York City. Pick a start closer in.");
+      refused = setTimeout(() => { el.classList.remove("refused"); drawTools(); }, 2600);
+    }
+  }
+
+  function drawTools(warn) {
     if (!ctx) return;
-    const w = el.clientWidth, h = el.clientHeight;
-    if (!w || !h) return;
-    const pts = [...ctx.items.map((p) => [p.lon, p.lat]), ...ctx.starts.map((s) => [s.lon, s.lat])];
-    projection = d3.geoMercator();
-    const pad = 46;
-    if (wide || !pts.length) projection.fitExtent([[8, 8], [w - 8, h - 8]], nta);
-    else {
-      projection.fitExtent([[pad, pad + 14], [w - pad, h - pad]], { type: "MultiPoint", coordinates: pts });
-      if (projection.scale() > MAX_SCALE) {
-        const c = d3.geoCentroid({ type: "MultiPoint", coordinates: pts });
-        projection.scale(MAX_SCALE).center(c).translate([w / 2, h / 2]);
-      }
-    }
-    const path = d3.geoPath(projection);
-    svg.attr("viewBox", `0 0 ${w} ${h}`);
-    svg.select(".g-land").selectAll("path").data([...land, ...parks]).join("path")
-      .attr("class", (f) => (f.properties.ntatype === "9" ? "land park" : "land")).attr("d", path);
-    const sel = ctx.items.find((p) => p.i === ctx.selected);
-    svg.select(".g-route").selectAll("path").data(sel ? ctx.starts : []).join("path").attr("class", "route")
-      .attr("d", (s) => { const a = projection([s.lon, s.lat]), b = projection([sel.lon, sel.lat]); return `M${a[0]},${a[1]}L${b[0]},${b[1]}`; });
-
-    // neighbourhood names: those that hold a listed place or a start first, then the largest in view; none overlapping
-    const inView = ([x, y]) => x > 40 && x < w - 40 && y > 24 && y < h - 24;
-    const want = new Set(ctx.items.map((p) => p.nta));
-    const cand = named.map((n) => ({ ...n, xy: projection(n.at) })).filter((n) => inView(n.xy))
-      .sort((a, b) => (want.has(b.full) - want.has(a.full)) || b.area - a.area);
-    const pins = ctx.items.map((p) => projection([p.lon, p.lat])), homes = ctx.starts.map((s) => projection([s.lon, s.lat]));
-    // a pin stands on its point and reaches 60px up; an avatar is centred on its point
-    const clear = (n) => pins.every((q) => Math.abs(q[0] - n.xy[0]) > 64 || n.xy[1] < q[1] - 72 || n.xy[1] > q[1] + 12)
-      && homes.every((q) => Math.abs(q[0] - n.xy[0]) > 74 || Math.abs(q[1] - n.xy[1]) > 38);
-    const placed = [];
-    for (const n of cand) {
-      if (placed.length >= 9) break;
-      const far = (q, dx, dy) => Math.abs(q[0] - n.xy[0]) > dx || Math.abs(q[1] - n.xy[1]) > dy;
-      if (placed.every((q) => far(q.xy, 96, 26)) && clear(n)) placed.push(n);
-    }
-    const order = [...ctx.items].sort((a, b) => b.rank - a.rank);   // rank 1 is drawn last, on top
-    over.innerHTML = placed.map((n) => `<span class="lbl" style="left:${n.xy[0]}px;top:${n.xy[1]}px">${esc(n.name)}</span>`).join("")
-      + ctx.starts.map((s) => { const [x, y] = projection([s.lon, s.lat]); return `<img class="startpin" src="${avatar(s.key)}" alt="${esc(s.name)} starts here" style="left:${x}px;top:${y}px">`; }).join("")
-      + order.map((p) => { const [x, y] = projection([p.lon, p.lat]);
-        return `<button type="button" class="pin${p.i === ctx.selected ? " sel" : ""}${p.i === ctx.hot ? " hot" : ""}" data-pin="${p.i}" aria-pressed="${p.i === ctx.selected}"
-          aria-label="Number ${p.rank}, ${esc(p.name)}, ${esc(p.nta)}" style="left:${x}px;top:${y}px"><span>${PIN}<b>${p.rank}</b></span></button>`; }).join("")
-      + (ctx.pinning ? `<div class="mapnote"><span>Tap the map where ${esc(ctx.pinning.name)} starts.</span><button type="button" class="btn quiet" data-maptool="cancel">Cancel</button></div>` : "")
-      + `<div class="maptools"><button type="button" class="btn quiet" data-maptool="zoom">${wide ? "Zoom to the list" : "Whole city"}</button>
-        ${ctx.starts.map((s) => `<button type="button" class="btn quiet" data-maptool="move:${s.key}">Move ${esc(s.name)}</button>`).join("")}</div>`;
+    const names = ctx.starts.map((s) => esc(s.name));
+    tools.innerHTML = `<button type="button" class="btn quiet" data-maptool="zoom">${wide ? "Zoom to the list" : "Whole city"}</button>
+      ${ctx.pinning || !names.length ? "" : `<span class="maphint">Drag ${names.join(" or ")} to move ${names.length > 1 ? "their" : "the"} start</span>`}`;
+    noteBox.innerHTML = warn ? `<div class="mapnote warn" role="status"><span>${warn}</span></div>`
+      : ctx.pinning ? `<div class="mapnote" role="status"><span>Tap the map to move ${esc(ctx.pinning.name)}, as often as you like. You can also drag.</span><button type="button" class="btn quiet" data-maptool="done">Done</button></div>` : "";
     el.classList.toggle("pinning", !!ctx.pinning);
   }
 
-  el.addEventListener("click", (e) => {
-    const pin = e.target.closest("[data-pin]"), tool = e.target.closest("[data-maptool]");
-    if (tool) {
-      const t = tool.dataset.maptool;
-      if (t === "zoom") { wide = !wide; draw(); }
-      else if (t === "cancel") handlers.pinMode(null);
-      else handlers.pinMode(t.split(":")[1]);
-      return;
+  const points = () => [...ctx.items.map((p) => [p.lat, p.lon]), ...ctx.starts.map((s) => [s.lat, s.lon])];
+  function fit(animate) {
+    if (!ctx) return;
+    if (!el.clientWidth || !el.clientHeight) { pendingFit = true; return; }
+    const pts = points();
+    if (wide || !pts.length) map.fitBounds(NYC, { animate });
+    else map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [44, 64], paddingBottomRight: [44, 64], maxZoom: CLOSEST, animate });
+  }
+  // after a move the view is left alone, unless a pin or a start is now out of sight: then it glides to show them
+  function keepInSight() {
+    const pts = points();
+    if (!pts.length || !el.clientWidth) return;
+    if (!map.getBounds().pad(-0.06).contains(L.latLngBounds(pts))) fit(true);
+  }
+
+  function draw() {
+    if (!ctx) return;
+    routes.clearLayers(); people.clearLayers(); places.clearLayers(); pins.clear(); routeOf.clear(); startOf.clear();
+    const sel = ctx.items.find((p) => p.i === ctx.selected);
+    for (const s of ctx.starts) {
+      if (sel) routeOf.set(s.key, L.polyline([[s.lat, s.lon], [sel.lat, sel.lon]], { className: "route", interactive: false }).addTo(routes));
+      const held = ctx.pinning?.key === s.key;
+      const m = L.marker([s.lat, s.lon], { icon: L.divIcon({ className: `startpin${held ? " held" : ""}`, html: `<img src="${avatar(s.key)}" alt="">`, iconSize: [52, 52], iconAnchor: [26, 26] }),
+        draggable: true, autoPan: true, autoPanPadding: [40, 40], keyboard: true, riseOnHover: true, riseOffset: 900, zIndexOffset: held ? 1200 : 100,
+        title: held ? `${s.name}: tap the map or use the arrow keys to move` : `${s.name} starts here: drag to move, or tap to hold` }).addTo(people);
+      const node = m.getElement();
+      node?.setAttribute("aria-label", `${s.name}'s start. ${held ? "Held: arrow keys move it, Enter lets go." : "Press Enter to hold it, then move it with the arrow keys."}`);
+      node?.setAttribute("aria-pressed", String(held));
+      m.on("dragstart", () => { node?.classList.add("dragging"); })
+        .on("drag", (e) => { const at = e.target.getLatLng(); if (sel) routeOf.get(s.key)?.setLatLngs([[at.lat, at.lng], [sel.lat, sel.lon]]); })   // the line follows the avatar
+        .on("dragend", (e) => { const at = e.target.getLatLng(); place(s.key, at.lat, at.lng); })
+        .on("click", () => { refocus = held ? null : s.key; handlers.hold(held ? null : s.key); });   // a tap (not a drag): hold it, or let it go
+      // keyboard: arrows nudge a held avatar; the map itself must not pan under it
+      node?.addEventListener("keydown", (e) => {
+        const step = { ArrowLeft: [-NUDGE, 0], ArrowRight: [NUDGE, 0], ArrowUp: [0, -NUDGE], ArrowDown: [0, NUDGE] }[e.key];
+        if (e.key === "Escape" && held) { e.stopPropagation(); refocus = s.key; handlers.hold(null); return; }
+        // Enter or Space holds the avatar or lets it go (handled here, and the key's own press is cancelled, so the
+        // map library does not add a click of its own on top)
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); refocus = s.key; handlers.hold(held ? null : s.key); return; }
+        if (!step || !held) return;
+        e.preventDefault(); e.stopPropagation();
+        const to = map.containerPointToLatLng(map.latLngToContainerPoint([s.lat, s.lon]).add(step));
+        refocus = s.key; place(s.key, to.lat, to.lng);
+      });
+      startOf.set(s.key, m);
     }
-    if (e.target.closest(".mapnote, .maptools")) return;
-    if (ctx?.pinning && projection) {
-      const r = el.getBoundingClientRect(), [lon, lat] = projection.invert([e.clientX - r.left, e.clientY - r.top]);
-      handlers.drop(lat, lon);
-      return;
+    for (const p of [...ctx.items].sort((a, b) => b.rank - a.rank)) {   // rank 1 is added last, on top
+      const m = L.marker([p.lat, p.lon], { icon: L.divIcon({ className: `pin${p.i === ctx.selected ? " sel" : ""}${p.i === ctx.hot ? " hot" : ""}`, html: `<span>${PIN}<b>${p.rank}</b></span>`, iconSize: [34, 44], iconAnchor: [17, 44] }),
+        zIndexOffset: 400 - p.rank + (p.i === ctx.selected ? 400 : 0), title: `${p.rank}. ${p.name}` }).addTo(places);
+      // while an avatar is held, a tap on a pin moves the avatar there too (the map's own click does not see it)
+      m.on("click", () => { if (ctx.pinning) place(ctx.pinning.key, p.lat, p.lon); else handlers.select(p.i); }).on("mouseover", () => handlers.hover(p.i)).on("mouseout", () => handlers.hover(null));
+      const node = m.getElement();
+      node?.setAttribute("aria-label", `Number ${p.rank}, ${p.name}, ${p.nta}`);
+      node?.setAttribute("aria-pressed", String(p.i === ctx.selected));
+      pins.set(p.i, m);
     }
-    if (pin) handlers.select(+pin.dataset.pin);
-  });
-  el.addEventListener("mouseover", (e) => { const pin = e.target.closest("[data-pin]"); if (pin) handlers.hover(+pin.dataset.pin); });
-  el.addEventListener("mouseout", (e) => { if (e.target.closest("[data-pin]")) handlers.hover(null); });
-  new ResizeObserver(() => draw()).observe(el);
+    drawTools();
+    if (refocus) { startOf.get(refocus)?.getElement()?.focus({ preventScroll: true }); refocus = null; }
+    // the view moves only when the places or the start points change, so picking a place keeps the person's zoom;
+    // and after a move it stays put as long as everything is still in sight
+    const key = JSON.stringify([ctx.items.map((p) => [p.lat, p.lon]), ctx.starts.map((s) => [s.lat, s.lon])]);
+    if (key !== fitKey) { fitKey = key; if (moved) keepInSight(); else fit(false); }
+    moved = false;
+  }
+
+  let w = 0, h = 0;
+  new ResizeObserver(() => {
+    if (!el.clientWidth || !el.clientHeight) return;
+    // coming out of hiding (the phone's list view) the map has no old centre worth keeping: measure, then fit on the
+    // next frame, once Leaflet has settled; a later change of size keeps the centre
+    const shown = !w || !h;
+    if (el.clientWidth !== w || el.clientHeight !== h) { w = el.clientWidth; h = el.clientHeight; map.invalidateSize({ pan: !shown }); }
+    if (pendingFit || shown) { pendingFit = false; requestAnimationFrame(() => { map.invalidateSize({ pan: false }); fit(false); }); }
+  }).observe(el);
 
   return {
     update(next) { ctx = next; draw(); },
-    // only the pin states change: no redraw of the land
+    // only the pin states change
     mark(selected, hot) {
       if (!ctx) return;
       ctx.hot = hot;
-      over.querySelectorAll("[data-pin]").forEach((b) => b.classList.toggle("hot", +b.dataset.pin === hot));
+      for (const [i, m] of pins) m.getElement()?.classList.toggle("hot", i === hot);
     },
   };
 }

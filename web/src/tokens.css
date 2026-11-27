@@ -2,14 +2,19 @@
    (the Lab dashboard) and app/app.css (the diner app). Every colour is one of Yila's swatches, cream paper or
    warm-brown ink, or a mix of two of them; cobalt blue is for water on the map only. Light only. */
 :root {
-  --cream: #FBF9EC; --inkc: #4A3526; --tomato: #E52113; --stew: #D94841; --herb: #556B2F; --salad: #93AC4E;
-  --chips: #FFCC64; --pumpkin: #F4B860; --prawn: #EFD9CD; --tofu: #F1F0BA;
+  /* The diner app shares the Lab's world since 2026-11-26 (Yila): a canvas of coral, light yellow and light blue,
+     frosted cards, deep coral for actions, teal as the second colour. The token names are the app's old ones
+     (cream, tomato, herb ...) so its stylesheet reads the same; only their values changed. */
+  --cream: #FFFDFC; --inkc: #3A2622; --tomato: #A63A2E; --stew: #8A2E24; --herb: #1F7872; --salad: #8CC7BF;
+  --chips: #FFD46B; --pumpkin: #F9DAD1; --prawn: #F7D7DB; --tofu: #FFF3DC;
+  --canvas-1: #F6C9C0; --canvas-2: #F7E3A6; --canvas-3: #BCD3EA;
+  --glass: rgb(255 255 255 / 0.70); --glass-soft: rgb(255 255 255 / 0.50); --glass-edge: rgb(255 255 255 / 0.85);
   --bg: var(--cream);
   --panel: var(--cream);
   --rail: color-mix(in oklab, var(--tofu) 55%, var(--cream));
   --ink: var(--inkc);
-  --ink-2: #655346;
-  --ink-3: #6E5F50;
+  --ink-2: #6F514B;
+  --ink-3: #7D605A;
   --line: color-mix(in oklab, var(--inkc) 16%, var(--cream));
   --line-strong: color-mix(in oklab, var(--inkc) 38%, var(--cream));
   --track: color-mix(in oklab, var(--inkc) 26%, var(--cream));
@@ -32,20 +37,82 @@
   --font: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
   --r: 6px;
-  --shadow: 0 1px 2px rgb(74 53 38 / 0.10), 0 4px 14px rgb(74 53 38 / 0.06);
+  --shadow: 0 1px 1px rgb(58 38 34 / 0.04), 0 14px 34px rgb(58 38 34 / 0.09);
   color-scheme: light;
 
   /* diner app (option C, "printed map") */
-  --ink-soft: #6B5443;            /* secondary text on cream, tofu and prawn surfaces */
-  --herb-deep: #3E4F22;           /* hover and pressed state of herb */
+  --ink-soft: #6F514B;            /* secondary text on the frosted surfaces */
+  --herb-deep: #165E59;           /* hover and pressed state of the teal */
   --white: #FFFFFF;               /* text on tomato and herb, sticker rims */
-  --water-blue: #1F5FBF;          /* map water, nowhere else */
+  --water-blue: #BCD3EA;          /* map water: the canvas's light blue */
   --display: Fredoka, "Arial Rounded MT Bold", Arial, sans-serif;
   --hand: "Patrick Hand", "Comic Sans MS", cursive;
   --text: Nunito, "Trebuchet MS", Arial, sans-serif;
-  --r-ctl: 6px; --r-card: 10px;
+  --r-ctl: 6px; --r-card: 22px;       /* buttons and fields are rectangles (Yila, 2026-11-26); cards stay rounded */
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 22px; --s6: 28px; --s7: 48px;
   --tap: 44px;                    /* smallest touch target */
   --sticker-shadow: 0 2px 5px rgb(74 53 38 / 0.28);
   --cutout-shadow: drop-shadow(0 1px 1px rgb(74 53 38 / 0.45));
+}
+
+/* The Lab (lab.html), chosen by Yila on 2026-11-26. Surfaces: frosted cards over a canvas of coral, light yellow
+   and light blue; type in Urbanist. Chart marks: her six-colour palette (terracotta, mist blue, teal, grape,
+   forest, mustard). Measured with the dataviz validator on the card tints:
+     - the three learned rankers (mist, grape, terracotta) pass every check: colour-blind difference of the worst
+       pair 10.7, normal vision 16.0, contrast 3.5:1 or more;
+     - mustard (1.9:1) and teal (2.9:1) are too light to stand alone, so they go to baselines, every mark has an
+       ink outline, and every series is named next to its mark;
+     - terracotta and forest are close for red-blind readers (6.2), mist and teal close for everyone (13.2), so
+       they are never the only difference between two neighbours: shapes and direct labels carry the identity.
+   Text in a series colour uses the colour mixed 45% into ink (5:1 or more). The diner app keeps the food palette. */
+:root[data-site="lab"] {
+  --coral-900: #A63A2E; --coral-700: #C9544A; --coral-500: #DD7666; --coral-300: #E89D8C; --coral-200: #F3BDB3; --coral-100: #F7D7DB;
+  --terracotta: #CB643C; --mist: #4E75AD; --teal: #499E9A; --grape: #7B3F71; --forest: #2A6E4D; --mustard: #DAAD3D;   /* marks */
+  --canvas-1: #F6C9C0; --canvas-2: #F7E3A6; --canvas-3: #BCD3EA;
+  --bg: #FBF1EE;
+  --glass: rgb(255 255 255 / 0.70); --glass-soft: rgb(255 255 255 / 0.46); --glass-edge: rgb(255 255 255 / 0.85);
+  --panel: #FFFDFC;                                /* opaque: hollow marks, halos behind chart text, menus, tooltips */
+  --rail: color-mix(in oklab, var(--coral-100) 30%, #FFFFFF);
+  --ink: #3A2622; --ink-2: #6F514B; --ink-3: #7D605A;
+  --line: rgb(58 38 34 / 0.12); --line-strong: rgb(58 38 34 / 0.32); --track: rgb(58 38 34 / 0.24);
+  --land: #F4E6E2; --park: #EFE3C2; --water: #DCE8F3;
+  --signal-red: #E0261C;                            /* one reference mark in a chart (no steering); larger, ink outline, named beside it */
+  --frontier-line: #6C8AB6;                         /* the frontier: mist blue, softened, so it sits beside the red reference mark */
+  --accent: var(--coral-900);                      /* the selected section, the primary button, focus */
+  /* What moved a place (Explorer). These are roles, not rankers, so they use none of the ranker colours and no
+     brown: the model's own reasons are teal, your controls mustard (light, so bars carry an ink edge and lines are
+     mixed towards ink), the variety step the page's deep coral; totals are a quiet sand. Teal, mustard and deep
+     coral stay apart for colour-blind readers (worst pair 10.0) and in full colour (22.3). */
+  --model: #1F7872; --control: var(--mustard); --diversity: var(--coral-900);
+  /* lines of the steering steps (the rank flow, the legend swatches): all solid since 2026-11-26, so the three are
+     set apart by colour as well as by where they sit. Teal, ochre and brick red, checked together on the card
+     (dataviz validator, all pairs: worst colour-blind difference 10.9, worst normal 19.9, all 3:1 or more on #FFFDFC). */
+  --model-line: #008B7D;
+  --control-line: #B98B1E;
+  --diversity-line: var(--coral-900);
+  --sim-other: #C9BBB1; --sim-sel: var(--coral-900);   /* the similarity map: every restaurant warm grey, the picked group brick red (Yila, 2026-11-26; before: sunny yellow and hot coral) */
+  --cal-before: #8E8681; --cal-diag: #B5A99F;   /* calibration: the raw curve in a neutral grey, the diagonal in a light brown-grey */
+  --flow-same: #BDB3AC;                            /* a line whose rank did not change at that step: 2.0:1 on the card */
+  --model-tint: color-mix(in oklab, var(--model) 16%, #FFFFFF);
+  --control-tint: color-mix(in oklab, var(--mustard) 30%, #FFFFFF);
+  --diversity-tint: color-mix(in oklab, var(--coral-900) 14%, #FFFFFF);
+  /* the restaurant map: every restaurant in sunny yellow, the picked group in hot coral (no grey, no brown; apart by
+     22 for colour-blind readers, 31 in full colour) */
+  --pop: #F2456A; --pop-base: #FFC53D;
+  --total: #DCCBBF; --total-edge: rgb(58 38 34 / 0.34);   /* start, subtotal and total bars */
+  /* the rankers: the same colour and shape in every chart. Learned: square, circle, triangle; baselines: diamonds */
+  --m-lr: var(--mist); --m-lgbm: var(--grape); --m-lmr: var(--terracotta);
+  /* the top of a ranker's bar in "What does each ranker rely on?": the same hue a little lighter, for a faint top-to-bottom gradient */
+  --m-lr-top: color-mix(in oklab, var(--m-lr) 52%, #FFFFFF); --m-lgbm-top: color-mix(in oklab, var(--m-lgbm) 52%, #FFFFFF); --m-lmr-top: color-mix(in oklab, var(--m-lmr) 52%, #FFFFFF);   /* (first #6487B6, #94638C, #D67C59: Yila asked for a stronger gradient) */
+  --m-pop: var(--mustard); --m-recent: var(--teal); --m-cf: var(--forest);
+  /* a quantity: one hue, light to dark. Teal, so it is never read as a ranker (mist blue, grape, terracotta) and
+     stays apart from the red reference mark for red-blind readers (deep green did not: 5.7 against 10.2 here) */
+  --seq-lo: #C4E2DD; --seq-hi: #155E63;
+  --focus: var(--coral-900); --reach: var(--pop); --ok: var(--model); --miss: var(--coral-900);
+  /* the controls: the tint behind a current value (and a hovered option), and behind a value that is off */
+  --value: color-mix(in oklab, var(--coral-900) 11%, #FFFFFF); --value-off: color-mix(in oklab, var(--ink) 7%, #FFFFFF);
+  --font: Urbanist, "Helvetica Neue", Arial, sans-serif;
+  --mono: var(--font);                             /* figures use the text face with tabular numerals */
+  --r: 22px;
+  --shadow: 0 1px 1px rgb(58 38 34 / 0.04), 0 14px 34px rgb(58 38 34 / 0.09);
 }

@@ -332,6 +332,9 @@ with their star rating and month. The calls need an Anthropic API key (`ANTHROPI
 kept in `data/llm_themes` (not in git), so `--export` and the site never call the model. No user ids or
 reviewer names are sent to the model.
 
+Since November 26 the Lab's Explorer shows these themes in its last card, "What reviewers say about this place", for
+the restaurant selected in the list, the map or the rank chart (`web/src/views/reviews.js`); the rankers do not read them.
+
 Results (`outputs/theme_summaries/THEMES.md`): 2,804 of the 3,005 restaurants are summarised; 201 have fewer
 than 10 text reviews of 30 or more characters and get no summary. The model read 154,837 of these restaurants'
 843,909 text reviews and returned 13,834 themes with 27,197 quotes. The script looks every quote up in the
@@ -382,6 +385,10 @@ Reports: `outputs/rq2/RQ2.md`, `outputs/cold_start/COLD_START.md`, `outputs/retr
 - The food stickers in `web/public/illustrations/` are AI-generated images (Magic Patterns), not drawings.
 
 ## One-sentence steering (November 25, 2026)
+
+> November 26, 2026: the **Say what you want** box was removed from the Lab's Explorer at Yila's request. The diner
+> app keeps its sentence box, and the reader (`server/nl.py`, `web/src/nl.js`) and its evaluation are unchanged. What
+> follows describes the Explorer as it was.
 
 Type a sentence in the Explorer's **Say what you want** box ("cheap sushi within walking distance"). A language
 model reads it into the app's own settings; the ranking model still chooses the places.
@@ -518,6 +525,32 @@ note, the trade-off frontier and the model lens compare the model in view with a
   case, trade-off and preview expectations; all at 0 failures.
 - The Overview's steering panel still shows LightGBM, and the user-study tasks and case studies stay on the
   models they were written for.
+
+## The Lab, redesigned (November 26, 2026)
+
+The Lab (`web/lab.html`) was cut from about 26 charts to 12 and restyled: frosted cards on a coral canvas, six
+mark colours (terracotta, mist blue, teal, grape, forest, mustard), side navigation, type in Urbanist. The
+palette and its measurements are in `docs/PLAN.md` §2.4. The ranker chart keeps its rows (name on the left, value and
+interval on the right) and draws each interval as a shaded bar, as a newspaper poll chart does, with a solid
+circle on the estimate. Its axis starts at 0.040, which is stated on the chart; the two popularity baselines score about a
+twentieth as much and are marked at the left edge with an arrow; their values stay in the right column.
+
+| Section | What it shows |
+|---|---|
+| Overview | Five fact tiles; which ranker is most accurate (poll-style chart with 95% intervals); what steering costs (192 settings, shaded by cuisine groups); whether protecting the least satisfied member of a group lowers recommendation quality (one row per rule in each kind of group; the least satisfied member's satisfaction and member NDCG@10 side by side, each with its 95% bootstrap interval over 1,000 groups; satisfaction is rescaled within each group's pool, so it is not compared across models). Text features, cold start, retrievers and one-sentence steering are not shown in the Lab (their "More results" rows were removed on November 26); their results are in the sections above and in `outputs/` |
+| App | Since November 26 the app's own map is the same kind of street map: it zooms from the whole city down to street and building names, with numbered pins, each person's avatar at their start and a dashed line to the picked place. All buttons in the app and the Lab are rectangles |
+| Explorer | Starts on LambdaRank, the model the app uses. Its map is a street map since November 26 (Leaflet on OpenStreetMap tiles, numbered bubbles, zoom buttons and "Reset view"; the tiles are fetched from tile.openstreetmap.org, so the map needs a connection and that server sees the visitor's IP address and the area in view). For one test user: how the list changed step by step, where it went on the map with the top 10, and why a place has its score (SHAP groups and the user's steering). The small previews under the controls are drawn in study mode only (their checkbox was removed on November 26) |
+| Analysis | Three cards since the evening of November 26: what each of the three rankers relies on (share of mean absolute SHAP by feature group over 300 random test users, with the chosen user marked); reliability diagrams for the three rankers, the table behind "Numbers"; and the UMAP of the restaurants drawn twice, one borough and one cuisine group picked out, with its trustworthiness. The pairwise lists, the SHAP beeswarm and the per-user steering frontier were removed (the frontier over 2,000 users is on the Overview) |
+
+Rules followed, from the course assignments: one colour and one shape per ranker in every chart; quantities
+in one hue from light to dark; no category by colour alone; palettes measured for colour-blind separation and
+contrast on the surface they sit on; a rate or a share always with its number of users; a projection always
+with what it keeps and what it distorts.
+
+Left out of the page, still in the reports: paired differences, accuracy by test period and across sampling
+seeds (`outputs/rankers_two_stage/EVALUATION.md`), the population histograms of list overlap and the per-group
+attribution scatter (`outputs/model_lens/MODEL_LENS.md`), the PCA twin of the restaurant map
+(`outputs/similarity_map/`), and a place's ratings over time (in the app's place drawer).
 
 ## Raw data (`data/raw`, not in git)
 

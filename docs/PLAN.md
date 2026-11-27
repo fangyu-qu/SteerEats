@@ -32,7 +32,7 @@ group recommendation (RQ2) and a shared room on phones.
 | RQ3 LLM aspect features (18,085 restaurants, `claude-haiku-5-5`, one message batch, $2.76 at list price) | `src/35_llm_aspects.py`, `outputs/llm_features/ABLATION.md` | run: base, bag-of-words and LLM compared over three seeds |
 | Dashboard: Overview (one chart and one sentence per question), Explorer, Analysis; swatch palette | `web/index.html`, `web/src/views/overview.js`, `web/src/styles.css` | built, 7 browser checks at 0 failures |
 | Time-safety test covers the text cutoff | `tests/check_time_safety.py` | passes |
-| W5 one-sentence steering in the Explorer: say-it box, chips to confirm, targets to the solver, filters (cuisine, price, needs, borough, neighbourhood) as a narrower candidate pool | `server/nl.py`, `server/app.py` (`/api/parse`), `web/src/nl.js`, `web/src/views/sayit.js` | built; `tests/check_nl.py` at 0 failures (3,136 filtered lists, browser = Python); keyword baseline scored, model run on the 64 sentences waits for the go-ahead (`src/40_nl_eval.py --plan`: about $0.02) |
+| W5 one-sentence steering in the Explorer: say-it box, chips to confirm, targets to the solver, filters (cuisine, price, needs, borough, neighbourhood) as a narrower candidate pool (the Explorer's say-it box was removed on 2026-11-26; the app keeps its sentence box) | `server/nl.py`, `server/app.py` (`/api/parse`), `web/src/nl.js`, `web/src/views/sayit.js` | built; `tests/check_nl.py` at 0 failures (3,136 filtered lists, browser = Python); keyword baseline scored, model run on the 64 sentences waits for the go-ahead (`src/40_nl_eval.py --plan`: about $0.02) |
 
 **Added in the night of November 25 to 26:**
 
@@ -52,6 +52,8 @@ group recommendation (RQ2) and a shared room on phones.
 | Onboarding in the app: "Places I like" (search by name, pick at least 3), next to the sample tastes; picks stay in the browser | `web/src/app/main.js`, `web/src/nlClient.js` | built; needs the server, the site says so when it is not there |
 | One process for the whole site: the API also serves `web/dist` | `server/app.py` | built; `http://127.0.0.1:8787/` |
 | W2 LambdaRank as the third model of the Lab: case files, replay, sweep, frontiers, calibration, trade-off, model lens for any pair, evaluation view | `src/19`–`25`, `web/src/views/`, `tests/` | run; every earlier number of logistic regression and LightGBM is unchanged (the result files only gained rows) |
+
+| Lab redesigned: frosted cards on a coral canvas, Yila's six mark colours, side navigation, 12 charts instead of about 26, each ranker in one colour and shape everywhere, the ranker chart with the shaded interval bars of a newspaper poll chart; the Overview's "More results" rows (text features, cold start, retrievers, one sentence) were then removed from the Lab, their results stay in `outputs/`; Analysis cut to three cards with all three rankers in each, quantities in teal so they are never read as a ranker, Explorer starts on LambdaRank; on the evening of 2026-11-26 the diner app took the same canvas and frosted cards (its paper grain and flat blocks are gone), the Explorer map became a street map (Leaflet, OpenStreetMap), and app and Lab share a new mark, a bowl with two spoons | `web/lab.html`, `web/src/styles.css`, `web/src/tokens.css`, `web/src/views/` | built; 8 browser checks at 0 failures, both pages build |
 
 Not started: rooms across phones, avatars for a third to fifth person, the MapLibre street map (the app draws
 neighbourhood shapes with D3), picking cuisines instead of places in the onboarding, hosting the server
@@ -191,9 +193,40 @@ Findings that constrain the design:
   restaurant is a tomato-red pin, never a sticker.
 - **Avatars:** Tomato and Tofu are made the same way (`web/public/illustrations/avatars/`); the other
   three (prawn, chips, salad) are still to be made.
+- **The mark (November 27):** two friends with their arms round each other's shoulders, in black line, generated the
+  same way and cut out to a clear ground (`web/public/illustrations/brand/buddies*`), is the icon of the app and the Lab
+  and the browser-tab icon (on white there). It replaced the bowl with two spoons of November 26, whose files are kept. Tomato and Tofu stand for people, so they are never the
+  app's mark. **The palette of the app changed the same day** to the Lab's canvas and frosted cards; the colours
+  named above (herb green, pumpkin land, cobalt water, paper grain) describe the app before that change.
 - The stickers are AI-generated images, not our drawings. The report says so.
 
 Final values are fixed in milestone M1 with the `dataviz` palette validator, on the real backgrounds.
+
+**The Lab has its own look since November 26.** Yila found the food palette wrong for an analysis page. She
+chose frosted cards over a coral canvas from three mock-ups drawn with the real data, then gave six colours for
+the chart marks and the shaded interval bars of a newspaper poll chart for estimates with intervals (the rest of
+the ranker chart keeps its rows: name on the left, value on the right, a circle on the estimate). Tokens are in the
+`:root[data-site="lab"]` block of `web/src/tokens.css`.
+
+| Job | Colours | Second code |
+|---|---|---|
+| The three learned rankers | logistic regression mist blue `#4E75AD`, LightGBM grape `#7B3F71`, LambdaRank terracotta `#CB643C` | square, circle, triangle |
+| The three baselines | Popularity mustard `#DAAD3D`, Recent popularity teal `#499E9A`, Item-CF forest `#2A6E4D` | diamond, and the name next to the mark |
+| What moved a place | history teal, the three controls ochre, variety deep coral (November 26; before: mist blue, terracotta, grape) | in the rank flow all lines are solid: the step is the column gap, the colour bar under the column name and the sentence under the chart; a grey line means the rank did not change |
+| A quantity | `#F7E1D7` to `#8C3A1C`, one hue | legend ramp with its end values |
+| Where you are | accent `#A63A2E` on the selected section | text label |
+
+Measured with the `dataviz` validator on the card tints:
+
+- Mist blue, grape and terracotta pass every check together: colour-blind difference of the worst pair 10.7,
+  normal vision 16.0, contrast 3.5:1 or more. That is why they are the learned rankers and the effect roles.
+- Mustard (contrast 1.9:1) and teal (2.9:1) are too light to stand alone. They are baselines only; every mark
+  has an ink outline and its name beside it.
+- Terracotta and forest are close for red-blind readers (6.2), mist blue and teal close for everyone (13.2).
+  They never sit next to each other as the only difference: shapes and direct labels carry the identity.
+- Text in a series colour is the colour mixed 45% into ink (5:1 or more).
+
+Cards are 70% white: more transparency would let the canvas tint the chart colours.
 
 ### 2.5 Illustration, type, motion, map
 

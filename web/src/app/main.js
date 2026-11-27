@@ -13,6 +13,7 @@ import { drawerHTML } from "./place.js";
 
 const BASE = import.meta.env.BASE_URL, DATA = `${BASE}data/`;
 const avatar = (key) => `${BASE}illustrations/avatars/${key}-cutout.png`;
+const BRAND = `${BASE}illustrations/brand/buddies-cutout.png`;   // the app's own mark: two friends, arms round each other's shoulders, in black line (Tomato and Tofu are people)
 const VARIETY = { some: 4, lots: 6 };                       // cuisine groups among the six
 const NYC = { lat: [40.45, 40.95], lon: [-74.3, -73.65] };
 const COUNT = ["No place", "One", "Two", "Three", "Four", "Five", "Six"];
@@ -220,7 +221,7 @@ function swap(el, html) {
   if (key) el.querySelector(`[data-fk="${CSS.escape(key)}"]`)?.focus();
 }
 
-const bandTop = () => `<div class="top"><a class="brand" href="./"><img class="cut" src="${avatar("tomato")}" alt=""><span>Eat Buddy</span></a>
+const bandTop = () => `<div class="top"><a class="brand" href="./"><img class="cut" src="${BRAND}" alt=""><span>Eat Buddy</span></a>
   <nav class="nav" aria-label="More"><a href="lab.html">Lab</a><button type="button" data-act="sheet" data-arg="data">About the data</button></nav></div>`;
 
 // How much a short list of liked places is worth, from the cold-start study (src/32_cold_start.py).
@@ -321,12 +322,14 @@ function mount() {
   map = createMap($("map"), D.nta, avatar, {
     select: (i) => { state.selected = i; state.compareWith = null; update(); focusDrawer(); },
     hover: (i) => { state.hot = i; markHot(); },
-    pinMode: (key) => { state.pinning = key; update(); },
-    drop: (lat, lon) => {
-      const m = state.members.find((x) => x.key === state.pinning);
-      if (lat < NYC.lat[0] || lat > NYC.lat[1] || lon < NYC.lon[0] || lon > NYC.lon[1]) return;
+    // an avatar is "held" (state.pinning) from a tap until it is tapped again, Done or Esc: while held, every tap on
+    // the map moves it; dragging moves it without holding. The point is rounded to about 100 m, as every start is.
+    hold: (key) => { state.pinning = key; update(); },
+    move: (key, lat, lon) => {
+      const m = state.members.find((x) => x.key === key);
+      if (!m || lat < NYC.lat[0] || lat > NYC.lat[1] || lon < NYC.lon[0] || lon > NYC.lon[1]) { update(); return false; }   // outside the city: back where it was
       m.start = { lat: +lat.toFixed(3), lon: +lon.toFixed(3), how: "pin", label: "dropped pin" };
-      state.pinning = null; update();
+      update();
     },
   });
   update();
@@ -518,7 +521,8 @@ function sheetBody() {
       <p><b>The model.</b> Scores come from ${esc(ix.model)}. On ${ix.test_users.toLocaleString("en-US")} test users it had the highest NDCG@10 of our three rankers: ${nd("LightGBM LambdaRank (supplementary)")}, against ${nd("LightGBM")} for LightGBM and ${nd("Logistic regression")} for logistic regression. The <a href="lab.html">Lab</a> shows the evaluation.</p>
       <p><b>Your sentence.</b> ${state.api?.llm ? "When you use “Say it”, the sentence alone is sent to Anthropic’s Claude to be read into settings. It never chooses places. Without the server, keyword rules read it on this page." : "On this site keyword rules read your sentence on this page; nothing is sent anywhere."}</p>
       <p><b>Your location.</b> Read only when you tap “Use my location”, rounded to about 100 m, and kept on this device.</p>
-      <p><b>Pictures.</b> The food stickers and the Tomato and Tofu avatars are AI-generated images (Magic Patterns), one per cuisine group. They are not photos of the restaurants.</p>`];
+      <p><b>The map.</b> Its streets and building names are OpenStreetMap pictures. While you look at the map, your browser fetches them from tile.openstreetmap.org, so that server sees your network address and which area is on screen. It is not told where you start.</p>
+      <p><b>Pictures.</b> The food stickers, the Tomato and Tofu avatars and the two friends in the corner are AI-generated images (Magic Patterns), one per cuisine group. They are not photos of the restaurants.</p>`];
   }
   if (state.sheet === "filters") {
     const f = state.filters;

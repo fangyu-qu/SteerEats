@@ -1,10 +1,14 @@
-// Score ledger (V3): why one restaurant scores where it does, on the normalized scale the steering uses.
-// Model part: SHAP feature groups (interventional, shared background) from the typical candidate to the model
-// score, with the history weight shrinking the collaborative group. Steering part: distance and popularity
-// penalties, then the variety step as a rank move. SHAP explains raw model scores; dividing by the per-user
-// score range puts them on the same axis as the penalties, so the bars add up exactly to the steered score.
-import * as d3 from "d3";
-import { SCORE_UNIT, esc, hueVar, truncate } from "./common.js";
+// "Why the model recommends this place" (V3): what the model's own score for one restaurant is made of.
+// The cards above it say how the person's settings moved a rank, in places. This one explains the model's score
+// before any setting, in the model's score units: SHAP values of the feature groups (interventional, a shared
+// background of 200 candidate rows) from the typical candidate to this restaurant's score; base + the groups = the
+// raw score (src/19_export_cases.py keeps the largest residual, about 1e-5).
+// Two columns, one chart each: on the left the selected restaurant's whole score (start, every factor as a bar from
+// one zero line, sum: Yila found a running-total waterfall unclear, 2026-11-26), on the right its factors
+// against a second restaurant's, as differences. One sentence over each chart, written from the numbers. The
+// person's settings are not here: what they do to a score is in the controls' "Model details" (`ledgerData`,
+// checked by tests/check_ledger.mjs).
+import { MODEL_NAMES, SCORE_UNIT, esc } from "./common.js";
 
 export const GROUP_LABEL = {
   Collaborative: "Your history (similar places)", Popularity: "Popularity and recency", Rating: "Rating",
@@ -60,135 +64,161 @@ export function ledgerData(c, model, theta, ranks, i) {
     ranks: { default: ranks.default[i], s2: ranks.boost[i], final: ranks.diversity[i] } };
 }
 
-function steeredAt(c, model, theta, i) {
-  const m = c[model], n = m.raw.length;
-  let zmin = Infinity, zmax = -Infinity;
-  for (let k = 0; k < n; k++) { const z = m.noncollab[k] + theta.w_h * m.collab[k]; if (z < zmin) zmin = z; if (z > zmax) zmax = z; }
-  const s0 = (m.noncollab[i] + theta.w_h * m.collab[i] - zmin) / (zmax - zmin || 1);
-  return s0 - theta.alpha * c.distance_n[i] - theta.beta * c.popularity_n[i] + (theta.boost && c.nta[i] === theta.boost_nta ? theta.boost : 0);
+// ---- words and numbers ------------------------------------------------------------------------------------
+const IN_SENTENCE = { Collaborative: "your history with similar places", Popularity: "popularity", Rating: "rating",
+  Location: "location", Taste: "taste match", Attributes: "amenities" };
+const NEAR_ZERO = 0.005;   // below what two decimals can show
+const signed = (v) => { const a = Math.abs(v); return a === 0 ? "0" : `${v > 0 ? "+" : "−"}${a < NEAR_ZERO ? "<0.01" : a.toFixed(2)}`; };
+const plain = (v) => v.toFixed(2).replace("-", "−");
+const list = (items) => (items.length < 3 ? items.join(" and ") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`);
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+// the rows are shown to two decimals: when the rounded rows no longer add up to the rounded total, say so
+const roundNote = (parts, total) => { const shown = parts.reduce((a, v) => a + +v.toFixed(2), 0);
+  return Math.abs(shown - +total.toFixed(2)) > 0.005 ? ` Rounded to two decimals, the rows shown add up to ${plain(shown)}.` : ""; };
+
+// The model's own explanation of one candidate, in the model's score units, before any setting.
+export function modelFactors(c, model, i) {
+  const m = c[model];
+  const groups = Object.keys(c.feature_groups).map((g) => ({ key: g, label: GROUP_LABEL[g] ?? g, value: m.shap_groups?.[g]?.[i] }));
+  const ok = groups.length > 0 && groups.every((g) => Number.isFinite(g.value)) && Number.isFinite(m.base) && Number.isFinite(m.raw?.[i]);
+  return { ok, base: m.base, score: m.raw?.[i], groups, ranked: [...groups].sort((a, b) => Math.abs(b.value) - Math.abs(a.value)) };
 }
 
-export function renderLedger(root, ctx) {
-  const { c, model, theta, ranks, i } = ctx;
-  const L = ledgerData(c, model, theta, ranks, i);
-  const n = c.cuisine.length;
-  const tenth = [...Array(n).keys()].find((k) => ranks.boost[k] === 10);
-  const cutoff = tenth != null ? steeredAt(c, model, theta, tenth) : null;
+// One sentence from the largest factors: what raises the score most, what lowers it most, or that nothing does.
+export function summarize(F, shown = 3) {
+  if (!F.ok) return "No explanation data is available for this restaurant.";
+  const top = F.ranked.slice(0, shown).filter((g) => Math.abs(g.value) >= NEAR_ZERO);
+  const up = top.filter((g) => g.value > 0).map((g) => IN_SENTENCE[g.key] ?? g.label.toLowerCase());
+  const down = top.filter((g) => g.value < 0).map((g) => IN_SENTENCE[g.key] ?? g.label.toLowerCase());
+  const one = (n) => n === 1;
+  if (!up.length && !down.length) return "No factor moves this restaurant’s model score much: every contribution is close to zero.";
+  if (!down.length) return `${cap(list(up))} ${one(up.length) ? "is the strongest factor" : "are the strongest factors"} raising this restaurant’s model score.`;
+  if (!up.length) return `${cap(list(down))} ${one(down.length) ? "is the strongest factor" : "are the strongest factors"} lowering this restaurant’s model score.`;
+  return `${cap(list(up))} ${one(up.length) ? "raises" : "raise"} this restaurant’s model score the most; ${list(down)} ${one(down.length) ? "lowers" : "lower"} it the most.`;
+}
 
-  const rows = [{ kind: "start", label: "Typical candidate", value: L.base }];
-  [...L.groups].sort((a, b) => Math.abs(b.value) - Math.abs(a.value)).forEach((g) => rows.push({ kind: "model", ...g }));
-  rows.push({ kind: "subtotal", label: "Model score", value: L.s0 });
-  rows.push({ kind: "control", label: "Distance penalty", value: L.dist, off: theta.alpha === 0 });
-  rows.push({ kind: "control", label: "Popularity penalty", value: L.pop, off: theta.beta === 0 });
-  if (theta.boost) rows.push({ kind: "control", label: "Neighborhood boost", value: L.boost, off: L.boost === 0 });
-  rows.push({ kind: "total", label: "Steered score", value: L.s2 });
+// Two model scores are called similar when they are less than two usual steps apart at the top of this model's list
+// for this user: twice the median gap between places ranked next to each other in its top 10 (so the rule follows
+// each model's own score scale). With fewer than 11 candidates there is no such gap, and no pair is called similar.
+export function similarGap(c, model) {
+  const raw = [...c[model].raw].sort((a, b) => b - a);
+  if (raw.length < 11) return null;
+  const gaps = raw.slice(0, 10).map((v, k) => v - raw[k + 1]).sort((a, b) => a - b);
+  return 2 * gaps[5];
+}
 
-  let run = 0;
-  for (const r of rows) {
-    if (r.kind === "start" || r.kind === "subtotal" || r.kind === "total") { r.x0 = 0; r.x1 = r.value; run = r.value; }
-    else { r.x0 = run; r.x1 = run + r.value; run = r.x1; }
-  }
-  const lo = Math.min(0, ...rows.map((r) => Math.min(r.x0, r.x1)), cutoff ?? 0);
-  const hi = Math.max(1, ...rows.map((r) => Math.max(r.x0, r.x1)), cutoff ?? 0);
-  const width = Math.max(root.clientWidth, 300), labelW = width < 460 ? 150 : 188, valueW = 62, rowH = 24, top = 8;
-  const height = top + rows.length * rowH + 30;
-  const x = d3.scaleLinear([lo, hi], [labelW, width - valueW]).nice();
+// One sentence for the comparison: how the two scores stand, then the factors that differ most and whom they favour.
+export function compareSentence(F, G, nameA, nameB, unit, near) {
+  const gap = F.score - G.score;
+  const diffs = F.groups.map((g, k) => ({ key: g.key, label: g.label, value: g.value - G.groups[k].value }))
+    .sort((p, q) => Math.abs(q.value) - Math.abs(p.value)).slice(0, 3).filter((d) => Math.abs(d.value) >= NEAR_ZERO);
+  const word = (d) => IN_SENTENCE[d.key] ?? d.label.toLowerCase();
+  const forA = diffs.filter((d) => d.value > 0).map(word), forB = diffs.filter((d) => d.value < 0).map(word);
+  const fav = (xs) => (xs.length === 1 ? "favours" : "favour");
+  const head = near != null && Math.abs(gap) < near ? "The model scores these restaurants similarly."
+    : `The model scores ${gap > 0 ? nameA : nameB} higher than ${gap > 0 ? nameB : nameA}, by ${Math.abs(gap) < NEAR_ZERO ? "less than 0.01" : Math.abs(gap).toFixed(2)} ${unit}.`;
+  const tail = forA.length && forB.length ? `${cap(list(forA))} ${fav(forA)} ${nameA}, while ${list(forB)} ${fav(forB)} ${nameB}.`
+    : forA.length ? `${cap(list(forA))} ${fav(forA)} ${nameA}.`
+    : forB.length ? `${cap(list(forB))} ${fav(forB)} ${nameB}.`
+    : "No factor differs by much.";
+  return `${head} ${tail}`;
+}
 
-  const svg = d3.select(root).selectAll("svg").data([0]).join("svg").attr("width", width).attr("height", height)
-    .attr("role", "img").attr("aria-label", `Score ledger for ${c.candidates.name[i]}`);
-  svg.selectAll("g.axis").data([0]).join("g").attr("class", "axis").attr("transform", `translate(0,${top + rows.length * rowH + 4})`)
-    .call(d3.axisBottom(x).ticks(width < 460 ? 3 : 5).tickSize(-rows.length * rowH - 4).tickFormat(d3.format(".1f")))
-    .call((g) => g.select(".domain").remove());
-  svg.selectAll("line.zero").data([0]).join("line").attr("class", "zero").attr("x1", x(0)).attr("x2", x(0))
-    .attr("y1", top - 4).attr("y2", top + rows.length * rowH);
-  const cut = svg.selectAll("g.cutline").data(cutoff == null ? [] : [cutoff]).join((e) => {
-    const g = e.append("g").attr("class", "cutline"); g.append("line"); g.append("text"); return g; });
-  cut.select("line").attr("x1", (d) => x(d)).attr("x2", (d) => x(d)).attr("y1", top + (rows.length - 3) * rowH + 2).attr("y2", top + rows.length * rowH);
-  cut.select("text").attr("x", (d) => x(d) - 6).attr("text-anchor", "end").attr("dy", "0.35em")
-    .attr("y", top + (rows.length - 2) * rowH + rowH / 2).text("score of #10");
-
-  const g = svg.selectAll("g.row").data(rows, (r) => r.label).join((e) => {
-    const r = e.append("g").attr("class", "row");
-    r.append("text").attr("class", "lab").attr("x", 2).attr("dy", "0.35em");
-    r.append("rect").attr("class", "ghost");
-    r.append("rect").attr("class", "bar");
-    r.append("line").attr("class", "conn");
-    r.append("text").attr("class", "val").attr("dy", "0.35em").attr("text-anchor", "end");
-    return r;
-  });
-  g.attr("transform", (_, k) => `translate(0,${top + k * rowH + rowH / 2})`).attr("data-kind", (r) => r.kind);
-  // on a phone the label column is narrower: drop the parenthetical ("Your history (similar places)")
-  const lab = (t) => (width < 460 ? t.replace(/ \(.*\)$/, "") : t);
-  g.select(".lab").text((r) => lab(r.label) + (r.scaled ? ` × ${theta.w_h.toFixed(2)}` : ""));
-  const color = (r) => (r.kind === "model" ? hueVar("model") : r.kind === "control" ? hueVar("control") : "var(--ink-2)");
-  g.select(".bar").attr("x", (r) => x(Math.min(r.x0, r.x1))).attr("width", (r) => Math.max(1, Math.abs(x(r.x1) - x(r.x0))))
-    .attr("y", -7).attr("height", 14).attr("rx", 2).attr("fill", color).attr("opacity", (r) => (r.off ? 0.25 : 1));
-  g.select(".ghost").attr("x", (r) => (r.scaled ? x(Math.min(r.x0, r.x0 + r.full)) : 0))
-    .attr("width", (r) => (r.scaled ? Math.abs(x(r.x0 + r.full) - x(r.x0)) : 0)).attr("y", -7).attr("height", 14).attr("rx", 2);
-  g.select(".conn").attr("x1", (r) => x(r.x1)).attr("x2", (r) => x(r.x1)).attr("y1", 7).attr("y2", rowH - 7)
-    .attr("visibility", (r, k) => (k < rows.length - 1 && r.kind !== "total" ? "visible" : "hidden"));
-  g.select(".val").attr("x", width).text((r) => (r.kind === "model" || r.kind === "control" ? (r.value >= 0 ? "+" : "−") + Math.abs(r.value).toFixed(2) : r.value.toFixed(2)));
-
-  // Variety and verdict lines (HTML under the chart)
-  const name = esc(c.candidates.name[i]);
-  const final = L.ranks.final, s2r = L.ranks.s2, def = L.ranks.default;
-  const variety = theta.lam === 0 ? "Variety is off, so the steered score decides the order."
-    : final === s2r ? `The variety step kept it at #${final}.`
-    : `The variety step moved it from #${s2r} to #${final} (${final < s2r ? "up" : "down"} ${Math.abs(final - s2r)}), to spread cuisines and neighborhoods.`;
-  const verdict = final <= 10 ? `${name} is #${final} in your list (the model alone put it at #${def}).`
-    : `${name} is #${final}, outside your top 10 (the model alone put it at #${def}).`;
-  ctx.notes.innerHTML = `<p><b>${verdict}</b> ${variety}</p>
-    <p class="muted">Scale: 0 = this user's lowest-scoring candidate, 1 = highest, under the current history weight. Group bars are SHAP values from ${esc(c.models[model])} (raw score ${c[model].raw[i].toFixed(2)} ${SCORE_UNIT[model]}) divided by the score range.${L.groups.some((x) => x.scaled) ? " The pale bar shows the history group at full weight." : ""}</p>`;
-
-  // Feature detail: the largest individual SHAP values for this place
+// ---- drawing: HTML rows, so names wrap and nothing sits on top of anything else -----------------------------
+// bars from a zero line in the middle; what each side means is written above them
+function diverging(rows, kind, ends) {
+  const max = Math.max(...rows.filter((r) => !r.text).map((r) => Math.abs(r.value)), 1e-12);   // (a row with its own text has no bar)
+  return `<table class="wf wf-div">
+    <thead><tr><th scope="col"><span class="wf-hide">Factor</span></th><th scope="col" class="wf-ends"><span>${ends[0]}</span><span>${ends[1]}</span></th><th scope="col"><span class="wf-hide">Difference</span></th></tr></thead>
+    <tbody>${rows.map((r) => `<tr class="${r.total ? "wf-total" : ""}${r.strong ? " wf-strong" : ""}"><th scope="row">${esc(r.label)}</th>
+      <td class="wf-track${r.text ? " wf-plain" : ""}" aria-hidden="true">${r.text ? "" : r.value ? `<i class="${r.value > 0 ? "pos" : "neg"} ${kind}" style="width:${Math.max(1.5, (50 * Math.abs(r.value)) / max)}%"></i>` : ""}</td>
+      <td class="wf-val">${r.text ?? signed(r.value)}</td></tr>`).join("")}</tbody></table>`;
+}
+function featureTable(c, model, i) {
   const feats = c.features.map((f) => ({ f, v: c[model].shap[f][i], x: c.feature_values[f][i] }))
     .sort((a, b) => Math.abs(b.v) - Math.abs(a.v)).slice(0, 8);
   const maxAbs = Math.max(...feats.map((d) => Math.abs(d.v)), 1e-9);
   const groupOf = Object.fromEntries(Object.entries(c.feature_groups).flatMap(([g, fs]) => fs.map((f) => [f, g])));
-  ctx.detail.innerHTML = `<table class="feat"><caption>Strongest single features (${SCORE_UNIT[model]})</caption>
-    <thead><tr><th scope="col">Feature</th><th scope="col">Value</th><th scope="col">Effect</th></tr></thead><tbody>
+  return `<table class="feat"><thead><tr><th scope="col">Input</th><th scope="col">Value</th><th scope="col">Effect on the score</th></tr></thead><tbody>
     ${feats.map((d) => {
       const [label, fmt] = FEATURE[d.f] ?? [d.f, (v) => v.toFixed(2)];
-      const w = (46 * Math.abs(d.v)) / maxAbs;
       return `<tr><td>${esc(label)}<span class="grp">${esc(GROUP_LABEL[groupOf[d.f]] ?? "")}</span></td><td class="num">${esc(fmt(d.x))}</td>
-        <td class="eff"><span class="mini ${d.v < 0 ? "neg" : "pos"}"><i style="width:${w}px"></i></span><span class="num">${d.v >= 0 ? "+" : "−"}${Math.abs(d.v).toFixed(2)}</span></td></tr>`;
+        <td class="eff"><span class="mini ${d.v < 0 ? "neg" : "pos"}"><i style="width:${(46 * Math.abs(d.v)) / maxAbs}px"></i></span><span class="num">${signed(d.v)}</span></td></tr>`;
     }).join("")}</tbody></table>`;
 }
 
-// Contrast (why A over B): the same ledger rows as differences A − B; bars right favour A.
-export function renderContrast(root, ctx) {
-  const { c, model, theta, ranks, a, b } = ctx;
-  if (b == null || a === b) { d3.select(root).selectAll("*").remove(); ctx.caption.textContent = ""; return; }
-  const A = ledgerData(c, model, theta, ranks, a), B = ledgerData(c, model, theta, ranks, b);
-  const rows = A.groups.map((g, k) => ({ kind: "model", label: g.label, value: g.value - B.groups[k].value }))
-    .sort((p, q) => Math.abs(q.value) - Math.abs(p.value));
-  rows.push({ kind: "control", label: "Distance penalty", value: A.dist - B.dist });
-  rows.push({ kind: "control", label: "Popularity penalty", value: A.pop - B.pop });
-  if (theta.boost) rows.push({ kind: "control", label: "Neighborhood boost", value: A.boost - B.boost });
-  rows.push({ kind: "total", label: "Steered score gap", value: A.s2 - B.s2 });
-  const width = Math.max(root.clientWidth, 300), labelW = width < 460 ? 150 : 188, valueW = 56, rowH = 24, top = 22;
-  const height = top + rows.length * rowH + 8;
-  const m = Math.max(0.05, ...rows.map((r) => Math.abs(r.value)));
-  const x = d3.scaleLinear([-m, m], [labelW, width - valueW]);
-  const svg = d3.select(root).selectAll("svg").data([0]).join("svg").attr("width", width).attr("height", height)
-    .attr("role", "img").attr("aria-label", `Why ${c.candidates.name[a]} scores differently from ${c.candidates.name[b]}`);
-  svg.selectAll("text.side").data([["end", `◀ ${truncate(c.candidates.name[b], 18)}`, x(0) - 6], ["start", `${truncate(c.candidates.name[a], 18)} ▶`, x(0) + 6]])
-    .join("text").attr("class", "side").attr("text-anchor", (d) => d[0]).attr("x", (d) => d[2]).attr("y", 10).text((d) => d[1]);
-  svg.selectAll("line.zero").data([0]).join("line").attr("class", "zero").attr("x1", x(0)).attr("x2", x(0)).attr("y1", top - 4).attr("y2", height - 4);
-  const g = svg.selectAll("g.row").data(rows, (r) => r.label).join((e) => {
-    const r = e.append("g").attr("class", "row");
-    r.append("text").attr("class", "lab").attr("x", 2).attr("dy", "0.35em");
-    r.append("rect").attr("class", "bar");
-    r.append("text").attr("class", "val").attr("dy", "0.35em").attr("text-anchor", "end");
-    return r;
-  });
-  g.attr("transform", (_, k) => `translate(0,${top + k * rowH + rowH / 2})`).attr("data-kind", (r) => r.kind);
-  g.select(".lab").text((r) => (width < 460 ? r.label.replace(/ \(.*\)$/, "") : r.label));
-  g.select(".bar").attr("x", (r) => x(Math.min(0, r.value))).attr("width", (r) => Math.max(1, Math.abs(x(r.value) - x(0))))
-    .attr("y", -7).attr("height", 14).attr("rx", 2)
-    .attr("fill", (r) => (r.kind === "model" ? hueVar("model") : r.kind === "control" ? hueVar("control") : "var(--ink-2)"));
-  g.select(".val").attr("x", width).text((r) => (r.value >= 0 ? "+" : "−") + Math.abs(r.value).toFixed(2));
-  const lead = [...rows.slice(0, -1)].sort((p, q) => Math.abs(q.value) - Math.abs(p.value))[0];
-  const winner = lead.value >= 0 ? c.candidates.name[a] : c.candidates.name[b];
-  ctx.caption.innerHTML = `Bars point toward the place they favour. ${esc(c.candidates.name[a])} (#${A.ranks.final}) vs ${esc(c.candidates.name[b])} (${B.ranks.final <= 10 ? "#" + B.ranks.final : "now #" + B.ranks.final}): the biggest difference is <b>${esc(lead.label.toLowerCase())}</b>, which favours ${esc(winner)}.`;
+// ctx: { c, model, i (the selected candidate or null), b (the restaurant compared with, or null),
+//        options: [[index, text]] for the comparison }; handlers: { pick(index | null) }
+export function renderWhy(root, ctx, handlers) {
+  const { c, model, i } = ctx;
+  if (!root.dataset.built) {
+    root.dataset.built = "1";
+    root.innerHTML = `
+      <p class="why-empty">Select a restaurant to see what shaped its model score.</p>
+      <div class="why-body" hidden>
+        <p class="why-intro"></p>
+        <div class="why-cols">
+          <section class="why-col" aria-label="This restaurant's model score">
+            <p class="why-name"></p>
+            <p class="why-summary" id="why-one-sum"></p>
+            <div class="why-chart" id="why-one"></div>
+          </section>
+          <section class="why-col" id="why-two-col" aria-label="Comparison with another restaurant">
+            <div class="why-compare-bar"><label class="field inline" for="why-compare-select"><span>Compare with</span><select id="why-compare-select"></select></label>
+              <button type="button" class="why-btn" id="why-compare-clear">Clear</button></div>
+            <p class="why-summary" id="why-two-sum"></p>
+            <div class="why-chart" id="why-two"></div>
+          </section>
+        </div>
+        <p class="why-scope">These charts explain model scores before your adjustments, not the final ranking.</p>
+        <details class="why-more why-tech"><summary>Single inputs with the largest effect on this score</summary><div class="why-tech-body"></div></details>
+      </div>`;
+    root.querySelector("#why-compare-clear").addEventListener("click", () => { handlers.pick(null); root.querySelector("#why-compare-select").focus({ preventScroll: true }); });
+    root.querySelector("#why-compare-select").addEventListener("change", (e) => handlers.pick(e.target.value === "" ? null : +e.target.value));
+  }
+  const $ = (sel) => root.querySelector(sel);
+  $(".why-empty").hidden = i != null;
+  $(".why-body").hidden = i == null;
+  if (i == null) return;
+
+  const F = modelFactors(c, model, i), unit = SCORE_UNIT[model], name = c.candidates.name[i], modelName = MODEL_NAMES[model];
+  $(".why-name").textContent = name;
+  $("#why-one-sum").textContent = summarize(F);
+  for (const sel of [".why-intro", "#why-one", "#why-two-col", ".why-scope", ".why-tech"]) $(sel).hidden = !F.ok;
+  if (!F.ok) return;
+
+  // Left: the whole model score as a sum that can be followed down the rows: the typical candidate's score, then
+  // every factor group as a bar from one zero line (right adds, left takes away), then the result. The largest
+  // factors are in bold.
+  const lead = new Set(F.ranked.slice(0, 3).filter((g) => Math.abs(g.value) >= NEAR_ZERO).map((g) => g.key));
+  $("#why-one").innerHTML = `<p class="why-unit">${esc(modelName)} score, in ${esc(unit)}</p>`
+    + diverging([{ label: "Typical candidate (start)", value: F.base, text: plain(F.base), total: true },
+      ...F.ranked.map((g) => ({ label: g.label, value: g.value, strong: lead.has(g.key) })),
+      { label: "Model score (the sum)", value: F.score, text: `= ${plain(F.score)}`, total: true }], "model", ["← Lowers the score", "Raises the score →"])
+    + `<p class="why-note why-callout">Read down: start from the typical candidate’s score, add each factor (a bar to the right adds, a bar to the left takes away), and the sum is this restaurant’s score.${roundNote([F.base, ...F.groups.map((g) => g.value)], F.score)}</p>`;
+
+  // Right: the same factors against a second restaurant's, as differences; nothing is drawn until one is chosen
+  const b = ctx.b != null && ctx.b !== i ? ctx.b : null, select = $("#why-compare-select");
+  select.innerHTML = `<option value="">Choose a restaurant…</option>` + ctx.options.map(([k, text]) => `<option value="${k}">${esc(text)}</option>`).join("");
+  select.value = b ?? "";
+  $("#why-compare-clear").hidden = b == null;
+  const G = b == null ? null : modelFactors(c, model, b), near = similarGap(c, model);   // near: what "similar" means here
+  if (!G) { $("#why-two-sum").textContent = "Choose a second restaurant to see how the model’s scores differ."; $("#why-two-sum").classList.add("hint"); $("#why-two").innerHTML = ""; }
+  else if (!G.ok) { $("#why-two-sum").textContent = "No explanation data is available for that restaurant."; $("#why-two-sum").classList.add("hint"); $("#why-two").innerHTML = ""; }
+  else {
+    const other = c.candidates.name[b], byKey = Object.fromEntries(G.groups.map((g) => [g.key, g.value]));
+    $("#why-two-sum").classList.remove("hint");
+    $("#why-two-sum").textContent = compareSentence(F, G, name, other, unit, near);
+    // the rows keep the order of the chart on the left, so a factor sits on the same line in both
+    const rows = F.ranked.map((g) => ({ label: g.label, value: g.value - byKey[g.key] }));
+    $("#why-two").innerHTML = `<p class="why-unit">Difference in ${esc(modelName)} score, in ${esc(unit)}: ${esc(name)} minus ${esc(other)}</p>`
+      + diverging([...rows, { label: "Model score difference", value: F.score - G.score, total: true }], "model", [`← Higher for ${esc(other)}`, `Higher for ${esc(name)} →`])
+      + `<p class="why-note why-callout">${esc(name)} ${plain(F.score)}, ${esc(other)} ${plain(G.score)}. Both start from the same typical candidate, so the rows add up to the difference between the two scores.${roundNote(rows.map((r) => r.value), F.score - G.score)}</p>`;
+  }
+
+  // What a bar is, said once above both charts; the single inputs behind the groups open below them
+  $(".why-intro").textContent = `Each bar is a SHAP value: the part of a restaurant’s ${modelName} score attributed to one group of the model’s inputs. `
+    + `The model has ${c.features.length} inputs, added up into ${F.groups.length} groups. “Typical candidate” is the model’s average score over a fixed background sample of 200 candidates; `
+    + `that starting point plus all the bars gives the restaurant’s score.`;
+  $(".why-tech-body").innerHTML = `<p>The ${Math.min(8, c.features.length)} of the model’s ${c.features.length} inputs that move ${esc(name)}’s score most, in ${esc(unit)}.</p>${featureTable(c, model, i)}`;
 }
