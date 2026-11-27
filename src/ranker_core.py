@@ -169,44 +169,56 @@ class Snapshot:
                              shape=(n, n))
 
     def _profiles(self, h):
-        d = self.d
         self.profile = {}
         for u, g in h.groupby("user_id", sort=False):
             items = g.item.to_numpy()
-            liked = items[g.rating.to_numpy() >= 4]
-            priced = d.price[items][~d.price_missing[items]]
-            self.profile[u] = dict(
-                seen=items, liked=liked, n=len(items),
-                lat=float(np.median(d.lat[items])), lon=float(np.median(d.lon[items])),
-                nta=int(np.bincount(d.nta[items]).argmax()), boro=int(np.bincount(d.boro[items]).argmax()),
-                cuisine=np.bincount(d.cuisine[items], minlength=len(d.cuisine_names)),
-                price=float(priced.mean()) if len(priced) else np.nan,
-                chain=float(d.is_chain[items].mean()))
+            self.profile[u] = profile_of(self.d, items, items[g.rating.to_numpy() >= 4])
 
     def user(self, u):
         """Feature matrix (all restaurants x FEATURES), the user's seen items, and raw CF scores."""
-        d, p = self.d, self.profile[u]
-        n = len(d.items)
-        row = np.zeros(n, np.float32)
-        row[p["seen"]] = 1
-        cf = self.sim.T.dot(row)
-        row_l = np.zeros(n, np.float32)
-        row_l[p["liked"]] = 1
-        cf_l = self.sim.T.dot(row_l)
-        dist = haversine_km(p["lat"], p["lon"], d.lat, d.lon)
-        aff = (p["cuisine"][d.cuisine] + CUISINE_PRIOR * self.global_cuisine[d.cuisine]) / (p["n"] + CUISINE_PRIOR)
-        unknown = np.isnan(p["price"])
-        gap = np.where(d.price_missing | unknown, 0.0, np.abs(d.price - (0 if unknown else p["price"])))
-        f = np.column_stack([
-            np.log1p(cf), np.log1p(cf_l), self.static[:, :8], self.static[:, 8],
-            np.log1p(cf_l) * (self.recent_mean - 3),
-            np.log1p(dist), d.nta == p["nta"], d.boro == p["boro"], aff,
-            gap, d.price_missing, np.full(n, float(unknown)), d.is_chain, d.is_chain * p["chain"],
-            np.full(n, np.log1p(p["n"])),
-            d.attr]).astype(np.float32)
-        if f.shape[1] != len(FEATURES) or not np.isfinite(f).all():
-            raise ValueError("Bad feature matrix")
-        return f, p["seen"], cf
+        return features(self.d, self, self.profile[u])
+
+
+def profile_of(d, items, liked):
+    """What the features take from one person: the restaurants they reviewed (`items`, restaurant indices) and
+    those of them they rated 4-5 stars (`liked`). `d` is a Data, or anything with the same arrays."""
+    priced = d.price[items][~d.price_missing[items]]
+    return dict(
+        seen=items, liked=liked, n=len(items),
+        lat=float(np.median(d.lat[items])), lon=float(np.median(d.lon[items])),
+        nta=int(np.bincount(d.nta[items]).argmax()), boro=int(np.bincount(d.boro[items]).argmax()),
+        cuisine=np.bincount(d.cuisine[items], minlength=len(d.cuisine_names)),
+        price=float(priced.mean()) if len(priced) else np.nan,
+        chain=float(d.is_chain[items].mean()))
+
+
+def features(d, s, p):
+    """Feature matrix (all restaurants x FEATURES) for the profile `p`, its seen items, and raw CF scores.
+
+    `d` holds the restaurant arrays of Data; `s` the snapshot arrays (sim, static, recent_mean, global_cuisine).
+    The live server passes a saved bundle for both (server/live.py), so a new profile gets exactly these features.
+    """
+    n = len(d.items)
+    row = np.zeros(n, np.float32)
+    row[p["seen"]] = 1
+    cf = s.sim.T.dot(row)
+    row_l = np.zeros(n, np.float32)
+    row_l[p["liked"]] = 1
+    cf_l = s.sim.T.dot(row_l)
+    dist = haversine_km(p["lat"], p["lon"], d.lat, d.lon)
+    aff = (p["cuisine"][d.cuisine] + CUISINE_PRIOR * s.global_cuisine[d.cuisine]) / (p["n"] + CUISINE_PRIOR)
+    unknown = np.isnan(p["price"])
+    gap = np.where(d.price_missing | unknown, 0.0, np.abs(d.price - (0 if unknown else p["price"])))
+    f = np.column_stack([
+        np.log1p(cf), np.log1p(cf_l), s.static[:, :8], s.static[:, 8],
+        np.log1p(cf_l) * (s.recent_mean - 3),
+        np.log1p(dist), d.nta == p["nta"], d.boro == p["boro"], aff,
+        gap, d.price_missing, np.full(n, float(unknown)), d.is_chain, d.is_chain * p["chain"],
+        np.full(n, np.log1p(p["n"])),
+        d.attr]).astype(np.float32)
+    if f.shape[1] != len(FEATURES) or not np.isfinite(f).all():
+        raise ValueError("Bad feature matrix")
+    return f, p["seen"], cf
 
 
 CANDIDATE_QUOTAS = {"item_cf": 100, "liked_cf": 40, "nearby_popular": 40, "trending": 20}

@@ -171,7 +171,7 @@ def top_k(case, theta, model, k=10):
     max_sim = np.zeros(len(rel))
     taken = np.zeros(len(rel), bool)
     out = []
-    for _ in range(k):
+    for _ in range(min(k, len(rel))):   # a filtered pool can hold fewer than k places
         v = (1 - lam) * rel - lam * max_sim
         v[taken] = -np.inf
         i = int(np.argmax(v))

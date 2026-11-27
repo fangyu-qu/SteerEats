@@ -31,3 +31,8 @@ outputs/rankers_two_stage/seeds/*/test_per_user.csv
 outputs/**/*per_user.csv
 !web/public/data/cases/index.json
 .claude/
+
+# local build and server files
+web/.vite/
+server/bundle/
+server/*.sqlite

@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from common import OUTPUTS
 
 OUT = OUTPUTS / "rq1"
-NAME = {"lr": "Logistic regression", "lgbm": "LightGBM"}
+NAME = {"lr": "Logistic regression", "lgbm": "LightGBM", "lmr": "LambdaRank"}
 TARGETS = [  # (quantity, direction, threshold, description)
     ("distance_km", "max", 2.0, "mean distance at most 2 km"),
     ("distance_km", "max", 1.5, "mean distance at most 1.5 km"),
@@ -45,7 +45,7 @@ def main():
     grid = pd.read_csv(OUT / "joint_grid.csv")
     rows = []
     for q, direction, thr, text in TARGETS:
-        for m in ("lr", "lgbm"):
+        for m in NAME:
             g = grid[grid.model == m]
             ok = g[g[q] <= thr] if direction == "max" else g[g[q] >= thr]
             base = g[(g.w_h == 1) & (g.alpha == 0) & (g.beta == 0) & (g.lam == 0)].iloc[0]
@@ -62,7 +62,7 @@ def main():
     fr = []
     for q, low in (("distance_km", True), ("popularity", True), ("cuisines", False), ("neighbourhoods", False),
                    ("outside_home_borough", False)):
-        for m in ("lr", "lgbm"):
+        for m in NAME:
             f = frontier(grid[grid.model == m], q, low)
             fr.append(f.assign(quantity=q, model_name=NAME[m])[["quantity", "model_name", q, "ndcg", "w_h", "alpha", "beta", "lam"]]
                       .rename(columns={q: "value"}))

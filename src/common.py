@@ -19,6 +19,9 @@ MATCHES = PROCESSED / "inspection_matches.parquet"
 
 SEED = 42
 
+# The three two-stage rankers, by the key used in the case files and in the browser.
+RANKERS = {"lr": "Logistic regression", "lgbm": "LightGBM", "lmr": "LambdaRank"}
+
 
 def normalize_name(name):
     """Lowercase, drop punctuation and filler words so 'Joe's Pizza, Inc.' and 'JOES PIZZA' compare equal."""
@@ -43,3 +46,8 @@ TEST_START = "2020-08-01"
 TAIL_START = "2021-05-01"
 LOCAL_TZ = "America/New_York"
 BULK_DAY_MIN = 5   # a user posting >= this many NYC restaurant reviews on one local day
+
+# Review text used as model input (bag-of-words and LLM aspect features) comes from before the earliest
+# training cutoff, so the same text is safe for every training, validation and test window.
+TEXT_CUTOFF = "2018-07-01"
+TEXT_SAMPLE = CLEAN / "text_sample.parquet"

@@ -1,0 +1,4 @@
+set,logistic_C,lightgbm_leaves,lightgbm_rounds,lambdarank_leaves,lambdarank_rounds,features
+base,0.1,15,557,31,102,30
+bow,1.0,31,418,15,300,48
+llm,0.1,31,421,31,202,52

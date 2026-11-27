@@ -15,7 +15,7 @@ let worstBase = 0, worstScore = 0, checks = 0;
 for (const f of readdirSync(dir).filter((x) => x.startsWith("demo_"))) {
   const c = JSON.parse(readFileSync(join(dir, f), "utf8"));
   const sim = similarity(c);
-  for (const model of ["lr", "lgbm"]) for (const th of thetas) {
+  for (const model of Object.keys(c.models)) for (const th of thetas) {
     const st = stages(c, th, model, sim);
     const ranks = { default: st.S0, model: st.S0, distance: st.S1, popularity: st.S2, boost: st.S2b, diversity: st.S3 };
     const m = c[model], n = m.raw.length;

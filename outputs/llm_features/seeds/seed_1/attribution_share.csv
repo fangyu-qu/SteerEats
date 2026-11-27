@@ -1,0 +1,61 @@
+set,model,group,share
+base,Logistic regression,Attributes,0.08511213388853435
+base,Logistic regression,Collaborative,0.12547387326102477
+base,Logistic regression,Location,0.1433929585635503
+base,Logistic regression,Popularity,0.4249402391745087
+base,Logistic regression,Rating,0.017982377629621345
+base,Logistic regression,Taste,0.20309841748276058
+base,LightGBM,Attributes,0.0522298411495632
+base,LightGBM,Collaborative,0.20871683431557975
+base,LightGBM,Location,0.12153327774380404
+base,LightGBM,Popularity,0.40885302328472756
+base,LightGBM,Rating,0.03911460616466058
+base,LightGBM,Taste,0.16955241734166474
+base,LambdaRank,Attributes,0.03674920877450551
+base,LambdaRank,Collaborative,0.28073483475918753
+base,LambdaRank,Location,0.12809171071345174
+base,LambdaRank,Popularity,0.40977018222338285
+base,LambdaRank,Rating,0.03182400854081763
+base,LambdaRank,Taste,0.11283005498865473
+bow,Logistic regression,Attributes,0.05651088601350643
+bow,Logistic regression,Collaborative,0.08254831819768613
+bow,Logistic regression,Location,0.1006150134581566
+bow,Logistic regression,Popularity,0.32017331914301805
+bow,Logistic regression,Rating,0.025260821670753223
+bow,Logistic regression,Taste,0.09231796101924812
+bow,Logistic regression,Text,0.32257368049763147
+bow,LightGBM,Attributes,0.034151261753924515
+bow,LightGBM,Collaborative,0.16729815403535525
+bow,LightGBM,Location,0.10720191254083135
+bow,LightGBM,Popularity,0.33694000952960707
+bow,LightGBM,Rating,0.030244468898766357
+bow,LightGBM,Taste,0.11455415528138907
+bow,LightGBM,Text,0.2096100379601265
+bow,LambdaRank,Attributes,0.027717614170038096
+bow,LambdaRank,Collaborative,0.23309515221498908
+bow,LambdaRank,Location,0.1091096025028799
+bow,LambdaRank,Popularity,0.33707910799687807
+bow,LambdaRank,Rating,0.030365365433387727
+bow,LambdaRank,Taste,0.06653889986232384
+bow,LambdaRank,Text,0.19609425781950324
+llm,Logistic regression,Attributes,0.05691053564273126
+llm,Logistic regression,Collaborative,0.08296163532765446
+llm,Logistic regression,Location,0.1027212608419952
+llm,Logistic regression,Popularity,0.3227231519899702
+llm,Logistic regression,Rating,0.029556786981301972
+llm,Logistic regression,Taste,0.13602669383648985
+llm,Logistic regression,Text,0.26909993537985705
+llm,LightGBM,Attributes,0.042031685024107805
+llm,LightGBM,Collaborative,0.18327063204747515
+llm,LightGBM,Location,0.11399551988550172
+llm,LightGBM,Popularity,0.3782272419871296
+llm,LightGBM,Rating,0.03708486335390599
+llm,LightGBM,Taste,0.15484953209079366
+llm,LightGBM,Text,0.090540525611086
+llm,LambdaRank,Attributes,0.0417209017812504
+llm,LambdaRank,Collaborative,0.2502091579500257
+llm,LambdaRank,Location,0.11740715017175388
+llm,LambdaRank,Popularity,0.3803948900619085
+llm,LambdaRank,Rating,0.03823620847191606
+llm,LambdaRank,Taste,0.10767032578866256
+llm,LambdaRank,Text,0.06436136577448313

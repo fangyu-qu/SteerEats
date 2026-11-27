@@ -1,245 +1,492 @@
-# SteerEats: working plan (Yila's branch)
+# SteerEats: working plan v2 (the app redesign)
 
-Written November 18, 2026. Final presentations are **December 1 and 8**; the 8-page report is due
-**December 14**. This plan covers the work Yila owns (logistic regression, LightGBM, the explanation
-pipeline, and the rank-change, SHAP, control, diversity and map views) and the joint work
-(integration, case studies, evaluation, slides, report).
+Written November 25, 2026 on branch `app-redesign`. It replaces the plan of November 18 (in git history),
+whose pipeline and views are built and merged. Final presentations are **December 1 and 8** (our slot is
+still unknown); the 8-page report is due **December 14**.
+
+The proposal (`../proposal/Team4.pdf`) and the project update (`../project update/Team4.pdf`) are
+references, not contracts. This plan goes back to two things the proposal had and the update dropped:
+group recommendation (RQ2) and a shared room on phones.
 
 ---
 
 ## 0. Where we stand
 
-| Item | Status | Evidence |
-|---|---|---|
-| NYC filtering, sample, time split | Done (Fangyu) | `src/01`–`04`, README |
-| Inspection matching | Done (Fangyu) | `src/03`, `outputs/03_*` |
-| Popularity and item-CF baselines | Done | `outputs/logistic_ranker/metrics.csv` |
-| Logistic ranker, 10 historical features | Done | test Recall@10 0.0484, NDCG@10 0.0357 |
-| Ratings over time | Done (Fangyu) | `outputs/06_rating_over_time.csv` |
-| LightGBM under the same protocol | **Not in the repo** (planned Nov 3–9) | — |
-| Rank decomposition / explanation pipeline | **Not in the repo** (planned Nov 3–9) | — |
-| Interface | **Not in the repo** (planned Nov 10–16) | — |
-| Significance of the LR vs item-CF gain | Not tested (update says so) | — |
-
-We are about two weeks behind the update's timeline, with 13 days to the first presentation slot.
-The plan below is ordered so that **a working, honest demo exists by November 30** and everything
-after that improves evidence and polish rather than adding risk.
-
----
-
-## 1. What the professor grades, and how we aim above it
-
-From the course site (syllabus, schedule, project-discussion slides):
-
-| Component | Weight in project | What the slides ask for | How we exceed it |
-|---|---|---|---|
-| Technical quality | 60% | Sound approach, appropriate evaluation, depth, innovation beyond baseline | Two rankers under one protocol, bootstrap CIs and a paired test, an exact-replay check with zero residual, an order-independent (Shapley) attribution of rank change across pipeline stages |
-| Presentation | 15% | Clear slides, demo/visualization quality, Q&A | Live, client-side demo (no server latency); one scripted case per research question |
-| Write-up | 20% | Motivation, contributions, related work, effective figures, discussion | Paper-grade figures exported from the same code as the demo; a design-rationale section tied to perception and color principles |
-| Teamwork | 5% | Division of labor documented | Contribution table in the report; commits on named branches |
-
-Course-wide emphasis to keep in view:
-
-- **Start from a question whose answer could come out either way.** Ours: *Does a linked,
-  stage-wise before-and-after view explain ranking changes that aggregate metrics (Recall,
-  NDCG, diversity) cannot?* and *Do logistic regression and LightGBM trade relevance for distance
-  and diversity differently under the same controls?*
-- **Visualization must serve an ML question.** The slide's in-scope examples include "how two
-  models differ" and "whether two explanation methods agree"; both are central here.
-- **Evaluation:** a quantitative metric, a baseline comparison, *or* a 3–5 person user study.
-  We plan all three, kept small.
-- **Reproduce, then extend:** reproduce TasteWeights' linked input–model–output layout on our
-  data, then add the evaluated extension (entered/exited items and stage-wise attribution).
-- **Modest and well-evaluated beats ambitious and broken.** Group recommendation, steering cost
-  and UMAP stay stretch goals.
-- **Disclose AI use** in the report (syllabus policy).
-
----
-
-## 2. System design
-
-### 2.1 Why the demo runs in the browser
-
-Every control in the update (history weight, distance, popularity, diversity) acts *after* the
-learned score. So for each case user we can precompute, offline in Python:
-
-1. ~200 candidates (union of LR top-k, LightGBM top-k, item-CF top-k and recent-popular),
-2. both models' raw scores and per-feature SHAP values for every candidate,
-3. the distance and popularity terms and the cuisine/neighborhood similarity matrix for MMR.
-
-The browser then recomputes `final = s − α·distance − β·popularity` and the MMR re-rank in a few
-milliseconds per slider move. Benefits: instant feedback (the core of a steering interface), no
-server to keep alive during the presentation, and a static site we can deploy to GitHub Pages or
-Netlify. FastAPI stays optional (only needed if we later add the shared-room stretch goal).
-
-```
-data/processed/*.parquet          (Fangyu's pipeline, local only)
-        │
-src/07_logistic_ranker.py         existing
-src/08_lightgbm_ranker.py         new: same snapshots, features, negatives, metrics
-src/09_evaluate.py                new: bootstrap CIs, paired test, overlap, calibration
-src/explain/                      new: candidates, stage log, SHAP, replay check
-src/10_export_cases.py            new: one JSON per case user  →  web/public/data/cases/
-        │
-web/                              Vite + D3 v7 static app (all steering computed client-side)
-```
-
-### 2.2 Decisions to settle on day one
-
-1. **Score scale.** LR and LightGBM raw scores (log-odds) are on different scales, so
-   `α·distance` would mean different things per model. Normalize each model's score per user over
-   its candidate set to [0, 1] (min–max on the logit, or percentile rank) before applying controls.
-   Record the choice in the report.
-2. **History weight `w_h`.** For LightGBM it cannot be applied by scaling one coefficient.
-   Proposed definition for both models: `s(w_h) = w_h · s_full + (1 − w_h) · s_context`, where
-   `s_context` is the same model class trained without the two CF features. It is model-agnostic
-   and easy to explain ("how much your own history counts").
-3. **Distance.** Haversine km from the user's training-period visit medoid (more robust than the
-   centroid when a user reviews in two boroughs), normalized by a fixed cap (e.g. 15 km → 1).
-4. **MMR.** `λ` is the diversity strength, with `λ = 0` meaning no re-ranking. Similarity
-   between two restaurants = 0.5·cuisine match + 0.5·same NTA (cuisine from DOHMH where matched,
-   Google categories otherwise).
-5. **Time cutoff control.** Precompute 3 snapshots per case user (e.g. 2019-06-01, 2019-12-01,
-   2020-08-01) rather than arbitrary dates.
-6. **Deploy target.** GitHub Pages on `fangyu-qu/SteerEats` needs Fangyu to enable Pages; Netlify
-   from the repo is the fallback.
-
-### 2.3 Explanation accounting (the method contribution)
-
-For one user and one control setting, log ranks over the *same* candidate set at four stages:
-
-| Stage | Score |
+| Built and checked (on `main`) | Evidence |
 |---|---|
-| S0 model | normalized ranker score (with `w_h`) |
-| S1 distance | S0 − α·distance |
-| S2 popularity | S1 − β·popularity |
-| S3 diversity | MMR(S2, λ) |
+| Data: 3 sources joined, cleaned, time split, 30 time-safe features | `src/01`–`12`, `outputs/cleaning/` |
+| Rankers: 3 baselines, LR, LightGBM, LambdaRank; two-stage protocol | test NDCG@10 0.0481 / 0.0482 / 0.0508, `outputs/rankers_two_stage/` |
+| Explanations: SHAP (LR, LightGBM), steering pipeline, exact rank accounting | `src/17`–`19`, `src/steering.py`, 0 replay mismatches |
+| RQ1: sweep, matched outcomes, frontiers, steering cost, calibration | `outputs/rq1/`, `outputs/calibration/` |
+| Interface: V1–V8, similarity map, case studies, user-study kit, Pages workflow | `web/`, 7 browser checks at 0 failures |
+| LLM theme summaries with verified quotes (Fangyu) | 2,804 restaurants, `outputs/theme_summaries/` |
 
-- Per item, `Δrank = Σ stage differences` telescopes exactly, so **replay residual = 0** is a
-  test we run in CI on every case file, not a hope.
-- Stage-wise attribution is order-dependent (the update says so). **Extension beyond the
-  update:** with only three post-model stages there are 3! = 6 orderings, so we can compute the
-  exact **Shapley value of each control's contribution to an item's rank change** cheaply and show
-  both the fixed-order and the order-independent view. This answers the reviewer's
-  order-dependence concern directly.
-- SHAP explains S0 (the raw model score), never final ranks. The UI labels this.
-- For LR, check SHAP against the closed form `β_j · (x_j − E[x_j])` (should match to float error).
-  For LightGBM use `TreeExplainer` (exact for trees).
+**Added on `app-redesign` (November 25, evening), all from scripts run on the real data:**
 
----
-
-## 3. The views
-
-Each view answers one question. One visual language across all of them: model effects, control
-effects and diversity effects always use the same three hues everywhere.
-
-| # | View | Question it answers | Encoding and interaction | Course link |
-|---|---|---|---|---|
-| V1 | **Steering console** | What can I change, and what will it cost? | **Decided 2026-11-20 (Option B): outcome targets**, not raw penalty weights. The user sets "within N km", "less mainstream (popularity percentile ≤ p)", "at least N cuisine groups" and the history weight; `solveTargets` in `web/src/steer.js` finds each model's smallest α / β / λ, shown as a small "used α · β · λ" line. Each target shows met / not met. A sparkline under each control shows how relevance and the other outcomes move across its range. Reason: the same penalty value steers the two models by different amounts (RQ1; prototype at the slider-design artifact). **Previews built 2026-11-21:** relevance is the model's Platt-calibrated predicted visits kept (as in V5); the other outcomes appear in the hover readout rather than as extra lines, to keep one scale; one shared scale across the four charts; click sets the control (`web/src/preview.js`, `tests/check_preview.mjs`) | Wk 2 perception; TasteWeights |
-| V2 | **Rank flow** | Which restaurants entered, left or moved, and at which stage? | Bump chart across S0→S1→S2→S3 (and before→after); exited items stay visible as hollow, faded lines; hover links to V3 and V4. **Animated 2026-11-21:** lines glide to new ranks (320 ms ease-out), entering and leaving places fade; no motion on a new case or with reduced motion | Novel (central claim) |
-| V3 | **Score ledger** | Why is this restaurant here? | Horizontal waterfall: SHAP feature bars (model hue), then distance and popularity terms (control hue), then the MMR rank effect (diversity hue); toggle fixed-order vs Shapley-over-stages | Wk 5 SHAP; Wk 4 white-box (LR) |
-| V4 | **Map** | Where did the list move geographically? Which neighborhoods can I reach, at what cost? | d3-geo NTA polygons for NYC, user medoid, distance rings, numbered top-10 markers, exited items hollow; NTA fill shows steering cost (smallest control change that brings the neighborhood into the top 10, hatched if unreachable). **Decided 2026-11-20:** clicking a neighborhood boosts it directly (a fifth, map-based control), because RQ1 showed the four indirect controls reach only 33–41% of other-borough neighborhoods. **Built 2026-11-20:** the boost adds a bonus to the neighborhood's places after the popularity step (smallest bonus that brings one into the top 10); it is a sixth column in the rank flow, a row in the ledger, and a fifth Shapley player | Spatial context; RQ1 steering cost |
-| V5 | **Trade-off space** | What do I give up when steering? | Scatter of relevance vs mean distance from the sweep, colored by diversity, Pareto frontier drawn, current θ marked; click a point to load its θ. **Built 2026-11-21:** two linked panels over the same 192 grid settings: this user (relevance = the model's Platt-calibrated predicted visits in the top 10, computed in the browser; settings giving the same list merge into one dot sized by count) and 2,000 test users (measured NDCG@10 with paired 95% intervals on the frontier); x switches between distance, popularity and cuisine variety; shade = cuisine groups; the other model's frontier dashed. A clicked setting is loaded as is and pauses the outcome targets until a control is touched (`src/25_export_tradeoff.py`, `tests/check_tradeoff.mjs`) | Wk 3 model assessment |
-| V6 | **Model lens: LR vs LightGBM** | Do the two models rank and explain differently? | Side-by-side SHAP beeswarms; per-user top-10 overlap and Kendall τ distributions; attribution-agreement scatter. **Built 2026-11-21:** plus a slope chart of both top 10s under the same targets, SHAP reliance by group (user vs 300 test users), and NDCG@10 by agreement level (`src/22_model_lens.py`, all 8,025 test users). Models are told apart by position and shape, not hue; beeswarm rows are ordered by SHAP spread within the user's candidates | Wk 5; "how two models differ" |
-| V7 | **Evaluation panel** | Is the learned ranker actually better? | Dot plot of Recall@10 / NDCG@10 with 95% bootstrap CIs for all five rankers; reliability diagram after Platt scaling. **Built 2026-11-21:** plus paired differences with Wilcoxon p, accuracy by period and across sampling seeds, reliability before and after Platt with bin counts and Wilson intervals, Brier skill / ECE / AUC table with the constant base rate. **Changed:** the final models were refit on train + validation, so Platt is cross-fitted over 5 test-user folds; the validation-fitted version (train-only models) is reported as a check (`src/23_calibration.py`) | Wk 3 calibration |
-| V8 | **Restaurant detail** (Fangyu) | What do the stars mean, and did they change? | Rolling mean rating with uncertainty band, review count, price (missing shown as missing), LLM theme summary with cited excerpts | Wk 11 time series; Wk 9 NLP |
-| S1 | Stretch: **similarity map** | Is the restaurant space structured by cuisine and place? | UMAP of item-CF or SVD item factors, trustworthiness and continuity reported, linked brushing to V4. **Built 2026-11-21:** SVD of all pre-cutoff reviews, UMAP beside PCA, noise baseline, second seed, parameter sweep, k-NN by cuisine and borough; answer: place much more than cuisine (`src/26_similarity_map.py`) | Wk 7 DR |
-| S2 | Stretch: **steering cost** | Which neighborhoods are reachable, at what L1 change in θ? | NTA choropleth of `C_m(n)` per model, ∞ shown as hatched | Proposal §4.2 |
-
-Layout: one page with two densities. The default "diner" layout shows V1, V2, V4 and a one-line
-plain-language summary ("3 places entered because you lowered the distance limit; 2 Brooklyn
-places left"). An "analyst" toggle reveals V3, V5, V6, V7. This keeps the update's single-app scope
-while preserving the proposal's user/researcher split.
-
-### 3.1 Design system (so it does not look like a template)
-
-- **Color:** tokens defined in OKLCH; three semantic hues for model / control / diversity; a
-  sequential scale for the map; a diverging scale for rank change (up vs down). Every palette
-  checked for color-vision deficiency (Sim Daltonism, or a script) and contrast (WCAG 2.1 AA).
-- **Type:** one text face with tabular figures for ranks and scores; restaurant names in the body
-  face, never in small caps.
-- **Motion:** rank changes animate along the bump-chart paths (object constancy), 250–400 ms,
-  with a `prefers-reduced-motion` fallback.
-- **Skills installed for this:** `impeccable` (dashboard / Operate-mode critique and polish),
-  `hallmark` and `design-taste-frontend` (landing/explainer page and anti-template checks),
-  `diagram-design` (pipeline and architecture figures for the slides and report). The `dataviz`
-  skill covers chart color and mark specs.
-
----
-
-## 4. Evaluation
-
-| RQ | Evidence | Planned output |
+| Piece | Where | State |
 |---|---|---|
-| Ranker quality | Recall@10, NDCG@10 on the 8,185 test users; 1,000-sample user-level bootstrap CIs; paired permutation (or Wilcoxon) test LR vs item-CF and LightGBM vs LR | Table 1, V7 |
-| Calibration | Brier score, ECE (15 bins), reliability diagram, after Platt scaling on validation | Fig., V7 |
-| RQ1 trade-offs | Sweep each control over a grid for all case users; report top-10 overlap with θ₀, mean distance, cuisine and NTA diversity (unique count, intra-list distance), catalog coverage, popularity, per model | Fig. (small multiples), V5 |
-| Model difference | Per-user overlap@10 and Kendall τ between LR and LightGBM; SHAP rank agreement | V6 |
-| Explanation fidelity | Replay residual = 0 for every case file; LR SHAP equals closed form | Automated test |
-| Usefulness (**kit built 2026-11-21**, `docs/USER_STUDY.md`, `src/28_user_study.py`; sessions not yet run) | 3–5 participant think-aloud study, 3 tasks (e.g. "Why did X drop?", "Get one Queens option without losing more than 2 of your current top 10", "Which model relies more on popularity?"); measure task success and time; compare with a list-only baseline (TasteWeights-like current list) | Report §Evaluation; follow NYU participant-review rules |
-| Case studies (**done 2026-11-21**, `src/27_case_studies.py`) | 3 scripted users: a Manhattan-centric user steered outward, a user whose list is popularity-dominated, a user where LR and LightGBM disagree | Slides and report |
+| RQ2 group engine and offline evaluation (1,000 groups per kind, three models) | `src/group.py`, `src/33_rq2_groups.py`, `outputs/rq2/RQ2.md` | run |
+| Cold-start study (k = 1, 3, 5, 10 liked places) | `src/32_cold_start.py`, `outputs/cold_start/COLD_START.md` | run |
+| Retriever contribution (W6) | `src/37_retriever_ablation.py`, `outputs/retrievers/RETRIEVERS.md` | run |
+| RQ3 text sample and bag-of-words comparator, three seeds | `src/34_text_sample.py`, `src/36_llm_ablation.py`, `outputs/llm_features/ABLATION.md` | run |
+| RQ3 LLM aspect features (18,085 restaurants, `claude-haiku-5-5`, one message batch, $2.76 at list price) | `src/35_llm_aspects.py`, `outputs/llm_features/ABLATION.md` | run: base, bag-of-words and LLM compared over three seeds |
+| Dashboard: Overview (one chart and one sentence per question), Explorer, Analysis; swatch palette | `web/index.html`, `web/src/views/overview.js`, `web/src/styles.css` | built, 7 browser checks at 0 failures |
+| Time-safety test covers the text cutoff | `tests/check_time_safety.py` | passes |
+| W5 one-sentence steering in the Explorer: say-it box, chips to confirm, targets to the solver, filters (cuisine, price, needs, borough, neighbourhood) as a narrower candidate pool (the Explorer's say-it box was removed on 2026-11-26; the app keeps its sentence box) | `server/nl.py`, `server/app.py` (`/api/parse`), `web/src/nl.js`, `web/src/views/sayit.js` | built; `tests/check_nl.py` at 0 failures (3,136 filtered lists, browser = Python); keyword baseline scored, model run on the 64 sentences waits for the go-ahead (`src/40_nl_eval.py --plan`: about $0.02) |
 
-Never quote a number that a script did not produce in this repository.
+**Added in the night of November 25 to 26:**
+
+| Piece | Where | State |
+|---|---|---|
+| One-sentence evaluation: 64 sentences, language model against keyword rules | `src/40_nl_eval.py`, `outputs/nl_steering/NL_EVAL.md`, Lab Overview panel 7 | run: 56 of 64 against 45 of 64 read completely right; $0.018 |
+| App data scored with LambdaRank (the best ranker on test) for the 24 sample tastes over the union of their candidates, with SHAP per feature group | `src/41_export_app.py`, `web/public/data/app/` | run |
+| Diner app, option C: start screen, party bar, say-it box, quick filters, six cards with member satisfaction, map with pins, place drawer (reasons, numbers, stars over time, review themes, compare), "How is this ranked?", "About the data" | `web/index.html`, `web/src/app/` | built for one or two people on one device |
+| App engine in the browser = Python | `web/src/app/engine.js`, `src/app_engine.py`, `tests/check_app.py` | 0 failures |
+| Pages: the app is `index.html`; the dashboard moved to `lab.html` (old `#case=` and `#study=` links are forwarded) | `web/vite.config.js` | built |
+
+**Added on November 26 (day):**
+
+| Piece | Where | State |
+|---|---|---|
+| W3 live profiles: a taste built from places a person picks, scored with `ranker_core` on a saved snapshot | `src/31_export_serving_bundle.py`, `server/live.py`, `server/app.py` (`/api/search`, `/api/party`) | built; `tests/check_serving.py` at 0 failures: for the 24 sample tastes the server's answer equals the exported files (difference 0); a new taste answers in 0.6 to 1.1 seconds, a party of two in 2.5 to 3.8 (the plan's bar of 2 seconds is met for one person, not for two) |
+| Onboarding in the app: "Places I like" (search by name, pick at least 3), next to the sample tastes; picks stay in the browser | `web/src/app/main.js`, `web/src/nlClient.js` | built; needs the server, the site says so when it is not there |
+| One process for the whole site: the API also serves `web/dist` | `server/app.py` | built; `http://127.0.0.1:8787/` |
+| W2 LambdaRank as the third model of the Lab: case files, replay, sweep, frontiers, calibration, trade-off, model lens for any pair, evaluation view | `src/19`–`25`, `web/src/views/`, `tests/` | run; every earlier number of logistic regression and LightGBM is unchanged (the result files only gained rows) |
+
+| Lab redesigned: frosted cards on a coral canvas, Yila's six mark colours, side navigation, 12 charts instead of about 26, each ranker in one colour and shape everywhere, the ranker chart with the shaded interval bars of a newspaper poll chart; the Overview's "More results" rows (text features, cold start, retrievers, one sentence) were then removed from the Lab, their results stay in `outputs/`; Analysis cut to three cards with all three rankers in each, quantities in teal so they are never read as a ranker, Explorer starts on LambdaRank; on the evening of 2026-11-26 the diner app took the same canvas and frosted cards (its paper grain and flat blocks are gone), the Explorer map became a street map (Leaflet, OpenStreetMap), and app and Lab share a new mark, a bowl with two spoons | `web/lab.html`, `web/src/styles.css`, `web/src/tokens.css`, `web/src/views/` | built; 8 browser checks at 0 failures, both pages build |
+
+Not started: rooms across phones, avatars for a third to fifth person, the MapLibre street map (the app draws
+neighbourhood shapes with D3), picking cuisines instead of places in the onboarding, hosting the server
+somewhere public (it runs on this computer; see the README).
+
+What is wrong with it (Yila, November 25): the page is one long list of analyst views with no clear
+goal; it reads as an analysis tool, not as something a person would use to choose dinner.
 
 ---
 
-## 5. Timeline (from today)
+## 1. Direction
 
-| Dates | Yila | Fangyu (per update) | Joint |
+**SteerEats helps friends pick a restaurant in New York together, and shows each of them why the pick
+is fair to them.** It is an app for diners first. The explanation and the model analysis are still
+there, one step further in, for whoever asks "why?".
+
+Three layers, each one step deeper than the last (progressive disclosure):
+
+| Layer | For | Holds |
+|---|---|---|
+| **App** | a diner, alone or in a group, on a phone or laptop | who is eating, where from, what they want; cards and map; the pick |
+| **Why** | a diner who asks "why this place?" or "why did it change?" | reasons in plain words, the ledger, rating history, review themes, who gives up what |
+| **Lab** | the course audience, analysts, us at Q&A | trade-off space, model comparison, similarity map, evaluation, RQ2 and LLM results |
+
+Why this still fits the course (technical quality 60%, presentation 15%, write-up 20%, teamwork 5%;
+"visualization must serve an ML question"; "modest and well-evaluated beats ambitious and broken"):
+every new feature below ships with a script-run evaluation, and each view answers one ML question.
+
+Research questions:
+
+- **RQ1 (done):** how do the controls trade relevance for distance, popularity and variety, and do the
+  models trade differently?
+- **RQ2 (new, from the proposal):** how do group strategies (average, least misery, average without
+  misery) change member satisfaction, the satisfaction gap, travel burden and feasibility?
+- **RQ3 (new):** do features an LLM reads out of review text improve ranking beyond collaborative
+  signals, and beyond plain bag-of-words text features? The answer can come out either way.
+- **Supporting evaluations:** how many liked places a new user must pick before recommendations are
+  useful (cold start), and how accurately one sentence is turned into steering targets.
+
+---
+
+## 2. Design brief
+
+### 2.1 Job, audience, success
+
+- **Who:** two to five friends deciding where to eat tonight, each on their own phone, often in
+  different places; also one person alone. Second audience: the class, on a projector.
+- **Primary task:** agree on one place quickly. Success: a group reaches a pick everyone can accept
+  and each person can say why it suits them.
+- **Product truth:** recommendations come from a 2020 snapshot of public reviews (data ends 2021).
+  The app says so; it is a research prototype, not a live directory.
+
+### 2.2 What we take from OpenTable's search page (studied November 25)
+
+| Pattern there | What we do |
+|---|---|
+| One context bar on top (date, time, party size) | One party bar: who is eating (avatars), where each starts from, solo or group |
+| One row of quick-filter chips with icons; "All filters" opens a panel with collapsed groups | Chips for Closer, Less mainstream, More variety, Price, Dietary; each opens a small popover with its slider and preview; everything else in one panel |
+| List on the left, map on the right; hovering a card raises its pin, clicking a pin shows a mini card | Same split and the same linking; the list is the top 10, the map shows start points and travel |
+| Card: picture, name, one line of facts, one line of proof, actions | Card: cuisine illustration, name, "rating · price · cuisine · neighbourhood", one plain reason, group satisfaction marks |
+| A quiet "How are results ranked?" link beside the count | Our door into the Why layer: opens "How the list changed" |
+| One accent colour, used only for actions and pins | Tomato red for actions, selection and the user's own steering; nothing else competes |
+| Phone: list first, a floating "Map" button swaps to the map | Same |
+
+### 2.3 Screens
+
+1. **Start:** name and food avatar; "eating alone" or "with friends" (create or join a room by code or
+   QR); taste: pick places you like, or pick cuisines, or borrow a sample taste profile; where from:
+   use my location, drop a pin, or choose a neighbourhood.
+2. **Discover:** party bar, a "say it" box (one-sentence steering), filter chips, cards and map.
+3. **Place (drawer over Discover):** illustration and facts; three reasons in plain words; in a group,
+   each member's satisfaction and travel; rating history and themes (V8); "show the full ledger";
+   "compare with another place".
+4. **Room (group):** lobby with members and their status; each sets preferences privately on their own
+   device; results with a strategy switch ("fair to everyone", "best on average", "nobody unhappy")
+   and a view of who gains and who gives up what.
+5. **Lab:** the analyst views, the RQ2 and RQ3 results, the case-study deep links, study mode.
+
+States that must be designed, not left to chance: first run, no location permission, a member who has
+not finished, no place satisfies everyone (say which constraint blocks, offer to relax it), server
+unreachable (fall back to sample profiles, say so), loading, phone and projector widths.
+
+### 2.4 Colour
+
+Yila's swatches, with roles set by measurement (contrast on the cream page background):
+
+| Token | Colour | Contrast | Role |
 |---|---|---|---|
-| **Wed 11/18 – Thu 11/19** | Get `data/processed/*.parquet` from Fangyu; refactor shared code out of `07` into `src/ranker_core.py`; train LightGBM (`08`) with identical snapshots, features, negatives; validation-tuned | Data dictionary | Settle the six decisions in §2.2 |
-| **Fri 11/20** | `09_evaluate.py`: bootstrap CIs, paired tests, Platt + reliability; SHAP for both models | Rating-history data export | — |
-| **Sat 11/21 – Sun 11/22** | `src/explain/`: candidates, stage log, Shapley-over-stages, replay test; `10_export_cases.py` and JSON schema | LLM theme summaries for case restaurants | Pick case users |
-| **Mon 11/23 – Wed 11/25** | `web/`: Vite + D3 skeleton, design tokens, V1, V2, V4 working on one case file | V8 | Daily merge to `main` via PR |
-| **Thu 11/26 – Fri 11/27** (Thanksgiving) | V3, V5 (light days) | — | — |
-| **Sat 11/28 – Mon 11/30** | V6, V7; design critique and polish pass; deploy | Integrate V8 | Slides, 10-minute script, dry run |
-| **Tue 12/1** | Presentation slot I (if assigned) | | |
-| **Wed 12/2 – Mon 12/7** | User study (3–5), case studies, stretch S1/S2 if time | Coverage views | Fix issues found |
-| **Tue 12/8** | Presentation slot II (if assigned) | | |
-| **Tue 12/8 – Mon 12/14** | Methods, explanation and evaluation sections; figures | Data and rating sections | Intro, related work, discussion, AI-use and contribution statements; **submit 12/14** |
+| `--tomato` | `#E52113` | 4.36 | Primary action, selection, pins, brand; the user's own steering in charts |
+| `--stew` | `#D94841` | 4.01 | Hover and pressed states of tomato |
+| `--herb` | `#556B2F` | 5.63 | Secondary action, links, small coloured text |
+| `--salad` | `#93AC4E` | 2.41 | Fills only (parks, positive fills) |
+| `--chips` `#FFCC64`, `--pumpkin` `#F4B860` | | 1.4–1.7 | Fills only (highlights, rating marks with a dark outline) |
+| `--prawn` `#EFD9CD`, `--tofu` `#F1F0BA` | | 1.1–1.3 | Surfaces: cards, bands, map land |
+| `--cream` | about `#FBF9EC` | | Page background |
+| `--ink` | about `#4A3526` | 10.9 | Text (warm brown, not black) |
 
-Ask the instructor which day Team 4 presents; if it is December 1, the polish pass moves into the
-Thanksgiving days.
+Findings that constrain the design:
+
+- **Palette only (Yila, November 25):** every colour in the interface comes from the swatches above.
+  The only additions are the two neutrals (cream paper, warm-brown ink) and one map colour: cobalt
+  blue `#1F5FBF`, used for water on the map and nowhere else. No purple or grey. This rule covers the
+  interface itself (surfaces, text, controls, charts, map); the food stickers and avatars are pictures
+  and use true-to-life food colours (Yila, November 25).
+- Tomato red and herb green are almost the same to a red-blind reader (OKLab difference 3.9; 8 is the
+  target), so that pair never separates two kinds of data.
+- Tomato, salad and chips stay apart for red-, green- and blue-blind readers (smallest difference
+  10.4), but salad and chips are too light to stand on the page alone (contrast 2.4 and 1.4). So every
+  chart mark is a palette fill **with a brown ink outline**.
+- The three effect roles are **never colour alone**. Each has a colour, a small food glyph and a fill
+  texture, and a legend is always present:
+
+| Effect role | Fill | Glyph | Texture |
+|---|---|---|---|
+| Model (what the ranker saw) | salad `#93AC4E` | chef's hat | solid |
+| Control (your steering) | tomato `#E52113` | fork | diagonal hatch |
+| Variety (diversity re-ranking) | chips `#FFCC64` | mixed plate | dots |
+
+- **Look (option C "Printed map" in the mock-ups, after Yila's reference; awaiting her final yes):** flat colour blocks without outlines or
+  shadows on cards, a paper-grain layer over the whole interface, caps headings with an underline, hand
+  lettering for map labels and reasons. Herb green is the dark colour (header band, dark buttons); the
+  map is pumpkin land with tofu streets, salad parks and blue water; restaurants on the map are
+  tomato-red pins, and the food stickers appear only on the recommendation cards.
+- **Cuisine stickers (decided by Yila, November 25):** one watercolour die-cut sticker per cuisine
+  group, 25 in all, generated with Magic Patterns' image tool from one prompt template and one style
+  reference, in true-to-life food colours. Files: `web/public/illustrations/cuisine/<cuisine_group>.jpg`
+  (1024 px, cream background). Each shows a dish chosen from what the group contains
+  (`outputs/cleaning/cuisine_category_map.csv`): American cheeseburger and fries, Chinese soup
+  dumplings, Pizza, Mexican tacos, Cafe latte and strawberry cake, General plated dinner, Italian
+  spaghetti and meatballs, Latin American empanadas, Japanese sushi, Middle Eastern kebab with hummus
+  and pita, European roast chicken leg with potatoes, Vegetarian salad bowl, Southeast Asian pho,
+  Caribbean jerk chicken with rice and peas, Fast food fried chicken bucket, South Asian curry with
+  rice and naan, Sandwich and deli pastrami on rye, Seafood prawns and mussels, Asian (other) takeout
+  noodles, Bar beer and cocktail, Korean bibimbap, Jewish and kosher bagel with lox, African jollof
+  rice with plantain and suya, Breakfast pancakes, Venue party platter.
+- **Where they go:** on the restaurant recommendation cards and the place drawer only. On the map a
+  restaurant is a tomato-red pin, never a sticker.
+- **Avatars:** Tomato and Tofu are made the same way (`web/public/illustrations/avatars/`); the other
+  three (prawn, chips, salad) are still to be made.
+- **The mark (November 27):** two friends with their arms round each other's shoulders, in black line, generated the
+  same way and cut out to a clear ground (`web/public/illustrations/brand/buddies*`), is the icon of the app and the Lab
+  and the browser-tab icon (on white there). It replaced the bowl with two spoons of November 26, whose files are kept. Tomato and Tofu stand for people, so they are never the
+  app's mark. **The palette of the app changed the same day** to the Lab's canvas and frosted cards; the colours
+  named above (herb green, pumpkin land, cobalt water, paper grain) describe the app before that change.
+- The stickers are AI-generated images, not our drawings. The report says so.
+
+Final values are fixed in milestone M1 with the `dataviz` palette validator, on the real backgrounds.
+
+**The Lab has its own look since November 26.** Yila found the food palette wrong for an analysis page. She
+chose frosted cards over a coral canvas from three mock-ups drawn with the real data, then gave six colours for
+the chart marks and the shaded interval bars of a newspaper poll chart for estimates with intervals (the rest of
+the ranker chart keeps its rows: name on the left, value on the right, a circle on the estimate). Tokens are in the
+`:root[data-site="lab"]` block of `web/src/tokens.css`.
+
+| Job | Colours | Second code |
+|---|---|---|
+| The three learned rankers | logistic regression mist blue `#4E75AD`, LightGBM grape `#7B3F71`, LambdaRank terracotta `#CB643C` | square, circle, triangle |
+| The three baselines | Popularity mustard `#DAAD3D`, Recent popularity teal `#499E9A`, Item-CF forest `#2A6E4D` | diamond, and the name next to the mark |
+| What moved a place | history teal, the three controls ochre, variety deep coral (November 26; before: mist blue, terracotta, grape) | in the rank flow all lines are solid: the step is the column gap, the colour bar under the column name and the sentence under the chart; a grey line means the rank did not change |
+| A quantity | `#F7E1D7` to `#8C3A1C`, one hue | legend ramp with its end values |
+| Where you are | accent `#A63A2E` on the selected section | text label |
+
+Measured with the `dataviz` validator on the card tints:
+
+- Mist blue, grape and terracotta pass every check together: colour-blind difference of the worst pair 10.7,
+  normal vision 16.0, contrast 3.5:1 or more. That is why they are the learned rankers and the effect roles.
+- Mustard (contrast 1.9:1) and teal (2.9:1) are too light to stand alone. They are baselines only; every mark
+  has an ink outline and its name beside it.
+- Terracotta and forest are close for red-blind readers (6.2), mist blue and teal close for everyone (13.2).
+  They never sit next to each other as the only difference: shapes and direct labels carry the identity.
+- Text in a series colour is the colour mixed 45% into ink (5:1 or more).
+
+Cards are 70% white: more transparency would let the canvas tint the chart colours.
+
+### 2.5 Illustration, type, motion, map
+
+- **Illustrations:** the 25 cuisine stickers and the five member avatars (tofu, prawn, chips, salad,
+  tomato) are watercolour stickers generated with Magic Patterns (§2.4). Small interface marks (map
+  pins, slider thumbs, rating marks, chart glyphs, empty and loading states) stay our own SVG,
+  coloured through tokens.
+- **Food shapes in charts, with rules:** only where a chart has about 30 marks or fewer; the value sits
+  at the glyph's centre; all glyphs have the same optical size; dense plots (beeswarm, scatter of 192
+  settings, similarity map) keep plain dots. Every illustrated control is a real button with a text
+  label.
+- **Type:** one rounded display face for names and headings, one plain face for text and numbers
+  (tabular figures). Chosen from two mock-ups, not from this document.
+- **Motion:** existing rank-flow motion stays; add small, short reactions (a pin grows when its card is
+  hovered, a member's avatar nods when they are ready). All of it off under reduced motion.
+- **Map:** MapLibre GL with vector tiles, styled from the tokens (tofu land, salad parks, soft water,
+  rounded labels), so street names appear as you zoom in. Candidate tile source: OpenFreeMap (no key);
+  checked in a first-day spike, with Protomaps as the alternative. The neighbourhood steering-cost
+  shading and the distance rings become layers on it. Without a network the current D3 map is the
+  fallback.
+- **Restaurant pictures:** the cuisine stickers, on cards only. The dataset's reviewer photo links (2.2% of sampled
+  reviews) are not used: they belong to their uploaders and can disappear.
+
+### 2.6 Anti-goals
+
+No second dashboard on the first screen. No chart on the first screen that needs a legend to be read.
+No colour-only encoding. No real names, accounts or passwords for the course version.
 
 ---
 
-## 6. Start here (first session)
+## 3. Architecture
 
-1. Open the folder in VS Code; install the recommended extensions when prompted.
-2. Select the interpreter `.venv/bin/python` (Python 3.13; `lightgbm`, `shap`, `umap-learn`,
-   `fastapi` are installed on top of `requirements.txt`).
-3. Copy Fangyu's `data/processed/` (four parquet files) and `data/raw/nyc_nta_2020.geojson` into
-   `data/`. They are git-ignored. Alternatively, put the raw files in `~/Downloads` and run
-   `scripts/download_data.py --from-directory ~/Downloads` then `src/01`–`04`.
-4. Reproduce the logistic result: `bash scripts/run_first_ranker.sh` and check that
-   `outputs/logistic_ranker/metrics.csv` matches the committed one.
-5. Start on `08_lightgbm_ranker.py`.
-6. Before each view, send the matching lecture slides so the view uses the course's vocabulary:
-   Week 3 (model assessment, calibration) before V7; Week 5 (PDP, LIME, SHAP) before V3/V6;
-   Week 2 (perception, color) before the design tokens; Week 7 (DR) before S1; Week 11 (time
-   series) before V8; Week 8 lab (paper writing) before the report.
+```
+            static site (GitHub Pages)                    optional API (FastAPI, one process)
+┌────────────────────────────────────────────┐      ┌──────────────────────────────────────────────┐
+│ web/  Vite + D3 v7 + MapLibre              │      │ server/                                      │
+│  app screens, Why layer, Lab               │ ───► │  /api/case     profile -> case JSON          │
+│  steer.js, group.js: all steering and      │      │  /api/rooms    shared rooms (SQLite, polling) │
+│  aggregation in the browser                │ ◄─── │  /api/parse    one sentence -> targets (LLM)  │
+│  24 demo cases (sample taste profiles)     │      │  /api/search   restaurant names (onboarding)  │
+└────────────────────────────────────────────┘      └──────────────────────────────────────────────┘
+        works alone, without the API                   reads server/bundle/ (built by src/31, no user rows)
+```
 
-## 7. Git workflow
+- **Case builder.** The API turns any profile (liked places, start location, price habit) into a case
+  file with the same schema as the demo cases: 200 candidates, three models' scores and SHAP values,
+  steering inputs. Everything the browser already does (steering, accounting, views) then works for a
+  new user unchanged, and the JS ↔ Python parity checks keep their meaning.
+- **Serving bundle** (`src/31_export_serving_bundle.py` → `server/bundle/`, git-ignored): restaurant
+  features at the 2020-08-01 snapshot, the top-50 item similarity matrix, retriever inputs, the three
+  models, the SHAP background, Platt coefficients. Aggregates only; no user ids or review rows.
+- **Rooms.** A room is a short code. Each member's device sends its nickname, avatar, taste profile,
+  preferences and start point; the server stores them in SQLite for at most 24 hours and returns the
+  room state on polling. Aggregation runs in every browser from the same state, so all phones show the
+  same pick. No accounts, no passwords.
+- **Location.** GPS only after the person taps "use my location"; otherwise a dropped pin or a chosen
+  neighbourhood. Coordinates are rounded to about 100 m before they leave the device. Two people in
+  the same room can therefore choose different start points for a demo.
+- **LLM.** The API key stays on the server (environment variable), never in the site or the repo.
+  Without the API the site falls back to a keyword parser and sample profiles, and says so.
+- **Demo hosting.** The API runs on a laptop behind an HTTPS tunnel (phones need HTTPS for location).
+  The static site alone remains a complete fallback.
 
-- Work on `Yila`; open small pull requests into `main` (one per script or view) so Fangyu can
-  review, as the update promises ("Both review code").
-- Data, per-user CSVs and private case files stay out of git (`.gitignore`). Only an anonymized
-  `demo_*.json` case file is committed so the deployed demo works.
-- Commit messages say what changed and which number it produced.
+New dependencies, each needing Yila's OK before install: `maplibre-gl` (npm); `fastapi`, `uvicorn`
+(pip); a tunnel tool for the demo; a QR-code generator (npm, small).
 
-## 8. Risks
+---
+
+## 4. Workstreams
+
+Each lists what is built, where, and the check that says it is done.
+
+### W1. Design system and app shell
+
+- `PRODUCT.md` and `DESIGN.md` (impeccable `init`, then `document` at the end).
+- Two clickable mock-ups of Discover + Place (artifact) → Yila picks → tokens, type, components.
+- New layout and routes: `#/` app, `#/place`, `#/room/CODE`, `#/lab`; existing views moved, not rewritten.
+- Illustration set; MapLibre map with our style; cards; chips with popovers; drawer.
+- Charts re-coloured through tokens, effect roles double-encoded, validated with `dataviz`.
+- **Done when:** all existing browser checks pass; phone (375 px) and projector (1440 px) screenshots
+  reviewed; impeccable `critique` and `audit` findings fixed; no colour pair fails the validator
+  without a second encoding.
+
+### W2. LambdaRank as the app's ranker
+
+- SHAP and additivity check for LambdaRank (`src/17`); third model in case files (`src/19`); sweep,
+  frontier, lens, calibration and exports (`src/20`–`25`); steering parity for three models.
+- Its raw scores are not log-odds: report Platt calibration quality before using "predicted visits"
+  for it; if poor, show measured NDCG only for that model.
+- App uses LambdaRank; Lab compares any two of the three models.
+- **Done when:** `replay`, `check_ledger`, `check_lens`, `check_tradeoff`, `check_preview` pass with
+  three models; evaluation view shows all three with intervals.
+
+### W3. Live profiles (new users)
+
+- `src/31_export_serving_bundle.py`, `server/live.py`, `server/app.py` (`/api/party`, `/api/search`, `/api/health`).
+- Onboarding: search and pick liked places, or pick cuisines; start location by GPS, pin or neighbourhood.
+- `src/32_cold_start.py`: for test users, keep only their k = 3, 5, 10 most recent liked places as
+  history and report NDCG@10 against the full-history result, with intervals. This sets the minimum
+  number of picks the onboarding asks for and is shown in the Lab.
+- **Done when:** for the demo users (local data), the server-built case equals the exported case
+  (`tests/check_serving.py`); a new profile returns a case in under 2 seconds.
+
+### W4. Group dining (RQ2)
+
+- **Engine** (`src/group.py`, mirrored by `web/src/group.js`):
+  - Pool: union of members' 200 candidates, minus hard vetoes (price ceiling, dietary flags; a place
+    is out if any member vetoes it).
+  - Each member steers their own scores with their own targets and their own start point; the steered
+    score, min-max over the pool, is that member's **satisfaction** in [0, 1].
+  - Group score: average, least misery, or average without misery (τ = 0.40, fixed in advance;
+    sensitivity at 0.30 and 0.50, and with rank-percentile satisfaction instead of min-max).
+  - Variety is a property of the list, so it is one group setting (the largest any member asks for),
+    applied by MMR after aggregation.
+  - Travel burden per member: km from their start point; maximum and gap are reported.
+- **Views:** G1 per-place member satisfaction and travel (avatars on a shared 0–1 line, never a bare
+  number); G2 "who gains, who gives up" across strategies (the rank flow with strategies as columns);
+  G3 group map (start points, travel lines, the pick); G4 fairness summary.
+- **Rooms:** `server/rooms.py`, lobby, join by code or QR, per-device preferences, live status.
+- **Offline evaluation** (`src/33_rq2_groups.py`): three-member groups of test users with similar,
+  random and diverse tastes (fixed seed); per strategy and model: minimum satisfaction, satisfaction
+  gap, maximum travel, travel gap, feasible-candidate count, share of groups with ten feasible places,
+  and each member's NDCG@10 on the group list (mean and worst), with paired bootstrap intervals.
+- **Done when:** `tests/check_group.mjs` shows browser = Python for every strategy; two phones in one
+  room reach the same pick; `outputs/rq2/RQ2.md` exists.
+
+### W5. LLM work
+
+- **One-sentence steering.** `/api/parse` (model `claude-haiku-5-5`, schema-constrained output) turns
+  "somewhere quiet, not too pricey, close to both of us" into targets and filters. The app shows what
+  it understood as removable chips before anything changes; the solver then does the steering, so the
+  LLM never ranks or invents a place. `tests/nl_cases.json` (64 sentences with
+  expected targets, including unclear, out-of-scope and Chinese ones) and `src/40_nl_eval.py` report accuracy
+  per slot against a keyword-rule baseline.
+- **LLM features (RQ3).** `src/34_llm_aspects.py`: for each restaurant, a sample of text reviews from
+  **before 2018-07-01** (the earliest training cutoff, so the same text is safe for every training,
+  validation and test window) → structured aspects (food, service, value, ambience, wait, noise) and
+  occasion tags, as a message batch. `src/36_llm_ablation.py`: retrain the three rankers with and
+  without these features, and with a bag-of-words baseline from the same text; same protocol, three
+  seeds, paired bootstrap on test. Cost is printed by `--plan` before anything is sent (the earlier
+  pilot measured about $2 per 1,000 restaurants for Haiku and $19 for Sonnet in single calls);
+  sending needs Yila's go-ahead and an API key.
+- Lab view L1: NDCG@10 with intervals for the three feature sets, and the SHAP share of the new group.
+- **Done when:** `tests/check_time_safety.py` covers the text cutoff; `outputs/llm_features/ABLATION.md`
+  and `outputs/nl_steering/NL_EVAL.md` exist; the app works with the API off.
+
+### W6. Evaluation and study
+
+- Fix the user-study tasks (both sets currently share their answers) and rewrite them for the new
+  app: conditions become app-with-Why versus app-without-Why; add one group task.
+- Refresh the three case studies for LambdaRank; add a group case study.
+- Missing evidence from the first build: literature references for the features, and a retriever
+  ablation (each retriever's share of stage-1 recall).
+
+### W7. Presentation and report
+
+- Ten-minute script: the problem, a two-phone group demo, one "why" walk-through, RQ1–RQ3 in the Lab.
+- A recorded backup of the demo. Report sections updated; AI assistance and contributions stated.
+
+---
+
+## 5. Where every view goes
+
+| View | Now | In the redesign |
+|---|---|---|
+| V1 Console | left rail, always open | Filter chips with popovers (slider + preview); "say it" box above them |
+| V2 Rank flow | first panel | Why layer, behind "How is this ranked?"; reused as G2 with strategies as columns |
+| V3 Ledger | panel | Place drawer: three plain reasons first, full ledger on request |
+| V4 Map | panel | Right half of Discover, on real streets; start points and travel added |
+| V8 Rating history and themes | panel | Place drawer |
+| V5 Trade-off, V6 Model lens, S1 Similarity, V7 Evaluation | "For analysts" on the same page | Lab page |
+| G1–G4 group views | — | Room results and Place drawer |
+| L1 LLM features, cold-start curve, RQ2 results | — | Lab page |
+
+---
+
+## 6. Schedule
+
+Today is Wednesday, November 25. The order is the same for either slot; only the cut line moves.
+
+| Milestone | Content | Slot Dec 8 | Slot Dec 1 |
+|---|---|---|---|
+| M0 | Plan agreed (Yila, Fangyu); mock-ups chosen; presentation day asked; dependencies and LLM cost approved | Wed 11/25 | Wed 11/25 |
+| M1 | W1 shell: tokens, layout, cards, map, illustrations; W2 pipeline runs in the background; LLM batch sent | Thu 11/26 – Sat 11/28 | Thu 11/26 – Fri 11/27 |
+| M2 | W2 finished in the interface; W3 live profiles and location | Sun 11/29 – Mon 11/30 | Sat 11/28 |
+| M3 | W4 group engine, views, rooms; RQ2 run | Tue 12/1 – Thu 12/3 | Sun 11/29 |
+| M4 | W5 one-sentence steering; RQ3 ablation in the Lab | Fri 12/4 | Mon 11/30 (morning) |
+| M5 | Critique, audit, polish; two-phone dry run; recorded backup; slides | Sat 12/5 – Mon 12/7, freeze Sun 12/6 | Mon 11/30, freeze that night |
+| M6 | User study (3–5 people), report | to Mon 12/14 | Wed 12/2 – Mon 12/14 |
+
+**If the slot is December 1 the list above does not all fit safely.** Cut in this order, top first:
+(1) Lab restyle beyond tokens; (2) cold-start study; (3) RQ3 view (results go on a slide);
+(4) live rooms (demo two members on one screen instead); (5) one-sentence steering falls back to the
+keyword parser. Never cut: passing checks, and numbers that come only from scripts.
+
+---
+
+## 7. Skills
+
+| Skill | Used for | When |
+|---|---|---|
+| `impeccable shape` | this brief | M0 |
+| `artifact-design` | two clickable mock-ups to choose from | M0 |
+| `impeccable` new-work, `colorize`, `typeset`, `layout` | the new visual system | M1 |
+| `impeccable distill` | removing clutter from each moved view | M1–M2 |
+| `impeccable onboard` | Start screen and room lobby | M2–M3 |
+| `impeccable adapt` | phone layouts | M1–M3 |
+| `impeccable animate`, `delight` | small reactions, empty states | M5 |
+| `impeccable critique`, `audit`, `polish` | review before the freeze | M5 |
+| `dataviz` | every chart: form, colour roles, validator, hover | M1–M4 |
+| `hallmark`, `design-taste-frontend` | Start screen as a new page; check against a templated look | M2 |
+| `diagram-design` | architecture and pipeline figures for slides and report | M5–M6 |
+| `claude-api` | before writing any LLM call | M4 |
+
+---
+
+## 8. Checks before every push
+
+```bash
+node tests/replay.mjs && node tests/check_ledger.mjs && node tests/check_lens.mjs
+node tests/check_tradeoff.mjs && node tests/check_preview.mjs
+node tests/check_detail.mjs && node tests/check_themes.mjs
+node tests/check_group.mjs            # new in W4
+.venv/bin/python tests/check_steering.py && .venv/bin/python tests/check_time_safety.py
+.venv/bin/python tests/check_nl.py && .venv/bin/python tests/check_app.py
+.venv/bin/python tests/check_serving.py   # W3, needs server/bundle (src/31_export_serving_bundle.py)
+cd web && npm run build
+```
+
+---
+
+## 9. Risks
 
 | Risk | Mitigation |
 |---|---|
-| LightGBM does not beat LR | That is a valid result; the comparison is about *how* they rank, not which wins |
-| Controls barely change the top 10 | Report it; widen ranges; it is itself an RQ1 finding |
-| Map clutter with 200 candidates | Show only top 10 + exited items; candidates on demand |
-| User data privacy in the demo | Hash user IDs; show only restaurant data and aggregates |
-| Presentation on December 1 | Freeze features November 29 |
+| Too much for the time, especially a December 1 slot | Fixed order and cut list in §6; the current site stays deployable throughout |
+| Classroom network blocks the tunnel or the map tiles | Static site with sample profiles; D3 map fallback; recorded backup |
+| New users have little history | Cold-start study sets the minimum picks; sample taste profiles as an alternative; the app shows how sure it is |
+| LLM features do not help | That is a valid RQ3 result; report it |
+| Review text leaks the future into features | Text cutoff before the earliest training window; time-safety test |
+| The LLM misreads a sentence | Chips show what was understood; nothing changes until the solver runs; accuracy is measured |
+| Location and nicknames are personal data | Rounded coordinates, no accounts, 24-hour room life, SQLite file git-ignored |
+| The warm palette cannot separate three chart roles by colour | Glyph and texture on every effect role; validator in the checks |
+| Data ends in 2021 | Stated in the app and the report |
 
-## 9. Open questions
+---
 
-- For the instructor: presentation day for Team 4; final report template (the slides only say
-  "conference paper format", 8 pages); whether a live demo link is expected.
-- For Fangyu: enabling GitHub Pages; the inspection cuisine field for MMR; the time-cutoff
-  snapshots she wants exposed in V8.
+## 10. Decisions and approvals needed
+
+- **Instructor:** which day Team 4 presents.
+- **Fangyu:** agreement with this direction; who takes which workstream (recorded in the report's
+  contribution table).
+- **Yila:** the mock-up direction (type, third chart colour, illustration style); the new
+  dependencies in §3; the LLM batch cost once `--plan` prints it; whose API key the server uses.
+
+---
+
+## 11. Git and housekeeping
+
+- Branch from `main` (`app-redesign` now); small pull requests into `main`; `main` deploys the site.
+- Remove the untracked duplicate files named "… 2" after checking them; add `web/.vite/`, `server/bundle/`
+  and `server/*.sqlite` to `.gitignore`.
+- Update `README.md`, `web/README.md`, `docs/HANDOFF.md` and `docs/USER_STUDY.md` as each workstream lands.

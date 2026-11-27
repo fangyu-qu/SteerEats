@@ -3,7 +3,7 @@
 // (100% = the model's own list), on one scale for all four charts. Grey where the target cannot be met.
 // Hover reads out a value; click sets the control to it.
 import * as d3 from "d3";
-import { CONTROL_INFO, hueVar } from "./common.js";
+import { CONTROL_INFO, hueVar, hueLine } from "./common.js";
 
 const H = 40, T = 5, B = 7;      // chart height, top and bottom padding of the plot band
 const HUE = { w_h: CONTROL_INFO.w_h.hue, km: CONTROL_INFO.alpha.hue, popularity: CONTROL_INFO.beta.hue, cuisines: CONTROL_INFO.lam.hue };
@@ -40,7 +40,7 @@ export function renderPreviews(root, sweeps, current, onPick, { stale = false, b
     const P = pts.map((d, k) => ({ ...d, k, x: xv(d, k), y: y(d.kept) }));
     svg.append("path").attr("class", "sp-all").attr("d", line(P));
     // solid in the control's hue where the target is met
-    svg.append("path").attr("class", "sp-met").style("stroke", hueVar(HUE[key])).attr("d", line.defined((d) => d.met)(P));
+    svg.append("path").attr("class", "sp-met").style("stroke", hueLine(HUE[key])).attr("d", line.defined((d) => d.met)(P));
     if (discrete) {
       svg.append("g").selectAll("circle").data(P).join("circle").attr("cx", (d) => d.x).attr("cy", (d) => d.y).attr("r", 2.6)
         .attr("class", (d) => (d.met ? "sp-dot" : "sp-dot miss")).style("fill", (d) => (d.met ? hueVar(HUE[key]) : null));

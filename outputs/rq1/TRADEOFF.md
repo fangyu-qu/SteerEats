@@ -15,3 +15,11 @@ Settings whose NDCG@10 change is not distinguishable from zero (interval include
 | 1 | 0 | 0.25 | 0 | 0.0419 | -0.0007 [-0.0043, +0.0027] | 3.63 | 0.478 | 4.60 |
 | 1 | 0.25 | 0.25 | 0 | 0.0391 | -0.0036 [-0.0073, +0.0002] | 2.02 | 0.477 | 4.66 |
 
+## LambdaRank
+
+Settings whose NDCG@10 change is not distinguishable from zero (interval includes 0): 1 of 191.
+
+| w_h | alpha | beta | lam | NDCG@10 | change [95% CI] | km | popularity | cuisines |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 0 | 0.25 | 0 | 0.0439 | -0.0031 [-0.0066, +0.0005] | 3.76 | 0.481 | 4.52 |
+

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en" data-site="lab">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="illustrations/brand/buddies-icon.png">
+  <title>Eat Buddy Lab: results and explorer</title>
+  <meta name="description" content="Steer NYC restaurant recommendations and see why the list changed.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,400;0,500;0,600;0,700;1,500&display=swap">
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body data-tab="overview">
+  <header class="side">
+    <div class="brand">
+      <img class="brand-mark" src="illustrations/brand/buddies-cutout.png" alt="" width="40" height="40">
+      <span>Eat Buddy Lab</span>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button type="button" role="tab" data-tab="overview" aria-selected="true">Overview</button>
+      <button type="button" role="tab" data-tab="explorer" aria-selected="false">Explorer</button>
+      <button type="button" role="tab" data-tab="analysis" aria-selected="false">Analysis</button>
+    </nav>
+    <p class="cutoff" id="cutoff"></p>
+    <a class="to-app" href="./">Open the app</a>
+  </header>
+
+  <div class="stage">
+  <main class="overview" id="overview" data-page="overview" aria-label="Overview"></main>
+
+  <div class="scroll-blur" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <div class="subbar" data-page="case">
+    <label class="field inline" for="case-select"><span>Test user</span>
+      <select id="case-select"></select>
+    </label>
+    <div class="segmented" role="radiogroup" aria-label="Ranking model">
+      <button type="button" role="radio" data-model="lr" aria-checked="false">Logistic regression</button>
+      <button type="button" role="radio" data-model="lgbm" aria-checked="false">LightGBM</button>
+      <button type="button" role="radio" data-model="lmr" aria-checked="true">LambdaRank</button>
+    </div>
+    <p class="subbar-note" id="subbar-note"></p>
+  </div>
+
+  <div class="layout">
+    <aside class="console" id="console" data-page="explorer" aria-label="Steering controls"></aside>
+
+    <div class="workspace">
+      <p class="summary" id="boot-error" role="alert" hidden></p>
+      <section class="panel flow-panel" data-page="explorer" aria-labelledby="flow-title">
+        <header class="panel-head flow-head">
+          <div class="flow-intro">
+            <h2 id="flow-title">How your top 10 changed</h2>
+            <p class="flow-counts" id="flow-counts" aria-live="polite"></p>
+            <ul class="key flow-key" id="flow-key">
+              <li><i class="moved" aria-hidden="true"></i>Colored line: rank changed at that step</li>
+              <li><i class="same" aria-hidden="true"></i>Gray line: rank unchanged</li>
+              <li class="hint">Hover or click a restaurant to follow its path</li>
+            </ul>
+          </div>
+          <aside class="flow-formula" id="flow-formula" aria-label="How the score is computed from your settings"></aside>
+        </header>
+        <div id="flow" class="flow"></div>
+        <p class="flow-read" id="flow-read"></p>
+      </section>
+
+      <div class="split" data-page="explorer">
+        <div class="split-left">
+        <section class="panel map-panel" aria-labelledby="map-title">
+          <header class="panel-head">
+            <h2 id="map-title">Where the list went</h2>
+            <p class="panel-sub">Your usual area with 1, 2 and 5 km rings. Numbers are your new top 10; hollow dots are places that left it. Shading is the steering cost: the smallest total change of your four controls that brings a place from that neighborhood into the top 10.</p>
+          </header>
+          <div id="map" class="map"></div>
+          <div class="cost-legend" aria-label="Steering cost legend">
+            <span><i class="sw cost-0"></i>in your list now</span><span><i class="sw cost-1"></i>≤ 0.25</span>
+            <span><i class="sw cost-2"></i>≤ 0.5</span><span><i class="sw cost-3"></i>≤ 1</span><span><i class="sw cost-4"></i>&gt; 1</span>
+            <span><i class="sw unreach"></i>not reachable</span><span><i class="sw none"></i>no candidates</span>
+          </div>
+        </section>
+        <section class="panel exited-box" aria-labelledby="exited-head">
+          <h3 class="subhead" id="exited-head"></h3>
+          <p class="exited-none" hidden>Every place from the original top 10 is still in it.</p>
+          <ul id="exited" class="exited"></ul>
+        </section>
+        </div>
+        <section class="panel list-panel" aria-labelledby="list-title">
+          <header class="panel-head">
+            <h2 id="list-title">Your top 10</h2>
+            <p class="panel-sub list-sub">These values show how much each preference contributed to a restaurant’s overall ranking change. We use Shapley values to account for all possible adjustment orders, rather than the single order shown in the chart above. The contributions add up to the total change, but may differ from the changes at each step of that chart.</p>
+          </header>
+          <ol id="list" class="toplist"></ol>
+        </section>
+      </div>
+
+      <div class="why-row" data-page="explorer">
+      <section class="panel ledger-panel" aria-labelledby="ledger-title">
+        <header class="panel-head">
+          <h2 id="ledger-title">Why the model recommends this place</h2>
+        </header>
+        <div id="why" class="why"></div>
+      </section>
+      <section class="panel reviews-panel" aria-labelledby="reviews-title">
+        <header class="panel-head">
+          <h2 id="reviews-title">What reviewers say about this place</h2>
+        </header>
+        <div id="reviews" class="why reviews"></div>
+      </section>
+      </div>
+
+      <section class="panel lens-panel" data-page="analysis" aria-labelledby="lens-title">
+        <header class="panel-head lens-head">
+          <div class="lens-intro">
+            <h2 id="lens-title">What does each ranker rely on?</h2>
+            <p class="panel-sub" id="lens-sub"></p>
+            <div class="rel-tools" id="lens-tools"></div>
+          </div>
+          <aside class="lens-method" id="lens-method" aria-label="How a share is calculated"></aside>
+        </header>
+        <div id="lens" class="lens"></div>
+      </section>
+
+      <section class="panel lens-panel" data-page="analysis" aria-labelledby="eval-title">
+        <header class="panel-head">
+          <h2 id="eval-title">Do predicted probabilities match actual visits?</h2>
+          <p class="panel-sub">Points closer to the diagonal indicate a better match between predicted probabilities and observed visits.</p>
+        </header>
+        <div id="evaluation" class="lens"></div>
+      </section>
+
+      <section class="panel lens-panel" data-page="analysis" aria-labelledby="sim-title">
+        <header class="panel-head lens-head">
+          <div class="lens-intro">
+            <h2 id="sim-title">Restaurants cluster more by borough than by cuisine</h2>
+            <p class="panel-sub sim-sub">Each dot is a restaurant. Nearby dots tend to have been reviewed by similar people. Both panels show the same layout, not a geographic map.</p>
+          </div>
+          <aside class="lens-method sim-stats-box" id="sim-stats" aria-label="Nearest-neighbour statistics"></aside>
+        </header>
+        <div id="similarity" class="lens"></div>
+      </section>
+    </div>
+  </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

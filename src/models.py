@@ -29,9 +29,9 @@ def lgbm_params(leaves):
                 seed=SEED, deterministic=True, force_row_wise=True, verbose=-1, num_threads=0)
 
 
-def fit_lgbm(x, y, leaves, rounds=None, valid=None):
+def fit_lgbm(x, y, leaves, rounds=None, valid=None, names=None):
     import lightgbm as lgb
-    train = lgb.Dataset(x, y, feature_name=FEATURES, free_raw_data=False)
+    train = lgb.Dataset(x, y, feature_name=list(names or FEATURES), free_raw_data=False)
     if valid is None:
         return lgb.train(lgbm_params(leaves), train, num_boost_round=rounds)
     v = lgb.Dataset(valid[0], valid[1], reference=train)
@@ -39,7 +39,7 @@ def fit_lgbm(x, y, leaves, rounds=None, valid=None):
                      callbacks=[lgb.early_stopping(50, verbose=False)])
 
 
-def fit_lambdarank(x, y, groups, leaves, rounds=None, valid=None):
+def fit_lambdarank(x, y, groups, leaves, rounds=None, valid=None, names=None):
     """LightGBM with a listwise objective (supplementary: not part of the pointwise comparison)."""
     import lightgbm as lgb
 
@@ -48,7 +48,7 @@ def fit_lambdarank(x, y, groups, leaves, rounds=None, valid=None):
         return counts[np.argsort(idx)]
     params = lgbm_params(leaves) | dict(objective="lambdarank", metric="ndcg", eval_at=[10],
                                          lambdarank_truncation_level=20)
-    train = lgb.Dataset(x, y, group=sizes(groups), feature_name=FEATURES, free_raw_data=False)
+    train = lgb.Dataset(x, y, group=sizes(groups), feature_name=list(names or FEATURES), free_raw_data=False)
     if valid is None:
         return lgb.train(params, train, num_boost_round=rounds)
     v = lgb.Dataset(valid[0], valid[1], group=sizes(valid[2]), reference=train)
